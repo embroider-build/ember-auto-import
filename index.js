@@ -13,10 +13,18 @@ module.exports = {
   included() {
     this._depFinder = new DepFinder(this.project);
     this.import('ember-auto-imports/ember-auto-imports.js');
+    this.import('ember-auto-imports/ember-auto-imports-test.js', { type: 'test' });
   },
 
   postprocessTree: function(type, tree){
+    let outputFile;
     if (type === 'js'){
+      outputFile = 'ember-auto-imports/ember-auto-imports.js';
+    } else if (type === 'test') {
+      outputFile = 'ember-auto-imports/ember-auto-imports-test.js';
+    }
+
+    if (outputFile) {
 
       // The analyzer is responsible for identifying the set of things
       // that are being imported by app code.
@@ -39,7 +47,7 @@ module.exports = {
       // combine them into a single file so we can share a single
       // constant app.import.
       let combined = concat(bundler, {
-        outputFile: 'ember-auto-imports/ember-auto-imports.js',
+        outputFile,
         inputFiles: ['**/*'],
         sourceMapConfig: { enabled: true },
         allowNone: true
