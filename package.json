@@ -1,17 +1,20 @@
 {
   "name": "ember-auto-import",
-  "version": "0.0.0",
-  "description": "The default blueprint for ember-cli addons.",
+  "version": "0.1.0",
+  "description": "Zero-config import from NPM packages",
   "keywords": [
-    "ember-addon"
+    "ember-addon",
+    "import",
+    "npm",
+    "rollup"
   ],
   "license": "MIT",
-  "author": "",
+  "author": "Edward Faulkner <edward@eaf4.com>",
   "directories": {
     "doc": "doc",
     "test": "tests"
   },
-  "repository": "",
+  "repository": "https://github.com/ef4/ember-auto-import",
   "scripts": {
     "build": "ember build",
     "lint:js": "eslint ./*.js addon addon-test-support app config lib server test-support tests",
