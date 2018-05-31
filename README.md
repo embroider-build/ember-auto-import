@@ -1,7 +1,9 @@
 ember-auto-import
 ==============================================================================
 
-[Short description of the addon.]
+Just `import` from NPM, with zero configuration.
+
+Spiritual successor to ember-browserify, but powered by a more modern packager (Rollup).
 
 Installation
 ------------------------------------------------------------------------------
@@ -14,8 +16,19 @@ ember install ember-auto-import
 Usage
 ------------------------------------------------------------------------------
 
-[Longer description of how to use the addon in apps.]
+Add whatever dependency you want to your project using NPM or yarn:
 
+```
+npm install --save-dev lodash-es
+  or
+yarn add --dev lodash-es
+```
+
+Then just import it from your Ember app code:
+
+```
+import { capitalize } from 'lodash-es';
+```
 
 Contributing
 ------------------------------------------------------------------------------
