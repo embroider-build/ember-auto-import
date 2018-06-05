@@ -1,0 +1,4 @@
+/dist
+/tmp
+/test-apps/*/dist
+/test-apps/*/tmp
