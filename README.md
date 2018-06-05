@@ -34,6 +34,33 @@ import { capitalize } from 'lodash-es';
 
 There is no step two. Works from both app code and test code.
 
+Customizing
+------------------------------------------------------------------------------
+
+While most NPM packages authored in CommonJS or ES Modules will Just Work,
+for others you may need some give ember-auto-import a hint on what to
+do.
+
+You can set options per-package by providing them like this in your
+ember-cli-build.js:
+
+```js
+// In your ember-cli-build.js file
+let app = new EmberApp(defaults, {
+  autoImport: {
+    qunit: { include: false }
+  }
+});
+```
+
+Suported Options
+
+ - `include`: _boolean, defaults to true_. If set to false,
+   ember-auto-imports will ignore this package. Can be helpful if the
+   package is already included another way (like a shim from some
+   other Ember addon).
+
+
 Credit / History
 ------------------------------------------------------------------------------
 
