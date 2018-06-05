@@ -4,7 +4,7 @@ const { module: Qmodule, test } = require('qunit');
 const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
 
-Qmodule('sample-direct fastboot', function(hooks) {
+Qmodule('sample-direct | fastboot', function(hooks) {
 
   let fastboot;
 
