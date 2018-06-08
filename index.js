@@ -11,17 +11,19 @@ module.exports = {
   name: 'ember-auto-import',
 
   included() {
-    this._depFinder = new DepFinder(this.project);
-    this.import('ember-auto-imports/ember-auto-imports.js');
-    this.import('ember-auto-imports/ember-auto-imports-test.js', { type: 'test' });
+    this._depFinder = new DepFinder(this.parent);
+    this.import(`${this.parent.pkg.name}/ember-auto-imports.js`);
+    if (this.project === this.parent) {
+      this.import(`${this.parent.pkg.name}/ember-auto-imports-test.js`, { type: 'test' });
+    }
   },
 
   postprocessTree: function(type, tree){
     let outputFile;
     if (type === 'js'){
-      outputFile = 'ember-auto-imports/ember-auto-imports.js';
+      outputFile = `${this.parent.pkg.name}/ember-auto-imports.js`;
     } else if (type === 'test') {
-      outputFile = 'ember-auto-imports/ember-auto-imports-test.js';
+      outputFile = `${this.parent.pkg.name}/ember-auto-imports-test.js`;
     }
 
     if (outputFile) {
