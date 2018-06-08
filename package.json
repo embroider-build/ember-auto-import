@@ -17,10 +17,11 @@
   "repository": "https://github.com/ef4/ember-auto-import",
   "scripts": {
     "build": "ember build",
-    "lint:js": "eslint ./*.js addon addon-test-support app config lib server test-support tests",
+    "lint:js": "eslint .",
     "start": "ember serve",
-    "test": "ember test",
-    "test:all": "ember try:each"
+    "test": "./scripts/test.sh",
+    "test:root": "ember test",
+    "prepare": "./scripts/link-them.sh"
   },
   "dependencies": {
     "@babel/parser": "^7.0.0-beta.48",
@@ -44,6 +45,7 @@
     "ember-cli": "~3.1.2",
     "ember-cli-dependency-checker": "^2.0.0",
     "ember-cli-eslint": "^4.2.1",
+    "ember-cli-fastboot": "^1.1.4-beta.1",
     "ember-cli-htmlbars": "^2.0.1",
     "ember-cli-htmlbars-inline-precompile": "^1.0.0",
     "ember-cli-inject-live-reload": "^1.4.1",
@@ -61,9 +63,12 @@
     "ember-try": "^0.2.23",
     "eslint-plugin-ember": "^5.0.0",
     "eslint-plugin-node": "^6.0.1",
+    "fastboot": "^1.2.0",
+    "jsdom": "^11.11.0",
     "loader.js": "^4.2.3",
     "lodash-es": "^4.17.10",
-    "moment": "^2.22.1"
+    "moment": "^2.22.1",
+    "qunit": "^2.6.1"
   },
   "engines": {
     "node": "6.* || >= 7.*"

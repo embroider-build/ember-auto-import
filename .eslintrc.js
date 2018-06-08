@@ -15,6 +15,7 @@ module.exports = {
     browser: true
   },
   rules: {
+    'no-var': 'error'
   },
   overrides: [
     // node files
@@ -25,7 +26,8 @@ module.exports = {
         'testem.js',
         'config/**/*.js',
         'tests/dummy/config/**/*.js',
-        'lib/**/*.js'
+        'lib/**/*.js',
+        'fastboot-tests/**/*.js'
       ],
       excludedFiles: [
         'addon/**',

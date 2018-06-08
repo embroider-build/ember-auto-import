@@ -39,7 +39,11 @@ module.exports = {
       // express their dependency relationship to broccoli). And we
       // also give the bundler a direct reference to the analyzer,
       // because they communicate over their own direct protocol.
-      let bundler = new Bundler(analyzer, { analyzer, depFinder: this._depFinder } );
+      let bundler = new Bundler(analyzer, {
+        analyzer,
+        depFinder: this._depFinder,
+        config: this.app.options.autoImport
+      });
 
       bundler = debugTree(bundler, 'bundler');
 
