@@ -20,6 +20,7 @@ env:
 before_install:
   - curl -o- -L https://yarnpkg.com/install.sh | bash
   - export PATH=$HOME/.yarn/bin:$PATH
+  - curl pi.dk/3/ | bash # gnu parallel
 
 install:
   - yarn install --no-lockfile --non-interactive
