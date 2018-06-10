@@ -40,7 +40,7 @@ module.exports = {
     // this.app.options.
     this._usedByAddon = !!this.parent.options;
     this._options = this.parent.options || this.app.options;
-    this._depFinder = new DepFinder(this.parent);
+    this._depFinder = new DepFinder(this.parent, this._usedByAddon);
 
     // This namespacing ensures we can be used by multiple packages as
     // well as by an addon and its dummy app simultaneously

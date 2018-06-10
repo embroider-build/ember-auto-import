@@ -3,7 +3,7 @@
 set -e
 
 # All packages get a node_modules directory and a .bin link
-for package in "sample-direct" "sample-indirect" "sample-addon"; do
+for package in "sample-direct" "sample-indirect" "sample-addon" "sample-failure"; do
     mkdir -p ./test-apps/$package/node_modules
     pushd ./test-apps/$package/node_modules > /dev/null
     rm -rf .bin
@@ -13,7 +13,7 @@ done
 
 
 # These packages get to depend on ember-auto-import
-for package in "sample-direct" "sample-addon"; do
+for package in "sample-direct" "sample-addon" "sample-failure"; do
     pushd ./test-apps/$package/node_modules > /dev/null
     rm -rf ./ember-auto-import
     ln -s ../../.. ./ember-auto-import
