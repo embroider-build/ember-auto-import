@@ -15,4 +15,9 @@ module('Acceptance | basic', function(hooks) {
     assert.equal(document.querySelector('[data-test="sample-addon-inner-lib"]').textContent.trim(), '42');
   });
 
+  test('addon-test-support deps are present inside the test suite', async function(assert) {
+    await visit('/dep-check');
+    assert.equal(document.querySelector('[data-test="lib2-status"]').textContent.trim(), 'yes', 'expected inner-lib2 to be present');
+  });
+
 });

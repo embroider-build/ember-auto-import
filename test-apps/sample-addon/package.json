@@ -24,6 +24,7 @@
     "ember-cli-babel": "^6.6.0",
     "ember-cli-htmlbars": "^2.0.1",
     "inner-lib":"*",
+    "inner-lib2":"*",
     "lodash-es": "*"
   },
   "devDependencies": {

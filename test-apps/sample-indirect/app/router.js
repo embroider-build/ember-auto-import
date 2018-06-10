@@ -8,6 +8,7 @@ const Router = EmberRouter.extend({
 
 Router.map(function() {
   this.route('inner');
+  this.route('dep-check');
 });
 
 export default Router;

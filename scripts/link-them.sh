@@ -28,10 +28,13 @@ for package in "sample-indirect" ; do
     popd > /dev/null
 done
 
-# These packages get to depend on inner-lib
+# These packages get to depend on inner-lib and inner-lib2
 for package in "sample-addon" ; do
     pushd ./test-apps/$package/node_modules > /dev/null
     rm -rf ./inner-lib
     ln -s ../../inner-lib ./inner-lib
+    rm -rf ./inner-lib2
+    ln -s ../../inner-lib2 ./inner-lib2
     popd > /dev/null
 done
+
