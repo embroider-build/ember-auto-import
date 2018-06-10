@@ -27,3 +27,11 @@ for package in "sample-indirect" ; do
     ln -s ../../sample-addon ./sample-addon
     popd > /dev/null
 done
+
+# These packages get to depend on inner-lib
+for package in "sample-addon" ; do
+    pushd ./test-apps/$package/node_modules > /dev/null
+    rm -rf ./inner-lib
+    ln -s ../../inner-lib ./inner-lib
+    popd > /dev/null
+done

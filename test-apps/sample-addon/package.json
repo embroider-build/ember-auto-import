@@ -23,6 +23,7 @@
     "ember-auto-import": "*",
     "ember-cli-babel": "^6.6.0",
     "ember-cli-htmlbars": "^2.0.1",
+    "inner-lib":"*",
     "lodash-es": "*"
   },
   "devDependencies": {

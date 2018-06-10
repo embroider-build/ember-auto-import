@@ -9,4 +9,10 @@ module('Acceptance | basic', function(hooks) {
     await visit('/');
     assert.equal(document.querySelector('[data-test="from-sample-addon"]').textContent.trim(), 'Hello');
   });
+
+  test('an addon can resolve a dependency relative to itself, not the host app', async function(assert) {
+    await visit('/inner');
+    assert.equal(document.querySelector('[data-test="sample-addon-inner-lib"]').textContent.trim(), '42');
+  });
+
 });
