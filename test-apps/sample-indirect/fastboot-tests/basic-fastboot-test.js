@@ -1,6 +1,6 @@
 const FastBoot = require('fastboot');
 const { execFileSync } = require('child_process');
-const { module: Qmodule, skip } = require('qunit');
+const { module: Qmodule, skip, test } = require('qunit');
 const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
 
@@ -15,6 +15,14 @@ Qmodule('sample-indirect | fastboot', function(hooks) {
       resilient: false
     })
   });
+
+  test('index', async function(assert) {
+    let page = await fastboot.visit('/');
+    let html = await page.html();
+    let document = new JSDOM(html).window.document;
+    assert.equal(document.querySelector('[data-test="from-sample-addon"]').textContent.trim(), 'Hello', 'lodash-es is working');
+  }),
+
 
   skip('no test-support deps in app', async function(assert) {
     let page = await fastboot.visit('/dep-check');
