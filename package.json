@@ -24,7 +24,8 @@
     "prepare": "./scripts/link-them.sh"
   },
   "dependencies": {
-    "@babel/parser": "^7.0.0-beta.48",
+    "babel-core": "^6.26.3",
+    "babylon": "^6.18.0",
     "broccoli-concat": "^3.2.2",
     "broccoli-debug": "^0.6.4",
     "broccoli-merge-trees": "^3.0.0",

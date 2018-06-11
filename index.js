@@ -38,6 +38,16 @@ module.exports = {
     this._options = this.parent.options || this.app.options;
     this._depFinder = new DepFinder(this.parent, this._usedByAddon);
 
+    // Generate the same babel options that the consuming app or addon
+    // is using. We will use these so we can configure our parser to
+    // match.
+    let babelAddon = this.addons.find(addon => addon.name === 'ember-cli-babel');
+    this._babelOptions = babelAddon.buildBabelOptions(this._options);
+
+    // https://github.com/babel/ember-cli-babel/issues/227
+    delete this._babelOptions.annotation;
+    delete this._babelOptions.throwUnlessParallelizable;
+
     // This namespacing ensures we can be used by multiple packages as
     // well as by an addon and its dummy app simultaneously
     this._namespace = `${this.parent.pkg.name}/${this._usedByAddon ? 'addon' : 'app'}`;
@@ -50,6 +60,7 @@ module.exports = {
 
     // The Analyzer keeps track of all your imports
     this._analyzer = new Analyzer({
+      babelOptions: this._babelOptions,
       didAddTree(tree) {
         // Here be dragons
         appBundler.plugin._inputNodes.push(tree);

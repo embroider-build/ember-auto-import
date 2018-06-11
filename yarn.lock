@@ -2,10 +2,6 @@
 # yarn lockfile v1
 
 
-"@babel/parser@^7.0.0-beta.48":
-  version "7.0.0-beta.48"
-  resolved "https://registry.yarnpkg.com/@babel/parser/-/parser-7.0.0-beta.48.tgz#f93895cbacee703c0ec98e5af3901c77edd9f1d7"
-
 "@ember/test-helpers@^0.7.18":
   version "0.7.24"
   resolved "https://registry.yarnpkg.com/@ember/test-helpers/-/test-helpers-0.7.24.tgz#0c4d394bff8f5b471646a6a8f9ce9a559e5de3df"
@@ -324,7 +320,7 @@ babel-code-frame@^6.22.0, babel-code-frame@^6.26.0:
     esutils "^2.0.2"
     js-tokens "^3.0.2"
 
-babel-core@^6.26.0:
+babel-core@^6.26.0, babel-core@^6.26.3:
   version "6.26.3"
   resolved "https://registry.yarnpkg.com/babel-core/-/babel-core-6.26.3.tgz#b2e2f09e342d0f0c88e2f02e067794125e75c207"
   dependencies:
