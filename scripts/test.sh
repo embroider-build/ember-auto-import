@@ -8,5 +8,4 @@ cd test-apps/sample-indirect && yarn test:fastboot
 cd test-apps/sample-addon    && yarn test
 cd test-apps/sample-failure  && yarn test
 yarn test:root
-yarn lint:js
 EOF
