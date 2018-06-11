@@ -1,4 +1,4 @@
-sample-dummy
+sample-failure
 ==============================================================================
 
 [Short description of the addon.]
@@ -7,7 +7,7 @@ Installation
 ------------------------------------------------------------------------------
 
 ```
-ember install sample-dummy
+ember install sample-failure
 ```
 
 
@@ -23,7 +23,7 @@ Contributing
 ### Installation
 
 * `git clone <repository-url>`
-* `cd sample-dummy`
+* `cd sample-failure`
 * `npm install`
 
 ### Linting

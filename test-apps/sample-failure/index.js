@@ -1,5 +1,5 @@
 'use strict';
 
 module.exports = {
-  name: 'sample-dummy'
+  name: 'sample-failure'
 };

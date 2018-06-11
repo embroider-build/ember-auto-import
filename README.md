@@ -94,9 +94,9 @@ The top-level test runner script (`/scripts/test.sh`) probably only works under 
 Index of test apps:
 
  - sample-direct: an app that directly uses ember-auto-import
- - sample-addon: an addon that uses ember-auto-import to implement a feature that will be used in apps
+ - sample-addon: an addon that uses ember-auto-import to implement a feature that will be used in apps, and also exercises auto-import for devDependencies in its dummy app.
  - sample-indirect: an app that uses sample-addon but does not directly depend on ember-auto-import
- - sample-dummy: an addon that uses ember-auto-import in its dummy app but not in its public API
+ - sample-failure: an addon that should refuse to build due to importing a devDependency from addon code
 
 
 License
