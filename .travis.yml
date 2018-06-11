@@ -5,6 +5,8 @@ node_js:
 
 addons:
   apt:
+    sources:
+    - sourceline: "deb http://archive.ubuntu.com/ubuntu precise universe"
     packages:
     - parallel
 
