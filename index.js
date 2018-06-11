@@ -7,6 +7,8 @@ const Bundler = require('./lib/bundler');
 const MergeTrees = require('broccoli-merge-trees');
 const debugTree = require('broccoli-debug').buildDebugCallback('ember-auto-import');
 
+const testsPattern = new RegExp(`^(/tests)?/[^/]+/(tests|test-support)/`)
+
 module.exports = {
   name: 'ember-auto-import',
 
@@ -60,7 +62,15 @@ module.exports = {
     let splitter = new Splitter({
       depFinder: this._depFinder,
       config: this._options.autoImport,
-      analyzer: this._analyzer
+      analyzer: this._analyzer,
+      bundles: ['app', 'tests'],
+      bundleForPath(path) {
+        if (testsPattern.test(path)) {
+          return 'tests';
+        } else {
+          return 'app'
+        }
+      }
     });
 
     // The Bundlers ask the splitter for deps they should include and

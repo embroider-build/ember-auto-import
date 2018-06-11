@@ -1,6 +1,6 @@
 const FastBoot = require('fastboot');
 const { execFileSync } = require('child_process');
-const { module: Qmodule, test, skip } = require('qunit');
+const { module: Qmodule, test } = require('qunit');
 const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
 
@@ -16,7 +16,7 @@ Qmodule('sample-direct | fastboot', function(hooks) {
     })
   });
 
-  skip('no test deps in app', async function(assert) {
+  test('no test deps in app', async function(assert) {
     let page = await fastboot.visit('/');
     let html = await page.html();
     let document = new JSDOM(html).window.document;
