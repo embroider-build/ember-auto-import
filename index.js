@@ -19,17 +19,8 @@ module.exports = {
 
     registry.add('js', {
       name: 'ember-auto-import-analyzer',
-      toTree: (tree) => {
-        // The analyzer is responsible for identifying the set of
-        // things that are being imported by app code. We need to do
-        // shenanigans to link the analyzer and the bundler together.
-
-        if (!this._connectAnalyzer) {
-          throw new Error('bug in ember-auto-import: expected bundler to be instantiated before analyzer');
-        }
-        return new Analyzer(debugTree(tree, `preprocessor:input:${counter++}`), {
-          connectAnalyzer: this._connectAnalyzer
-        });
+      toTree: (tree, inputPath) => {
+        return this._analyzer.analyzeTree(debugTree(tree, `preprocessor:input:${counter++}`), inputPath);
       }
     });
   },
@@ -51,6 +42,14 @@ module.exports = {
   },
 
   treeForVendor(tree) {
+
+    this._analyzer = new Analyzer({
+      didAddTree(tree) {
+        // Here be dragons
+        bundler.plugin._inputNodes.push(tree);
+      }
+    });
+
     // The bundler is responsible for determining which imported
     // modules discovered by the analyzer are external NPM packages
     // that need to be handled by auto-import, and packaging them
@@ -58,10 +57,10 @@ module.exports = {
     let bundler = new Bundler({
       outputFile: `${this._namespace}/ember-auto-imports.js`,
       depFinder: this._depFinder,
-      config: this._options.autoImport
+      config: this._options.autoImport,
+      analyzer: this._analyzer
     });
 
-    this._connectAnalyzer = bundler.connectAnalyzer.bind(bundler);
     return new MergeTrees([
       tree,
       debugTree(bundler.tree, 'combined')
