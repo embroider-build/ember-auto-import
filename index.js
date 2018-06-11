@@ -1,6 +1,7 @@
 'use strict';
 
 const Analyzer = require('./lib/analyzer');
+const Splitter = require('./lib/splitter');
 const DepFinder = require('./lib/dep-finder');
 const Bundler = require('./lib/bundler');
 const MergeTrees = require('broccoli-merge-trees');
@@ -17,10 +18,12 @@ module.exports = {
       return;
     }
 
+    // This is where we hook our analyzer into the build pipeline so
+    // it will see all the consumer app or addon's javascript
     registry.add('js', {
       name: 'ember-auto-import-analyzer',
       toTree: (tree, inputPath) => {
-        return this._analyzer.analyzeTree(debugTree(tree, `preprocessor:input:${counter++}`), inputPath);
+        return this._analyzer.analyzeTree(debugTree(tree, `preprocessor:input`), inputPath);
       }
     });
   },
@@ -43,6 +46,7 @@ module.exports = {
 
   treeForVendor(tree) {
 
+    // The Analyzer keeps track of all your imports
     this._analyzer = new Analyzer({
       didAddTree(tree) {
         // Here be dragons
@@ -50,22 +54,25 @@ module.exports = {
       }
     });
 
-    // The bundler is responsible for determining which imported
-    // modules discovered by the analyzer are external NPM packages
-    // that need to be handled by auto-import, and packaging them
-    // into AMD-loader compatible format.
-    let bundler = new Bundler({
-      outputFile: `${this._namespace}/ember-auto-imports.js`,
+    // The Splitter takes the set of imports from the Analyzer and
+    // decides which ones to include in which bundles
+    let splitter = new Splitter({
       depFinder: this._depFinder,
       config: this._options.autoImport,
       analyzer: this._analyzer
     });
 
+    // The Bundlers ask the splitter for deps they should include and
+    // are responsible for packaging those deps up.
+    let bundler = new Bundler({
+      outputFile: `${this._namespace}/ember-auto-imports.js`,
+      splitter,
+      bundle: 'app'
+    });
+
     return new MergeTrees([
       tree,
-      debugTree(bundler.tree, 'combined')
+      debugTree(bundler.tree, 'app')
     ]);
   }
 };
-
-let counter = 0;
