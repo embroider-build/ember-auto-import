@@ -41,7 +41,7 @@ module.exports = {
     this._namespace = `${this.parent.pkg.name}/${this._usedByAddon ? 'addon' : 'app'}`;
 
     this.import(`vendor/${this._namespace}/ember-auto-imports.js`);
-    //this.import(`vendor/${this._namespace}/ember-auto-imports-test.js`, { type: 'test' });
+    this.import(`vendor/${this._namespace}/ember-auto-imports-test.js`, { type: 'test' });
   },
 
   treeForVendor(tree) {
@@ -50,7 +50,8 @@ module.exports = {
     this._analyzer = new Analyzer({
       didAddTree(tree) {
         // Here be dragons
-        bundler.plugin._inputNodes.push(tree);
+        appBundler.plugin._inputNodes.push(tree);
+        testsBundler.plugin._inputNodes.push(tree);
       }
     });
 
@@ -64,15 +65,23 @@ module.exports = {
 
     // The Bundlers ask the splitter for deps they should include and
     // are responsible for packaging those deps up.
-    let bundler = new Bundler({
+
+    let appBundler = new Bundler({
       outputFile: `${this._namespace}/ember-auto-imports.js`,
       splitter,
       bundle: 'app'
     });
 
+    let testsBundler = new Bundler({
+      outputFile: `${this._namespace}/ember-auto-imports-test.js`,
+      splitter,
+      bundle: 'tests'
+    });
+
     return new MergeTrees([
       tree,
-      debugTree(bundler.tree, 'app')
+      debugTree(appBundler.tree, 'app'),
+      debugTree(testsBundler.tree, 'tests')
     ]);
   }
 };
