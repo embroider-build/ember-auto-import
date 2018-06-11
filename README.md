@@ -48,7 +48,9 @@ ember-cli-build.js:
 // In your ember-cli-build.js file
 let app = new EmberApp(defaults, {
   autoImport: {
-    qunit: { include: false }
+    modules: {
+      qunit: { include: false }
+    }
   }
 });
 ```
