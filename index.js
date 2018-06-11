@@ -47,6 +47,10 @@ module.exports = {
     // https://github.com/babel/ember-cli-babel/issues/227
     delete this._babelOptions.annotation;
     delete this._babelOptions.throwUnlessParallelizable;
+    if (this._babelOptions.plugins) {
+      this._babelOptions.plugins = this._babelOptions.plugins.filter(p => !p._parallelBabel);
+    }
+
 
     // This namespacing ensures we can be used by multiple packages as
     // well as by an addon and its dummy app simultaneously
