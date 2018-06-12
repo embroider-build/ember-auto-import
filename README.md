@@ -61,6 +61,63 @@ Suported Options
    ember-auto-imports will ignore this package. Can be helpful if the
    package is already included another way (like a shim from some
    other Ember addon).
+ - `bundler`: _function, defaults to our webpack bundler_, Allows you to completely replace the bundling strategy used for packaging up this module. See Custom Bundlers below.
+ - `webpackConfig`: _object_, The default webpack-based `bundler` merges this object into the webpack config.
+
+Configuring the Default Webpack Bundler
+---------------------------
+
+By default, we will package up each module you import using webpack. The default settings usually work, but sometimes tweaking is required. For example, the `yamljs` library tries to `require('fs')` inside a function, which only works on node and will break a webpack build by default. But [we can tell webpack to treat it as empty instead](https://github.com/jeremyfa/yaml.js/issues/102):
+
+```js
+// In your ember-cli-build.js file
+let app = new EmberApp(defaults, {
+  autoImport: {
+    modules: {
+      yamljs: {
+        webpackConfig: {
+          node: {
+            fs: 'empty'
+          }
+        }
+      }
+    }
+  }
+});
+```
+
+Custom Bundlers
+---------------
+
+You can completely replace the bundler strategy for a given module by passing a function:
+
+```js
+// In your ember-cli-build.js file
+
+function customBundler({ moduleName, entrypoint, outputFile, consoleWrite, environment }, moduleConfig) {
+  // - read from the file `entrypoint`
+  // - write to the file `outputFile`
+  // - make sure the resulting module is loadable as AMD with the name `moduleName`
+  // - `moduleConfig` is the per-module, user-provided configuration for this module. In this example, 
+  //   we could read `moduleConfig.customBundlerOptions`.
+  // - return a Promise that resolves when you're done
+}
+
+let app = new EmberApp(defaults, {
+  autoImport: {
+    modules: {
+      qunit: {
+        bundler: customBundler
+        customBundlerOptions: { ... }
+      }
+    }
+  }
+});
+```
+
+Your bundler gets access to `moduleConfig` and may define custom options there. You should include the name of your bundler in the name(s) of the options, to avoid collision with future options added by ember-auto-import. (For example, the default webpack bundler adds the `webpackConfig` option.)
+
+If you want to wrap the default bundler strategy, it's available via `require('ember-auto-import').webpackBundler`.
 
 
 Credit / History
