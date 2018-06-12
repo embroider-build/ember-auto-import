@@ -124,6 +124,6 @@ module.exports = {
       tree,
       debugTree(appBundler.tree, 'app'),
       debugTree(testsBundler.tree, 'tests')
-    ]);
+    ].filter(Boolean));
   }
 };
