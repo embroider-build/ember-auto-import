@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+ - BUGFIX: fix an exception when the app has no vendor directory
+
 ## 0.2.0
 
  - ENHANCEMENT: respect `module` and `browser` fields in package.json
