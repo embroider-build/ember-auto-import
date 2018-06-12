@@ -6,11 +6,15 @@ const DepFinder = require('./lib/dep-finder');
 const Bundler = require('./lib/bundler');
 const MergeTrees = require('broccoli-merge-trees');
 const debugTree = require('broccoli-debug').buildDebugCallback('ember-auto-import');
+const webpackBundler = require('./lib/webpack');
 
 const testsPattern = new RegExp(`^(/tests)?/[^/]+/(tests|test-support)/`)
 
 module.exports = {
   name: 'ember-auto-import',
+
+  // This is exported so apps can import it and use it
+  webpackBundler,
 
   setupPreprocessorRegistry(type, registry) {
     // we register on our parent registry (so we will process code
@@ -30,19 +34,26 @@ module.exports = {
     });
   },
 
-  included() {
+  included(project) {
     // When consumed by an addon, we will have
     // this.parent.options. When consumed by an app, we will have
     // this.app.options.
     this._usedByAddon = !!this.parent.options;
-    this._options = this.parent.options || this.app.options;
+    let options = this.parent.options || this.app.options;
+    this._env = this._usedByAddon ? project.app.env : project.env;
     this._depFinder = new DepFinder(this.parent, this._usedByAddon);
 
     // Generate the same babel options that the consuming app or addon
     // is using. We will use these so we can configure our parser to
     // match.
     let babelAddon = this.addons.find(addon => addon.name === 'ember-cli-babel');
-    this._babelOptions = babelAddon.buildBabelOptions(this._options);
+    this._babelOptions = babelAddon.buildBabelOptions(options);
+
+    // Stash our own config options
+    this._config = options.autoImport || {};
+    if (!this._config.modules) {
+      this._config.modules = Object.create(null);
+    }
 
     // https://github.com/babel/ember-cli-babel/issues/227
     delete this._babelOptions.annotation;
@@ -76,7 +87,7 @@ module.exports = {
     // decides which ones to include in which bundles
     let splitter = new Splitter({
       depFinder: this._depFinder,
-      config: this._options.autoImport,
+      config: this._config,
       analyzer: this._analyzer,
       bundles: ['app', 'tests'],
       bundleForPath(path) {
@@ -94,13 +105,19 @@ module.exports = {
     let appBundler = new Bundler({
       outputFile: `${this._namespace}/ember-auto-imports.js`,
       splitter,
-      bundle: 'app'
+      bundle: 'app',
+      config: this._config,
+      environment: this._env,
+      consoleWrite: (...args) => this.project.ui.write(...args)
     });
 
     let testsBundler = new Bundler({
       outputFile: `${this._namespace}/ember-auto-imports-test.js`,
       splitter,
-      bundle: 'tests'
+      bundle: 'tests',
+      config: this._config,
+      environment: this._env,
+      consoleWrite: (...args) => this.project.ui.write(...args)
     });
 
     return new MergeTrees([
