@@ -8,6 +8,6 @@ module('Integration | Component | sample-addon-inner-lib', function(hooks) {
 
   test('it locates inner-lib', async function(assert) {
     await render(hbs`{{sample-addon-inner-lib}}`);
-    assert.equal(this.element.textContent.trim(), '42');
+    assert.equal(this.element.textContent.trim(), 'ember_auto_import_sample_lib');
   });
 });

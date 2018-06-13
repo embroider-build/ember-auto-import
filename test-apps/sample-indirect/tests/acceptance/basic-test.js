@@ -12,7 +12,7 @@ module('Acceptance | basic', function(hooks) {
 
   test('an addon can resolve a dependency relative to itself, not the host app', async function(assert) {
     await visit('/inner');
-    assert.equal(document.querySelector('[data-test="sample-addon-inner-lib"]').textContent.trim(), '42');
+    assert.equal(document.querySelector('[data-test="sample-addon-inner-lib"]').textContent.trim(), 'ember_auto_import_sample_lib');
   });
 
   test('addon-test-support deps are present inside the test suite', async function(assert) {

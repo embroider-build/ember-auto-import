@@ -1,3 +1,3 @@
 module.exports = function() {
-  return 42;
+  return 'ember_auto_import_sample_lib';
 }
