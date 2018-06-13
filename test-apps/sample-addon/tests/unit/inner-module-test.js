@@ -5,7 +5,7 @@ import deeperNamed from 'inner-lib2/deeper/named';
 
 module('Unit | inner modules', function() {
   test('module imported by filename from top-level of its package', function(assert) {
-    assert.equal(named(), 'named');
+    assert.equal(named(), 'ember_auto_import_inner_lib2_named');
   });
   test('module imported from index.js inside a subdir of its package', function(assert) {
     assert.equal(deeperIndex(), 'deeper index');
