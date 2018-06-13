@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.2
+ - PERFORMANCE: add rebuild caching. 
+
 ## 0.2.1
 
  - BUGFIX: fix an exception when the app has no vendor directory
