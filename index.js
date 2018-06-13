@@ -35,6 +35,8 @@ module.exports = {
   },
 
   included(project) {
+    this._super.included.apply(this, arguments);
+
     // When consumed by an addon, we will have
     // this.parent.options. When consumed by an app, we will have
     // this.app.options.
