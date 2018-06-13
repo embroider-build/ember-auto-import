@@ -57,10 +57,8 @@ let app = new EmberApp(defaults, {
 
 Suported Options
 
- - `include`: _boolean, defaults to true_. If set to false,
-   ember-auto-imports will ignore this package. Can be helpful if the
-   package is already included another way (like a shim from some
-   other Ember addon).
+ - `cache`: _boolean, defaults to true_. If set to false, we will always rebuild this package. Useful when you're in the middle of developing the package itself. (This doesn't establish any watching for automatic rebuilds, it just ensures that if your app rebuilds, it will pick up any changes in the package.)
+ - `include`: _boolean, defaults to true_. If set to false, ember-auto-imports will ignore this package. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
  - `bundler`: _function, defaults to our webpack bundler_, Allows you to completely replace the bundling strategy used for packaging up this module. See Custom Bundlers below.
  - `webpackConfig`: _object_, The default webpack-based `bundler` merges this object into the webpack config.
 
