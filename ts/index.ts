@@ -43,7 +43,11 @@ module.exports = {
     // this.app.options.
     this._usedByAddon = !!this.parent.options;
     let options = this.parent.options || this.app.options;
-    this._env = this._usedByAddon ? project.app.env : project.env;
+
+    // _findHost is private API but it's been stable in ember-cli for two years.
+    this._env = this._findHost().env;
+
+    if (!this._env) { throw new Error("Bug in ember-auto-import: did not discover environment"); }
     this._depFinder = new DepFinder(this.parent, this._usedByAddon);
 
     // Generate the same babel options that the consuming app or addon

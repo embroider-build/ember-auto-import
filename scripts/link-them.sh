@@ -3,7 +3,7 @@
 set -e
 
 # All packages get a node_modules directory and a .bin link
-for package in "sample-direct" "sample-indirect" "sample-addon" "sample-failure"; do
+for package in "sample-direct" "sample-indirect" "sample-addon" "sample-failure" "sample-intermediate-addon" "sample-double-indirect"; do
     mkdir -p ./test-apps/$package/node_modules
     pushd ./test-apps/$package/node_modules > /dev/null
     rm -rf .bin
@@ -21,12 +21,21 @@ for package in "sample-direct" "sample-addon" "sample-failure"; do
 done
 
 # These packages get to depend on our sample-addon
-for package in "sample-indirect" ; do
+for package in "sample-indirect" "sample-intermediate-addon"; do
     pushd ./test-apps/$package/node_modules > /dev/null
     rm -rf ./sample-addon
     ln -s ../../sample-addon ./sample-addon
     popd > /dev/null
 done
+
+# These packages get to depend on our sample-intermediate-addon
+for package in "sample-double-indirect" ; do
+    pushd ./test-apps/$package/node_modules > /dev/null
+    rm -rf ./sample-intermediate-addon
+    ln -s ../../sample-intermediate-addon ./sample-intermediate-addon
+    popd > /dev/null
+done
+
 
 # These packages get to depend on inner-lib and inner-lib2
 for package in "sample-addon" ; do
