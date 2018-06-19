@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.6
+ - BUGFIX: fix env discovery inside deeply nested addons
+
 ## 0.2.5
  - BUGFIX: ensure our import analyzer always runs before babel has a chance to transpile away the imports
 
