@@ -12,6 +12,7 @@
     "no-debugger": true,
     "no-duplicate-variable": true,
     "no-inferrable-types": [true],
+    "no-implicit-dependencies": true,
     "no-trailing-whitespace": true,
     "no-unused-expression": true,
     "no-unused-variable": true,

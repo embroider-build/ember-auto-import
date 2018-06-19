@@ -1,6 +1,17 @@
 import resolve from 'resolve';
 import { get } from 'lodash';
 import { join, dirname } from 'path';
+import {
+  NodeJsInputFileSystem,
+  CachedInputFileSystem,
+  ResolverFactory
+} from 'enhanced-resolve';
+
+const resolver = ResolverFactory.createResolver({
+  fileSystem: new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000),
+  extensions: ['.js', '.json'],
+  mainFields: ['browser', 'module', 'main']
+});
 
 export default class DepFinder {
   private _project;
@@ -47,24 +58,23 @@ export default class DepFinder {
     return this._pkgs.get(name);
   }
 
-  packageRoot(name) {
+  private packageRoot(name) {
     if (!this._paths.has(name)) {
       this._paths.set(name, dirname(resolve.sync(`${name}/package.json`, { basedir: this._project.root })));
     }
     return this._paths.get(name);
   }
 
-  entryPoint(name, innerPath) {
-    let pkg = this._pkg(name);
-    let packagePath = this.packageRoot(name);
-    if (innerPath) {
-      return require.resolve(join(packagePath, innerPath));
-    } else {
-      // Priority goes to native ES module implementations, then
-      // browser-specific implementations, then normal defaults for
-      // main.
-      let localEntrypoint = pkg.module || pkg.browser || pkg.main || 'index.js';
-      return join(packagePath, localEntrypoint);
-    }
+  async entryPoint(importSpecifier) {
+    let path = await new Promise((resolvePromise, reject) => {
+      resolver.resolve({}, this._project.root, importSpecifier, {}, (err, path) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolvePromise(path);
+        }
+      });
+    });
+    return path;
   }
 }
