@@ -117,6 +117,10 @@ Your bundler gets access to `moduleConfig` and may define custom options there. 
 
 If you want to wrap the default bundler strategy, it's available via `require('ember-auto-import').webpackBundler`.
 
+Debugging Tips
+--------------
+
+Set the environment variable `DEBUG="ember-auto-import:*"` to see debug logging.
 
 Credit / History
 ------------------------------------------------------------------------------

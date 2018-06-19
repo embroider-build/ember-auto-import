@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "curly": false,
+    "no-var-keyword": true,
+    "indent": [true, "spaces"],
+    "label-position": true,
+    "no-consecutive-blank-lines": [
+      true
+    ],
+    "no-angle-bracket-type-assertion": true,
+    "no-construct": true,
+    "no-debugger": true,
+    "no-duplicate-variable": true,
+    "no-inferrable-types": [true],
+    "no-implicit-dependencies": true,
+    "no-trailing-whitespace": true,
+    "no-unused-expression": true,
+    "no-unused-variable": true,
+    "semicolon": [true, "always"],
+    "triple-equals": true,
+    "class-name": true,
+    "no-require-imports": true
+  }
+}

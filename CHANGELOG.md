@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5
+ - BUGFIX: ensure our import analyzer always runs before babel has a chance to transpile away the imports
+
+## 0.2.3
+ - BUGFIX: switch to enhanced-resolve to get correct entrypoint discovery semantics for every case of `browser` and `module`
+
 ## 0.2.2
  - PERFORMANCE: add rebuild caching. 
 
