@@ -54,7 +54,7 @@ export default class DepFinder {
     return this._paths.get(name);
   }
 
-  entryPoint(name, innerPath) {
+  async entryPoint(name, innerPath) {
     let pkg = this._pkg(name);
     let packagePath = this.packageRoot(name);
     if (innerPath) {

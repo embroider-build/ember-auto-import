@@ -22,23 +22,23 @@ export default class Splitter {
     this._usersBundleForPath = options.bundleForPath;
   }
 
-  depsForBundle(bundleName) {
+  async depsForBundle(bundleName) {
     let imports = this._analyzer.imports;
     if (!this._lastDeps || this._lastImports !== imports) {
-      this._lastDeps = this._computeDeps(imports);
+      this._lastDeps = await this._computeDeps(imports);
       debug('splitter %j', this._lastDeps);
     }
     return this._lastDeps[bundleName];
   }
 
-  _computeDeps(imports) {
+  async _computeDeps(imports) {
     let deps = {};
 
     this._bundles.forEach(bundleName => {
       deps[bundleName] = {};
     });
 
-    Object.keys(imports).forEach(sourcePath => {
+    await Promise.all(Object.keys(imports).map(async sourcePath => {
 
       if (sourcePath[0] === '.' || sourcePath[0] === '/') {
         // we're only trying to identify imports of external NPM
@@ -68,9 +68,9 @@ export default class Splitter {
       let bundleName = this._chooseBundle(imports[sourcePath]);
 
       deps[bundleName][sourcePath] = {
-        entrypoint: this._depFinder.entryPoint(packageName, innerPath)
+        entrypoint: await this._depFinder.entryPoint(packageName, innerPath)
       };
-    });
+    }));
 
     return deps;
   }

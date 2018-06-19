@@ -32,8 +32,8 @@ class BundlerPlugin extends Plugin {
     this._builtModules = new Map();
   }
 
-  build() {
-    let dependencies = this._splitter.depsForBundle(this._bundleName);
+  async build() {
+    let dependencies = await this._splitter.depsForBundle(this._bundleName);
     if (!dependencies) {
       return;
     }
