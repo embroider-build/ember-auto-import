@@ -1,8 +1,9 @@
 import webpack from 'webpack';
 import { dirname, basename } from 'path';
 import { merge } from 'lodash';
+import { BundlerHookInputs } from './bundler-hook';
 
-export default function({ moduleName, entrypoint, outputFile, consoleWrite, environment }, moduleConfig) {
+export default function({ moduleName, entrypoint, outputFile, consoleWrite, environment } : BundlerHookInputs, moduleConfig) : Promise<void> {
   return new Promise((resolve, reject) => {
     let config = {
       mode: environment === 'production' ? 'production' : 'development',

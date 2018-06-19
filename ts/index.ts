@@ -35,7 +35,7 @@ module.exports = {
     });
   },
 
-  included(project) {
+  included() {
     this._super.included.apply(this, arguments);
 
     // When consumed by an addon, we will have
@@ -84,8 +84,8 @@ module.exports = {
       this._babelOptions,
       (tree) => {
         // Here be dragons
-        appBundler.plugin._inputNodes.push(tree);
-        testsBundler.plugin._inputNodes.push(tree);
+        appBundler.unsafeConnect(tree);
+        testsBundler.unsafeConnect(tree);
       }
     );
 

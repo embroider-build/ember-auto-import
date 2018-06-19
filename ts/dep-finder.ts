@@ -14,60 +14,54 @@ const resolver = ResolverFactory.createResolver({
 });
 
 export default class DepFinder {
-  private _project;
-  private _insideAddon;
-  private _deps;
-  private _nonDevDeps;
-  private _pkgs;
-  private _paths;
+  private deps;
+  private nonDevDeps;
+  private pkgs = new Map();
+  private paths = new Map();
 
-  constructor(project, insideAddon) {
-    this._project = project;
-    this._insideAddon = insideAddon;
+  constructor(private project, private insideAddon) {
     let pkg = project.pkg;
-    this._deps = Object.assign({}, pkg.dependencies, pkg.devDependencies);
-    this._nonDevDeps = pkg.dependencies;
-    this._pkgs = new Map();
-    this._paths = new Map();
+    this.deps = Object.assign({}, pkg.dependencies, pkg.devDependencies);
+    this.nonDevDeps = pkg.dependencies;
   }
 
   hasDependency(name) {
-    return Boolean(this._deps[name]);
+    return Boolean(this.deps[name]);
   }
 
   isEmberAddon(name) {
-    let keywords = get(this._pkg(name), 'keywords');
+    let keywords = get(this.pkg(name), 'keywords');
     return keywords && keywords.includes("ember-addon");
   }
 
   assertAllowed(name) {
-    if (this._insideAddon && !this._nonDevDeps[name]) {
+    if (this.insideAddon && !this.nonDevDeps[name]) {
       throw new Error(`You tried to import "${name}" from addon code, but "${name}" is a devDependency. You may need to move it into dependencies.`);
     }
   }
 
-  _pkg(name) {
-    if (!this._pkgs.has(name)) {
+  private pkg(name) {
+    if (!this.pkgs.has(name)) {
       let pkgPath = this.packageRoot(name);
       if (pkgPath) {
-        this._pkgs.set(name, require(join(pkgPath, 'package.json')));
+        this.pkgs.set(name, require(join(pkgPath, 'package.json')));
       } else {
-        this._pkgs.set(name, null);
+        this.pkgs.set(name, null);
       }
     }
-    return this._pkgs.get(name);
+    return this.pkgs.get(name);
   }
 
   private packageRoot(name) {
-    if (!this._paths.has(name)) {
-      this._paths.set(name, dirname(resolve.sync(`${name}/package.json`, { basedir: this._project.root })));
+    if (!this.paths.has(name)) {
+      this.paths.set(name, dirname(resolve.sync(`${name}/package.json`, { basedir: this.project.root })));
     }
-    return this._paths.get(name);
+    return this.paths.get(name);
   }
 
   async entryPoint(importSpecifier) {
     let path = await new Promise((resolvePromise, reject) => {
-      resolver.resolve({}, this._project.root, importSpecifier, {}, (err, path) => {
+      resolver.resolve({}, this.project.root, importSpecifier, {}, (err, path) => {
         if (err) {
           reject(err);
         } else {

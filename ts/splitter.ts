@@ -1,40 +1,40 @@
 import makeDebug from 'debug';
+import DepFinder from './dep-finder';
+import Analyzer from './analyzer';
+
 const debug = makeDebug('ember-auto-import:splitter');
 
+export interface SplitterOptions {
+  // list of bundle names in priority order
+  bundles: string[];
+  depFinder: DepFinder;
+  config;
+  analyzer: Analyzer;
+  bundleForPath: (string) => string;
+}
+
 export default class Splitter {
-  private _bundles;
-  private _depFinder;
-  private _config;
-  private _analyzer;
-  private _lastImports;
-  private _lastDeps;
-  private _usersBundleForPath;
+  private config;
+  private lastImports = null;
+  private lastDeps = null;
 
-  constructor(options) {
-    // list of bundle names in priority order
-    this._bundles = options.bundles;
-
-    this._depFinder = options.depFinder;
-    this._config = (options.config && options.config.modules) || {};
-    this._analyzer = options.analyzer;
-    this._lastImports = null;
-    this._lastDeps = null;
-    this._usersBundleForPath = options.bundleForPath;
+  constructor(private options : SplitterOptions) {
+    this.config = (options.config && options.config.modules) || {};
   }
 
   async depsForBundle(bundleName) {
-    let imports = this._analyzer.imports;
-    if (!this._lastDeps || this._lastImports !== imports) {
-      this._lastDeps = await this._computeDeps(imports);
-      debug('splitter %j', this._lastDeps);
+    let imports = this.options.analyzer.imports;
+    if (!this.lastDeps || this.lastImports !== imports) {
+      this.lastDeps = await this.computeDeps(imports);
+      debug('splitter %j', this.lastDeps);
     }
-    return this._lastDeps[bundleName];
+    return this.lastDeps[bundleName];
   }
 
-  async _computeDeps(imports) {
+  private async computeDeps(imports) {
     let deps = {};
 
-    this._bundles.forEach(bundleName => {
+    this.options.bundles.forEach(bundleName => {
       deps[bundleName] = {};
     });
 
@@ -54,19 +54,20 @@ export default class Splitter {
         packageName = parts[0];
       }
 
-      let config = this._config[packageName];
+      let config = this.config[packageName];
       if (config && typeof config.include === 'boolean' && !config.include) {
         return;
       }
-      if (!this._depFinder.hasDependency(packageName) || this._depFinder.isEmberAddon(packageName)) {
+      let { depFinder } = this.options;
+      if (!depFinder.hasDependency(packageName) || depFinder.isEmberAddon(packageName)) {
         return;
       }
-      this._depFinder.assertAllowed(packageName);
+      depFinder.assertAllowed(packageName);
 
-      let bundleName = this._chooseBundle(imports[sourcePath]);
+      let bundleName = this.chooseBundle(imports[sourcePath]);
 
       deps[bundleName][sourcePath] = {
-        entrypoint: await this._depFinder.entryPoint(sourcePath)
+        entrypoint: await depFinder.entryPoint(sourcePath)
       };
     }));
 
@@ -75,18 +76,18 @@ export default class Splitter {
 
   // given that a module is imported by the given list of paths, which
   // bundle should it go in?
-  _chooseBundle(paths) {
+  private chooseBundle(paths) {
     let usedInBundles = {};
     paths.forEach(path => {
-      usedInBundles[this._bundleForPath(path)] = true;
+      usedInBundles[this.bundleForPath(path)] = true;
     });
-    return this._bundles.find(bundle => usedInBundles[bundle]);
+    return this.options.bundles.find(bundle => usedInBundles[bundle]);
   }
 
-  _bundleForPath(path) {
-    let bundleName = this._usersBundleForPath(path);
-    if (this._bundles.indexOf(bundleName) === -1) {
-      throw new Error(`bundleForPath("${path}") returned ${bundleName}" but the only configured bundle names are ${this._bundles.join(',')}`);
+  private bundleForPath(path) {
+    let bundleName = this.options.bundleForPath(path);
+    if (this.options.bundles.indexOf(bundleName) === -1) {
+      throw new Error(`bundleForPath("${path}") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.join(',')}`);
     }
     debug('bundleForPath("%s")=%s', path, bundleName);
     return bundleName;

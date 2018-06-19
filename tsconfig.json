@@ -5,6 +5,8 @@
     "declaration": true,
     "outDir": "./js",
     "typeRoots": ["node_modules/@types", "types"],
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   }
 }
