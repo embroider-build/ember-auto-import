@@ -1,22 +1,39 @@
-const Plugin = require('broccoli-plugin');
-const walkSync = require('walk-sync');
-const fs = require('fs');
-const FSTree = require('fs-tree-diff');
-const debug = require('debug')('ember-auto-import:analyzer');
-const { Pipeline, File } = require('babel-core');
-const babylon = require('babylon');
-const symlinkOrCopy = require('symlink-or-copy');
-const mkdirp = require('mkdirp');
-const { join, dirname } = require('path');
+import Plugin, { Tree } from 'broccoli-plugin';
+import walkSync from  'walk-sync';
+import {
+  unlinkSync,
+  rmdirSync,
+  mkdirSync,
+  readFileSync,
+  existsSync
+} from 'fs';
+import FSTree from 'fs-tree-diff';
+import makeDebug from 'debug';
+import { Pipeline, File } from 'babel-core';
+import { parse } from 'babylon';
+import symlinkOrCopy from 'symlink-or-copy';
+import mkdirp from 'mkdirp';
+import { join, dirname } from 'path';
+
+const debug = makeDebug('ember-auto-import:analyzer');
 
 /*
   Analyzer discovers and maintains info on all the module imports that
   appear in some number of broccoli trees.
 */
-module.exports = class Analyzer  {
+export default class Analyzer  {
+  protected _parserOptions;
+  protected _modules;
+  protected _paths;
+  private _didAddTree;
+
   // didAddTree is an optional callback that lets you hear when a new
   // tree is added. It receives the post-analyzed tree as an argument.
-  constructor({ babelOptions, didAddTree }) {
+  static create(babelOptions, didAddTree: (Tree) => void) : Analyzer {
+    return new AnalyzerInternal(babelOptions, didAddTree);
+  }
+
+  constructor(babelOptions, didAddTree) {
     this._parserOptions = this._buildParserOptions(babelOptions);
     this._modules = Object.create(null);
     this._paths = Object.create(null);
@@ -46,17 +63,44 @@ module.exports = class Analyzer  {
   // analyzes all the Javascript in the tree for import
   // statements. You can provide a label to namespace this tree
   // relative to any other trees.
-  analyzeTree(tree, label='') {
+  analyzeTree(tree, label='') : Tree {
     let outputTree = new AnalyzerTransform(tree, label, this);
     if (this._didAddTree) {
       this._didAddTree(outputTree);
     }
     return outputTree;
   }
-};
+}
+
+class AnalyzerInternal extends Analyzer {
+  removeImports(label, relativePath) {
+    let labeledPath = join(label, relativePath);
+    debug(`removing imports for ${labeledPath}`);
+    this._paths[labeledPath] = null;
+    this._modules = null; // invalidates cache
+  }
+
+  updateImports(label, relativePath, source) {
+    let labeledPath = join(label, relativePath);
+    debug(`updating imports for ${labeledPath}, ${source.length}`);
+    this._paths[labeledPath] = this._parseImports(source);
+    this._modules = null; // invalidates cache
+  }
+
+  _parseImports(source) {
+    let ast = parse(source, this._parserOptions);
+    // No need to recurse here, because we only deal with top-level static import declarations
+    return ast.program.body.filter(node => node.type === 'ImportDeclaration').map(node => node.source.value);
+  }
+
+}
 
 class AnalyzerTransform extends Plugin {
-  constructor(inputTree, label, analyzer) {
+  private _label;
+  private _previousTree;
+  private _analyzer: AnalyzerInternal;
+
+  constructor(inputTree: Tree, label, analyzer) {
     super([inputTree], {
       annotation: 'ember-auto-import-analyzer',
       persistentOutput: true
@@ -72,20 +116,20 @@ class AnalyzerTransform extends Plugin {
 
       switch (operation) {
       case 'unlink':
-        this._removeImports(relativePath);
-        fs.unlinkSync(outputPath);
+        this._analyzer.removeImports(this._label, relativePath);
+        unlinkSync(outputPath);
         break;
       case 'rmdir' :
-        fs.rmdirSync(outputPath);
+        rmdirSync(outputPath);
         break;
       case 'mkdir' :
-        fs.mkdirSync(outputPath);
+        mkdirSync(outputPath);
         break;
       case 'create':
       case 'change':
         {
           let absoluteInputPath  = join(this.inputPaths[0], relativePath);
-          this._updateImports(relativePath, fs.readFileSync(absoluteInputPath, 'utf8'));
+          this._analyzer.updateImports(this._label, relativePath, readFileSync(absoluteInputPath, 'utf8'));
           copy(absoluteInputPath, outputPath);
         }
       }
@@ -99,27 +143,7 @@ class AnalyzerTransform extends Plugin {
     return previous.calculatePatch(next);
   }
 
-  _removeImports(relativePath) {
-    let labeledPath = join(this._label, relativePath);
-    debug(`removing imports for ${labeledPath}`);
-    this._analyzer._paths[labeledPath] = null;
-    this._analyzer._modules = null; // invalidates analyzer's cache
-  }
-
-  _updateImports(relativePath, source) {
-    let labeledPath = join(this._label, relativePath);
-    debug(`updating imports for ${labeledPath}, ${source.length}`);
-    this._analyzer._paths[labeledPath] = this._parseImports(source);
-    this._analyzer._modules = null; // invalidates analyzer's cache
-  }
-
-  _parseImports(source) {
-    let ast = babylon.parse(source, this._analyzer._parserOptions);
-    // No need to recurse here, because we only deal with top-level static import declarations
-    return ast.program.body.filter(node => node.type === 'ImportDeclaration').map(node => node.source.value);
-  }
 }
-
 
 function copy(sourcePath, destPath) {
   let destDir = dirname(destPath);
@@ -127,11 +151,11 @@ function copy(sourcePath, destPath) {
   try {
     symlinkOrCopy.sync(sourcePath, destPath);
   } catch (e) {
-    if (!fs.existsSync(destDir)) {
+    if (!existsSync(destDir)) {
       mkdirp.sync(destDir);
     }
     try {
-      fs.unlinkSync(destPath);
+      unlinkSync(destPath);
     } catch (e) {
       // swallow the error
     }

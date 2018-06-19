@@ -1,14 +1,15 @@
 'use strict';
 
-const Analyzer = require('./lib/analyzer');
-const Splitter = require('./lib/splitter');
-const DepFinder = require('./lib/dep-finder');
-const Bundler = require('./lib/bundler');
-const MergeTrees = require('broccoli-merge-trees');
-const debugTree = require('broccoli-debug').buildDebugCallback('ember-auto-import');
-const webpackBundler = require('./lib/webpack');
+import Analyzer from './analyzer';
+import Splitter from './splitter';
+import DepFinder from './dep-finder';
+import Bundler from './bundler';
+import MergeTrees from 'broccoli-merge-trees';
+import { buildDebugCallback } from 'broccoli-debug';
+import webpackBundler from './webpack';
 
-const testsPattern = new RegExp(`^(/tests)?/[^/]+/(tests|test-support)/`)
+const debugTree = buildDebugCallback('ember-auto-import');
+const testsPattern = new RegExp(`^(/tests)?/[^/]+/(tests|test-support)/`);
 
 module.exports = {
   name: 'ember-auto-import',
@@ -64,7 +65,6 @@ module.exports = {
       this._babelOptions.plugins = this._babelOptions.plugins.filter(p => !p._parallelBabel);
     }
 
-
     // This namespacing ensures we can be used by multiple packages as
     // well as by an addon and its dummy app simultaneously
     this._namespace = `${this.parent.pkg.name}/${this._usedByAddon ? 'addon' : 'app'}`;
@@ -76,14 +76,14 @@ module.exports = {
   treeForVendor(tree) {
 
     // The Analyzer keeps track of all your imports
-    this._analyzer = new Analyzer({
-      babelOptions: this._babelOptions,
-      didAddTree(tree) {
+    this._analyzer = Analyzer.create(
+      this._babelOptions,
+      (tree) => {
         // Here be dragons
         appBundler.plugin._inputNodes.push(tree);
         testsBundler.plugin._inputNodes.push(tree);
       }
-    });
+    );
 
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
@@ -96,7 +96,7 @@ module.exports = {
         if (testsPattern.test(path)) {
           return 'tests';
         } else {
-          return 'app'
+          return 'app';
         }
       }
     });

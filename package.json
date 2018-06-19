@@ -14,14 +14,16 @@
     "doc": "doc",
     "test": "tests"
   },
+  "main": "js/index.js",
   "repository": "https://github.com/ef4/ember-auto-import",
   "scripts": {
+    "compile": "tsc",
     "build": "ember build",
-    "lint:js": "eslint .",
+    "lint": "eslint . && tslint --project .",
     "start": "ember serve",
     "test": "./scripts/test.sh",
     "test:root": "ember test",
-    "prepare": "./scripts/link-them.sh"
+    "prepare": "./scripts/link-them.sh && yarn compile"
   },
   "dependencies": {
     "babel-core": "^6.26.3",
@@ -44,6 +46,7 @@
     "webpack": "^4.12.0"
   },
   "devDependencies": {
+    "@types/node": "^10.3.4",
     "broccoli-asset-rev": "^2.4.5",
     "ember-ajax": "^3.0.0",
     "ember-cli": "~3.1.2",
@@ -72,7 +75,9 @@
     "loader.js": "^4.2.3",
     "lodash-es": "^4.17.10",
     "moment": "^2.22.1",
-    "qunit": "^2.6.1"
+    "qunit": "^2.6.1",
+    "tslint": "^5.10.0",
+    "typescript": "^2.9.2"
   },
   "engines": {
     "node": "6.* || >= 7.*"

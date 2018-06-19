@@ -1,20 +1,29 @@
-const Plugin = require('broccoli-plugin');
-const debug = require('debug')('ember-auto-import:bundler');
-const { UnwatchedDir } = require('broccoli-source');
-const quickTemp = require('quick-temp');
-const concat = require('broccoli-concat');
-const debugTree = require('broccoli-debug').buildDebugCallback('ember-auto-import');
-const webpackBundler = require('./webpack');
-const path = require('path');
-const rimraf = require('rimraf');
+import Plugin from 'broccoli-plugin';
+import makeDebug from 'debug';
+import { UnwatchedDir } from 'broccoli-source';
+import quickTemp from 'quick-temp';
+import concat from 'broccoli-concat';
+import { buildDebugCallback }  from 'broccoli-debug';
+import webpackBundler from './webpack';
+import { join } from 'path';
+import rimraf from 'rimraf';
+
+const debug = makeDebug('ember-auto-import:bundler');
+const debugTree = buildDebugCallback('ember-auto-import');
 
 class BundlerPlugin extends Plugin {
-  constructor(bundler, options) {
+  private _bundleName;
+  private _splitter;
+  private _consoleWrite;
+  private _config;
+  private _environment;
+  private _builtModules;
+
+  constructor(placeholderTree, options) {
     // we need to have at least one valid input tree during
     // construction, and our real trees aren't available yet, so we
     // use a placeholder that doesn't really do anything.
-    super([bundler._placeholderTree], { persistentOutput: true });
-    this._bundler = bundler;
+    super([placeholderTree], { persistentOutput: true });
     this._bundleName = options.bundle;
     this._splitter = options.splitter;
     this._consoleWrite = options.consoleWrite;
@@ -35,8 +44,8 @@ class BundlerPlugin extends Plugin {
     [...this._builtModules.keys()].forEach(cachedModule => {
       if (!dependencies[cachedModule]) {
         debug("removing %s", cachedModule);
-        rimraf.sync(path.join(this.outputPath, cachedModule));
-        this._builtModules.delete(cachedModule)
+        rimraf.sync(join(this.outputPath, cachedModule));
+        this._builtModules.delete(cachedModule);
       }
     });
 
@@ -51,7 +60,7 @@ class BundlerPlugin extends Plugin {
       return bundlerHook({
         moduleName,
         entrypoint: dependencies[moduleName].entrypoint,
-        outputFile: path.join(this.outputPath, moduleName, 'output.js'),
+        outputFile: join(this.outputPath, moduleName, 'output.js'),
         environment: this._environment,
         consoleWrite: this._consoleWrite
       }, moduleConfig).then(() => {
@@ -61,11 +70,16 @@ class BundlerPlugin extends Plugin {
   }
 }
 
-module.exports = class Bundler {
+export default class Bundler {
+  private _placeholder;
+  private _placeholderTree;
+  plugin;
+  tree;
+
   constructor(options) {
     quickTemp.makeOrRemake(this, '_placeholder', 'ember-auto-import');
     this._placeholderTree = new UnwatchedDir(this._placeholder, { annotation: 'ember-auto-import' });
-    this.plugin = new BundlerPlugin(this, options);
+    this.plugin = new BundlerPlugin(this._placeholderTree, options);
 
     // The bundler plugin generates one file per imported module, here
     // we combine them into a single file so we can share a single

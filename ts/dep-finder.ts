@@ -1,8 +1,15 @@
-const resolve = require('resolve');
-const { get } = require('lodash');
-const path = require('path');
+import resolve from 'resolve';
+import { get } from 'lodash';
+import { join, dirname } from 'path';
 
-module.exports = class {
+export default class DepFinder {
+  private _project;
+  private _insideAddon;
+  private _deps;
+  private _nonDevDeps;
+  private _pkgs;
+  private _paths;
+
   constructor(project, insideAddon) {
     this._project = project;
     this._insideAddon = insideAddon;
@@ -32,7 +39,7 @@ module.exports = class {
     if (!this._pkgs.has(name)) {
       let pkgPath = this.packageRoot(name);
       if (pkgPath) {
-        this._pkgs.set(name, require(path.join(pkgPath, 'package.json')));
+        this._pkgs.set(name, require(join(pkgPath, 'package.json')));
       } else {
         this._pkgs.set(name, null);
       }
@@ -42,7 +49,7 @@ module.exports = class {
 
   packageRoot(name) {
     if (!this._paths.has(name)) {
-      this._paths.set(name, path.dirname(resolve.sync(`${name}/package.json`, { basedir: this._project.root })));
+      this._paths.set(name, dirname(resolve.sync(`${name}/package.json`, { basedir: this._project.root })));
     }
     return this._paths.get(name);
   }
@@ -51,13 +58,13 @@ module.exports = class {
     let pkg = this._pkg(name);
     let packagePath = this.packageRoot(name);
     if (innerPath) {
-      return require.resolve(path.join(packagePath, innerPath));
+      return require.resolve(join(packagePath, innerPath));
     } else {
       // Priority goes to native ES module implementations, then
       // browser-specific implementations, then normal defaults for
       // main.
       let localEntrypoint = pkg.module || pkg.browser || pkg.main || 'index.js';
-      return path.join(packagePath, localEntrypoint);
+      return join(packagePath, localEntrypoint);
     }
   }
 }

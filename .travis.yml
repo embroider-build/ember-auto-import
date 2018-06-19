@@ -26,5 +26,5 @@ install:
   - yarn install --no-lockfile --non-interactive
 
 script:
-  - yarn lint:js
+  - yarn lint
   - yarn test

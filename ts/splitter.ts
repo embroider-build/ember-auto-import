@@ -1,6 +1,15 @@
-const debug = require('debug')('ember-auto-import:splitter');
+import makeDebug from 'debug';
+const debug = makeDebug('ember-auto-import:splitter');
 
-module.exports = class Splitter {
+export default class Splitter {
+  private _bundles;
+  private _depFinder;
+  private _config;
+  private _analyzer;
+  private _lastImports;
+  private _lastDeps;
+  private _usersBundleForPath;
+
   constructor(options) {
     // list of bundle names in priority order
     this._bundles = options.bundles;
