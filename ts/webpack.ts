@@ -1,15 +1,15 @@
-const webpack = require('webpack');
-const path = require('path');
-const { merge } = require('lodash');
+import webpack from 'webpack';
+import { dirname, basename } from 'path';
+import { merge } from 'lodash';
 
-module.exports = function({ moduleName, entrypoint, outputFile, consoleWrite, environment }, moduleConfig) {
+export default function({ moduleName, entrypoint, outputFile, consoleWrite, environment }, moduleConfig) {
   return new Promise((resolve, reject) => {
     let config = {
       mode: environment === 'production' ? 'production' : 'development',
       entry: entrypoint,
       output: {
-        path: path.dirname(outputFile),
-        filename: path.basename(outputFile),
+        path: dirname(outputFile),
+        filename: basename(outputFile),
         libraryTarget: 'amd',
         library: moduleName
       }
@@ -32,6 +32,6 @@ module.exports = function({ moduleName, entrypoint, outputFile, consoleWrite, en
         consoleWrite(stats.toString());
       }
       resolve();
-    })
+    });
   });
 }
