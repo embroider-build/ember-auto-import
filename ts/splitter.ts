@@ -47,13 +47,11 @@ export default class Splitter {
       }
 
       let parts = sourcePath.split('/');
-      let packageName, innerPath;
+      let packageName;
       if (sourcePath[0] === '@') {
         packageName = `${parts[0]}/${parts[1]}`;
-        innerPath = parts.slice(2).join('/');
       } else {
         packageName = parts[0];
-        innerPath = parts.slice(1).join('/');
       }
 
       let config = this._config[packageName];
@@ -68,7 +66,7 @@ export default class Splitter {
       let bundleName = this._chooseBundle(imports[sourcePath]);
 
       deps[bundleName][sourcePath] = {
-        entrypoint: await this._depFinder.entryPoint(packageName, innerPath)
+        entrypoint: await this._depFinder.entryPoint(sourcePath)
       };
     }));
 
