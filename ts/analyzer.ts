@@ -112,7 +112,14 @@ export default class Analyzer extends Plugin {
     }
     if (ast){
       // No need to recurse here, because we only deal with top-level static import declarations
-      return ast.program.body.filter(node => node.type === 'ImportDeclaration').map(node => node.source.value);
+      return ast.program.body.map(node => {
+        if (node.type === 'ImportDeclaration'){
+          return node.source.value;
+        }
+        if (node.type === 'ExportNamedDeclaration' && node.source){
+          return node.source.value;
+        }
+      }).filter(Boolean);
     } else {
       return [];
     }

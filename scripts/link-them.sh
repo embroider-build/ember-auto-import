@@ -37,7 +37,7 @@ done
 
 
 # These packages get to depend on inner-lib and inner-lib2
-for package in "sample-addon" "sample-merged"; do
+for package in "sample-addon" "sample-merged" "sample-direct"; do
     pushd ./test-apps/$package/node_modules > /dev/null
     rm -rf ./inner-lib
     ln -s ../../inner-lib ./inner-lib
