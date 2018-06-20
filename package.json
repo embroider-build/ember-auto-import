@@ -37,6 +37,7 @@
     "ember-cli-babel": "^6.6.0",
     "enhanced-resolve": "^4.0.0",
     "fs-tree-diff": "^0.5.7",
+    "handlebars": "^4.0.11",
     "lodash": "^4.17.10",
     "mkdirp": "^0.5.1",
     "quick-temp": "^0.1.8",

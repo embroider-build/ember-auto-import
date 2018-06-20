@@ -1,38 +1,69 @@
 import webpack from 'webpack';
-import { dirname, basename } from 'path';
+import { join, dirname, basename } from 'path';
 import { merge } from 'lodash';
-import { BundlerHookInputs } from './bundler-hook';
+import quickTemp from 'quick-temp';
+import { writeFileSync } from 'fs';
+import { compile } from 'handlebars';
 
-export default function({ moduleName, entrypoint, outputFile, consoleWrite, environment } : BundlerHookInputs, moduleConfig) : Promise<void> {
-  return new Promise((resolve, reject) => {
+const entryTemplate = compile(`
+module.exports = (function(){
+  {{#each modules as |module|}}
+    window.define('{{module.specifier}}', [], function() { return require('{{module.entrypoint}}'); });
+  {{/each}}
+})();
+`);
+
+export default class WebpackBundler {
+  private stagingDir;
+  private webpack;
+
+  constructor(outputFile, environment, extraWebpackConfig, private consoleWrite){
+    quickTemp.makeOrRemake(this, 'stagingDir', 'ember-auto-import-webpack');
     let config = {
       mode: environment === 'production' ? 'production' : 'development',
-      entry: entrypoint,
+      entry: join(this.stagingDir, 'entry.js'),
       output: {
         path: dirname(outputFile),
         filename: basename(outputFile),
-        libraryTarget: 'amd',
-        library: moduleName
+        libraryTarget: 'var',
+        library: '__ember_auto_import__'
       }
     };
-    if (moduleConfig.webpackConfig) {
-      merge(config, moduleConfig.webpackConfig);
+    if (extraWebpackConfig) {
+      merge(config, extraWebpackConfig);
     }
-    webpack(config, (err, stats) => {
-      if (err) {
-        consoleWrite(stats.toString());
-        reject(err);
-        return;
-      }
-      if (stats.hasErrors()) {
-        consoleWrite(stats.toString());
-        reject(new Error('webpack returned errors to ember-auto-import'));
-        return;
-      }
-      if (stats.hasWarnings()) {
-        consoleWrite(stats.toString());
-      }
-      resolve();
+    this.webpack = webpack(config);
+  }
+
+  async build(modules){
+    this.writeEntryFile(modules);
+    await this.runWebpack();
+  }
+
+  private writeEntryFile(modules){
+    let moduleList = Object.keys(modules).map(specifier => ({ specifier, entrypoint: modules[specifier].entrypoint}));
+    writeFileSync(join(this.stagingDir, 'entry.js'), entryTemplate({ modules: moduleList }));
+  }
+
+  private async runWebpack(){
+    return new Promise((resolve, reject) => {
+      this.webpack.run((err, stats) => {
+        if (err) {
+          this.consoleWrite(stats.toString());
+          reject(err);
+          return;
+        }
+        if (stats.hasErrors()) {
+          this.consoleWrite(stats.toString());
+          reject(new Error('webpack returned errors to ember-auto-import'));
+          return;
+        }
+        if (stats.hasWarnings()) {
+          this.consoleWrite(stats.toString());
+        }
+        resolve();
+      });
     });
-  });
+  }
+
 }

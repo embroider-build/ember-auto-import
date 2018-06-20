@@ -4,11 +4,10 @@ import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
 import concat from 'broccoli-concat';
 import { buildDebugCallback }  from 'broccoli-debug';
-import webpackBundler from './webpack';
+import WebpackBundler from './webpack';
 import { join } from 'path';
-import rimraf from 'rimraf';
 import Splitter from './splitter';
-import { BundlerHook } from './bundler-hook';
+import { shallowEqual } from './util';
 
 const debug = makeDebug('ember-auto-import:bundler');
 const debugTree = buildDebugCallback('ember-auto-import');
@@ -18,11 +17,13 @@ export interface BundlerPluginOptions {
   consoleWrite: (string) => void;
   environment: string;
   splitter: Splitter;
+  outputFile: string;
   config;
 }
 
 export class BundlerPlugin extends Plugin {
-  private builtModules = new Map();
+  private lastDeps = null;
+  private cachedBundlerHook;
 
   constructor(placeholderTree, private options : BundlerPluginOptions) {
     // we need to have at least one valid input tree during
@@ -31,42 +32,33 @@ export class BundlerPlugin extends Plugin {
     super([placeholderTree], { persistentOutput: true });
   }
 
+  get bundlerHook(){
+    if (!this.cachedBundlerHook){
+      // FIXME
+      let extraWebpackConfig = {};
+
+      this.cachedBundlerHook = new WebpackBundler(
+        join(this.outputPath, this.options.outputFile),
+        this.options.environment,
+        extraWebpackConfig,
+        this.options.consoleWrite
+      );
+    }
+    return this.cachedBundlerHook;
+  }
+
   async build() {
     let { splitter, bundle} = this.options;
     let dependencies = await splitter.depsForBundle(bundle);
-    if (!dependencies) {
+    let moduleNames = Object.keys(dependencies);
+
+    if (shallowEqual(moduleNames, this.lastDeps)) {
       return;
     }
 
-    let moduleNames = Object.keys(dependencies);
-    debug("dependencies for %s bundle: %s", bundle, moduleNames);
-
-    [...this.builtModules.keys()].forEach(cachedModule => {
-      if (!dependencies[cachedModule]) {
-        debug("removing %s", cachedModule);
-        rimraf.sync(join(this.outputPath, cachedModule));
-        this.builtModules.delete(cachedModule);
-      }
-    });
-
-    return Promise.all(moduleNames.map(moduleName => {
-      let moduleConfig = this.options.config.modules[moduleName] || {};
-      if (this.builtModules.get(moduleName) && moduleConfig.cache !== false) {
-        return;
-      }
-      debug("adding %s", moduleName);
-
-      let bundlerHook : BundlerHook = moduleConfig.bundler || webpackBundler;
-      return bundlerHook({
-        moduleName,
-        entrypoint: dependencies[moduleName].entrypoint,
-        outputFile: join(this.outputPath, moduleName, 'output.js'),
-        environment: this.options.environment,
-        consoleWrite: this.options.consoleWrite
-      }, moduleConfig).then(() => {
-        this.builtModules.set(moduleName, true);
-      });
-    }));
+    debug("building %s bundle with dependencies: %j", bundle, moduleNames);
+    await this.bundlerHook.build(dependencies);
+    this.lastDeps = moduleNames;
   }
 }
 

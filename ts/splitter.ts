@@ -1,6 +1,7 @@
 import makeDebug from 'debug';
 import Analyzer from './analyzer';
 import Package from './package';
+import { shallowEqual } from './util';
 import { flatMap } from 'lodash';
 import {
   NodeJsInputFileSystem,
@@ -144,10 +145,6 @@ export default class Splitter {
     debug('bundleForPath("%s")=%s', path, bundleName);
     return bundleName;
   }
-}
-
-function shallowEqual(a: any[], b: any[]){
-  return a.length === b.length && a.every((item, index) => item === b[index]);
 }
 
 async function resolveEntrypoint(specifier, pkg) : Promise<string> {
