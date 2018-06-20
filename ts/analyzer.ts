@@ -14,6 +14,7 @@ import { parse } from 'babylon';
 import symlinkOrCopy from 'symlink-or-copy';
 import mkdirp from 'mkdirp';
 import { join, dirname } from 'path';
+import { isEqual } from 'lodash';
 
 const debug = makeDebug('ember-auto-import:analyzer');
 
@@ -84,14 +85,19 @@ export default class Analyzer extends Plugin {
 
   removeImports(relativePath) {
     debug(`removing imports for ${relativePath}`);
-    this.paths[relativePath] = null;
-    this.modules = null; // invalidates cache
+    if (this.paths[relativePath] && this.paths[relativePath].length > 0){
+      this.paths[relativePath] = null;
+      this.modules = null; // invalidates cache
+    }
   }
 
   updateImports(relativePath, source) {
     debug(`updating imports for ${relativePath}, ${source.length}`);
-    this.paths[relativePath] = this.parseImports(source);
-    this.modules = null; // invalidates cache
+    let newImports = this.parseImports(source);
+    if (!isEqual(this.paths[relativePath], newImports)) {
+      this.paths[relativePath] = newImports;
+      this.modules = null; // invalidates cache
+    }
   }
 
   private parseImports(source) {
