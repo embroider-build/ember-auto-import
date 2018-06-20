@@ -22,7 +22,7 @@
     "lint": "eslint . && tslint --project .",
     "start": "ember serve",
     "test": "./scripts/test.sh",
-    "test:root": "ember test",
+    "test:root": "ember test --test-port=0",
     "prepare": "./scripts/link-them.sh && yarn compile"
   },
   "dependencies": {

@@ -16,7 +16,7 @@
     "build": "ember build",
     "lint:js": "eslint ./*.js addon addon-test-support app blueprints config lib server test-support tests",
     "start": "ember serve",
-    "test": "ember test",
+    "test": "ember test --test-port=0",
     "test:all": "ember try:each"
   },
   "dependencies": {
