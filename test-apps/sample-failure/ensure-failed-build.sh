@@ -5,7 +5,7 @@ code=$?
 
 own_status=0
 
-if [[ "$output" =~ "You tried to import \"moment\" from addon code, but \"moment\" is a devDependency" ]]
+if [[ "$output" =~ "sample-failure tried to import \"moment\" from addon code, but \"moment\" is a devDependency" ]]
 then
     echo "OK message"
 else

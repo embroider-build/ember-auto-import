@@ -1,15 +1,25 @@
 import makeDebug from 'debug';
-import DepFinder from './dep-finder';
 import Analyzer from './analyzer';
+import Package from './package';
+import { flatMap } from 'lodash';
+import {
+  NodeJsInputFileSystem,
+  CachedInputFileSystem,
+  ResolverFactory
+} from 'enhanced-resolve';
 
 const debug = makeDebug('ember-auto-import:splitter');
+const resolver = ResolverFactory.createResolver({
+  fileSystem: new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000),
+  extensions: ['.js', '.json'],
+  mainFields: ['browser', 'module', 'main']
+});
 
 export interface SplitterOptions {
   // list of bundle names in priority order
   bundles: string[];
-  depFinder: DepFinder;
   config;
-  analyzer: Analyzer;
+  analyzers: Map<Analyzer, Package>;
   bundleForPath: (string) => string;
 }
 
@@ -23,32 +33,47 @@ export default class Splitter {
   }
 
   async depsForBundle(bundleName) {
-    let imports = this.options.analyzer.imports;
-    if (!this.lastDeps || this.lastImports !== imports) {
-      this.lastDeps = await this.computeDeps(imports);
-      debug('splitter %j', this.lastDeps);
+    if (this.importsChanged()){
+      this.lastDeps = await this.computeDeps(this.options.analyzers);
+      debug('output %j', this.lastDeps);
     }
     return this.lastDeps[bundleName];
   }
 
-  private async computeDeps(imports) {
-    let deps = {};
+  private importsChanged() : boolean {
+    let imports = [...this.options.analyzers.keys()].map(analyzer => analyzer.imports);
+    if (!this.lastImports || !shallowEqual(this.lastImports, imports)) {
+      this.lastImports = imports;
+      return true;
+    }
+  }
 
-    this.options.bundles.forEach(bundleName => {
-      deps[bundleName] = {};
+  private flatImports(analyzers){
+    return flatMap([...analyzers.entries()], ([analyzer, pkg]) => {
+      return Object.keys(analyzer.imports).map(specifier => {
+        return {
+          specifier,
+          paths: analyzer.imports[specifier],
+          pkg
+        };
+      });
     });
+  }
 
-    await Promise.all(Object.keys(imports).map(async sourcePath => {
+  private async computeTargets(analyzers : Map<Analyzer, Package>){
+    let specifiers = Object.create(null);
+    let imports = this.flatImports(analyzers);
+    await Promise.all(imports.map(async ({ specifier, paths, pkg }) => {
 
-      if (sourcePath[0] === '.' || sourcePath[0] === '/') {
+      if (specifier[0] === '.' || specifier[0] === '/') {
         // we're only trying to identify imports of external NPM
         // packages, so relative imports are never relevant.
         return;
       }
 
-      let parts = sourcePath.split('/');
+      let parts = specifier.split('/');
       let packageName;
-      if (sourcePath[0] === '@') {
+      if (specifier[0] === '@') {
         packageName = `${parts[0]}/${parts[1]}`;
       } else {
         packageName = parts[0];
@@ -56,18 +81,45 @@ export default class Splitter {
 
       let config = this.config[packageName];
       if (config && typeof config.include === 'boolean' && !config.include) {
+        // This package has been explicitly excluded.
         return;
       }
-      let { depFinder } = this.options;
-      if (!depFinder.hasDependency(packageName) || depFinder.isEmberAddon(packageName)) {
+
+      if (!pkg.hasDependency(packageName) || pkg.isEmberAddonDependency(packageName)) {
         return;
       }
-      depFinder.assertAllowed(packageName);
+      pkg.assertAllowedDependency(packageName);
 
-      let bundleName = this.chooseBundle(imports[sourcePath]);
+      let entrypoint = await resolveEntrypoint(specifier, pkg);
+      let seenAlready = specifiers[specifier];
+      if (seenAlready){
+        if (seenAlready.entrypoint !== entrypoint) {
+          throw new Error(`${pkg.name} and ${seenAlready.pkg.name} are using different versions of ${specifier} (${entrypoint} vs ${seenAlready.entrypoint})`);
+        }
+        seenAlready.paths = seenAlready.paths.concat(paths);
+      } else {
+        specifiers[specifier] = {
+          entrypoint,
+          paths,
+          pkg
+        };
+      }
+    }));
+    return specifiers;
+  }
 
-      deps[bundleName][sourcePath] = {
-        entrypoint: await depFinder.entryPoint(sourcePath)
+  private async computeDeps(analyzers) {
+    let targets = await this.computeTargets(analyzers);
+    let deps = {};
+
+    this.options.bundles.forEach(bundleName => {
+      deps[bundleName] = {};
+    });
+
+    await Promise.all(Object.keys(targets).map(async specifier => {
+      let bundleName = this.chooseBundle(targets[specifier].paths);
+      deps[bundleName][specifier] = {
+        entrypoint: targets[specifier].entrypoint
       };
     }));
 
@@ -92,4 +144,20 @@ export default class Splitter {
     debug('bundleForPath("%s")=%s', path, bundleName);
     return bundleName;
   }
+}
+
+function shallowEqual(a: any[], b: any[]){
+  return a.length === b.length && a.every((item, index) => item === b[index]);
+}
+
+async function resolveEntrypoint(specifier, pkg) : Promise<string> {
+  return new Promise((resolvePromise, reject) => {
+    resolver.resolve({}, pkg.root, specifier, {}, (err, path) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolvePromise(path);
+      }
+    });
+  }) as Promise<string>;
 }
