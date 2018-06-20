@@ -45,6 +45,7 @@ export default class AutoImport{
     }
 
     treeForVendor(tree){
+        // FIXME
         let pack = Package.lookup(this.primaryPackage);
 
         // The Splitter takes the set of imports from the Analyzer and
