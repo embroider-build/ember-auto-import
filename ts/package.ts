@@ -1,5 +1,7 @@
 import resolve from 'resolve';
 
+const cache : WeakMap<any, Package> = new WeakMap();
+
 export default class Package {
     public name: string;
     public root: string;
@@ -10,17 +12,24 @@ export default class Package {
     private nonDevDeps;
     private isAddonCache = new Map<string, boolean>();
 
-    constructor(instance){
-        this.name = instance.parent.pkg.name;
-        this.root = instance.parent.root;
+    static lookup(appOrAddon){
+        if (!cache.has(appOrAddon)){
+            cache.set(appOrAddon, new this(appOrAddon));
+        }
+        return cache.get(appOrAddon);
+    }
+
+    constructor(appOrAddon){
+        this.name = appOrAddon.parent.pkg.name;
+        this.root = appOrAddon.parent.root;
 
         // When consumed by an addon, we will see
         // instance.parent.options. When consumed by an app, we will have
         // instance.app.options.
-        this.isAddon = !!instance.parent.options;
+        this.isAddon = !!appOrAddon.parent.options;
 
         // This is the per-package options from ember-cli
-        let options = instance.parent.options || instance.app.options;
+        let options = appOrAddon.parent.options || appOrAddon.app.options;
 
         // Stash our own config options
         this.autoImportOptions = options.autoImport || {};
@@ -28,9 +37,9 @@ export default class Package {
           this.autoImportOptions.modules = Object.create(null);
         }
 
-        this.babelOptions = this.buildBabelOptions(instance, options);
+        this.babelOptions = this.buildBabelOptions(appOrAddon, options);
 
-        let pkg = instance.parent.pkg;
+        let pkg = appOrAddon.parent.pkg;
         this.deps = Object.assign({}, pkg.dependencies, pkg.devDependencies);
         this.nonDevDeps = pkg.dependencies;
     }
