@@ -101,9 +101,21 @@ export default class Analyzer extends Plugin {
   }
 
   private parseImports(source) {
-    let ast = parse(source, this.parserOptions);
-    // No need to recurse here, because we only deal with top-level static import declarations
-    return ast.program.body.filter(node => node.type === 'ImportDeclaration').map(node => node.source.value);
+    let ast;
+    try {
+      ast = parse(source, this.parserOptions);
+    } catch(err){
+      if (err.name !== 'SyntaxError') {
+        throw err;
+      }
+      debug('Ignoring an unparseable file');
+    }
+    if (ast){
+      // No need to recurse here, because we only deal with top-level static import declarations
+      return ast.program.body.filter(node => node.type === 'ImportDeclaration').map(node => node.source.value);
+    } else {
+      return [];
+    }
   }
 }
 
