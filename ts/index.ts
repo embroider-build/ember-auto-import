@@ -20,11 +20,11 @@ class PrivateState {
   config;
 
   constructor(publicInstance){
-    priv.set(publicInstance, this);
+    privateState.set(publicInstance, this);
   }
 }
 
-const priv = new WeakMap<any, PrivateState>();
+const privateState = new WeakMap<any, PrivateState>();
 
 module.exports = {
   name: 'ember-auto-import',
@@ -45,8 +45,8 @@ module.exports = {
     registry.add('js', {
       name: 'ember-auto-import-analyzer',
       toTree: (tree, inputPath) => {
-        let ps = priv.get(this);
-        return ps.analyzer.analyzeTree(debugTree(tree, `preprocessor:input`), inputPath);
+        let { analyzer } = privateState.get(this);
+        return analyzer.analyzeTree(debugTree(tree, `preprocessor:input`), inputPath);
       }
     });
   },
@@ -95,7 +95,7 @@ module.exports = {
   },
 
   treeForVendor(tree) {
-    let ps = priv.get(this);
+    let ps = privateState.get(this);
 
     // The Analyzer keeps track of all your imports
     ps.analyzer = Analyzer.create(
