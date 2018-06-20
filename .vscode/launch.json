@@ -14,6 +14,17 @@
             "args": [
                 "build"
             ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Build sample-conflict",
+            "program": "${workspaceFolder}/node_modules/.bin/ember",
+            "cwd": "${workspaceFolder}/test-apps/sample-conflict",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "args": [
+                "build"
+            ]
         }
     ]
 }
