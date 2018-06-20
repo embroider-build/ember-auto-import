@@ -1,8 +1,8 @@
 {
-  "name": "sample-merged",
+  "name": "sample-conflict",
   "version": "0.0.0",
   "private": true,
-  "description": "Small description for sample-merged goes here",
+  "description": "Small description for sample-conflict goes here",
   "license": "MIT",
   "author": "",
   "directories": {
@@ -12,18 +12,17 @@
   "repository": "",
   "scripts": {
     "build": "ember build",
-    "lint:js": "eslint ./*.js app config lib server tests",
+    "lint:js": "eslint ./*.js app blueprints config lib server tests",
     "start": "ember serve",
-    "test": "ember test --test-port=0"
+    "test": "./ensure-failed-build.sh"
   },
   "devDependencies": {
+    "ember-auto-import": "*",
+    "sample-addon":"*",
     "inner-lib": "*",
-    "inner-lib2": "*",
-    "sample-addon": "*",
     "broccoli-asset-rev": "^2.4.5",
     "ember-ajax": "^3.0.0",
-    "ember-auto-import": "*",
-    "ember-cli": "~3.1.2",
+    "ember-cli": "~3.1.4",
     "ember-cli-babel": "^6.6.0",
     "ember-cli-dependency-checker": "^2.0.0",
     "ember-cli-eslint": "^4.2.1",

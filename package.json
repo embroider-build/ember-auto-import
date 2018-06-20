@@ -22,7 +22,7 @@
     "lint": "eslint . && tslint --project .",
     "start": "ember serve",
     "test": "./scripts/test.sh",
-    "test:root": "ember test",
+    "test:root": "ember test --test-port=0",
     "prepare": "./scripts/link-them.sh && yarn compile"
   },
   "dependencies": {
@@ -37,6 +37,7 @@
     "ember-cli-babel": "^6.6.0",
     "enhanced-resolve": "^4.0.0",
     "fs-tree-diff": "^0.5.7",
+    "handlebars": "^4.0.11",
     "lodash": "^4.17.10",
     "mkdirp": "^0.5.1",
     "quick-temp": "^0.1.8",
@@ -47,6 +48,7 @@
     "webpack": "^4.12.0"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.110",
     "@types/node": "^10.3.4",
     "broccoli-asset-rev": "^2.4.5",
     "ember-ajax": "^3.0.0",
@@ -85,6 +87,8 @@
   },
   "ember-addon": {
     "configPath": "tests/dummy/config",
-    "before": ["ember-cli-babel"]
+    "before": [
+      "ember-cli-babel"
+    ]
   }
 }

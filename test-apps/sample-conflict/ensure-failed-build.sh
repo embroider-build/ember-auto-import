@@ -5,7 +5,7 @@ code=$?
 
 own_status=0
 
-if [[ "$output" =~ "sample-failure tried to import \"moment\" from addon code, but \"moment\" is a devDependency" ]]
+if [[ "$output" =~ "sample-addon and sample-conflict are using different versions of inner-lib" ]]
 then
     echo "OK message"
 else
