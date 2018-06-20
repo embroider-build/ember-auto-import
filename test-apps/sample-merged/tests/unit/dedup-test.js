@@ -1,4 +1,4 @@
-import { module, skip } from 'qunit';
+import { module, test } from 'qunit';
 
 module('Unit | deduplication', function(hooks) {
 
@@ -10,11 +10,11 @@ module('Unit | deduplication', function(hooks) {
     sourceCode = await response.text();
   });
 
-  skip('a module imported by both the app and an addon gets deduplicated', async function(assert) {
+  test('a module imported by both the app and an addon gets deduplicated', async function(assert) {
     assert.equal(sourceCode.match(/ember_auto_import_sample_lib/g).length, 1, "expected only one copy of inner-lib in vendor.js");
   });
 
-  skip('a module imported both directly by the app and indirectly by another imported module gets deduplicated', async function(assert) {
+  test('a module imported both directly by the app and indirectly by another imported module gets deduplicated', async function(assert) {
     assert.equal(sourceCode.match(/ember_auto_import_inner_lib2_named/g).length, 1, "expected only one copy of inner-lib2/named in vendor.js");
   });
 })
