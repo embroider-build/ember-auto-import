@@ -7,7 +7,7 @@ export default class Package {
     public root: string;
     public isAddon: boolean;
     public babelOptions;
-    public autoImportOptions;
+    private autoImportOptions;
     private deps;
     private nonDevDeps;
     private isAddonCache = new Map<string, boolean>();
@@ -22,20 +22,13 @@ export default class Package {
     constructor(appOrAddon){
         this.name = appOrAddon.parent.pkg.name;
         this.root = appOrAddon.parent.root;
-
-        // When consumed by an addon, we will see
-        // instance.parent.options. When consumed by an app, we will have
-        // instance.app.options.
-        this.isAddon = !!appOrAddon.parent.options;
+        this.isAddon = appOrAddon.parent !== appOrAddon.project;
 
         // This is the per-package options from ember-cli
-        let options = appOrAddon.parent.options || appOrAddon.app.options;
+        let options = this.isAddon ? appOrAddon.parent.options : appOrAddon.app.options;
 
         // Stash our own config options
-        this.autoImportOptions = options.autoImport || {};
-        if (!this.autoImportOptions.modules) {
-          this.autoImportOptions.modules = Object.create(null);
-        }
+        this.autoImportOptions = options.autoImport;
 
         this.babelOptions = this.buildBabelOptions(appOrAddon, options);
 
@@ -82,5 +75,13 @@ export default class Package {
       if (this.isAddon && !this.nonDevDeps[name]) {
         throw new Error(`${this.name} tried to import "${name}" from addon code, but "${name}" is a devDependency. You may need to move it into dependencies.`);
       }
+    }
+
+    excludesDependency(name): boolean {
+        return this.autoImportOptions && this.autoImportOptions.exclude && this.autoImportOptions.exclude.includes(name);
+    }
+
+    get webpackConfig() : any{
+        return this.autoImportOptions && this.autoImportOptions.webpack;
     }
 }

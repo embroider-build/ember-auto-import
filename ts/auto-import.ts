@@ -11,12 +11,13 @@ const protocol = '__ember_auto_import_protocol_v1__';
 
 export default class AutoImport{
     private primaryPackage;
+    private packages: Set<Package> = new Set();
     private env: string;
-    private consoleWrite: Function;
+    private consoleWrite: (string) => void;
     private analyzers: Map<Analyzer, Package> = new Map();
     private bundlers: Bundler[];
 
-    static lookup(appOrAddon){
+    static lookup(appOrAddon) : AutoImport {
         if (!global[protocol]) {
             global[protocol] = new this(appOrAddon);
         }
@@ -38,6 +39,7 @@ export default class AutoImport{
 
     analyze(tree, appOrAddon){
         let pack = Package.lookup(appOrAddon);
+        this.packages.add(pack);
         let analyzer = new Analyzer(debugTree(tree, `preprocessor:input`), pack.babelOptions);
         this.analyzers.set(analyzer, pack);
         this.bundlers.forEach(bundler => bundler.unsafeConnect(analyzer));
@@ -45,13 +47,9 @@ export default class AutoImport{
     }
 
     treeForVendor(tree){
-        // FIXME
-        let pack = Package.lookup(this.primaryPackage);
-
         // The Splitter takes the set of imports from the Analyzer and
         // decides which ones to include in which bundles
         let splitter = new Splitter({
-            config: pack.autoImportOptions,
             analyzers: this.analyzers,
             bundles: ['app', 'tests'],
             bundleForPath(path) {
@@ -70,8 +68,8 @@ export default class AutoImport{
           outputFile: `ember-auto-import/app.js`,
           splitter,
           bundle: 'app',
-          config: pack.autoImportOptions,
           environment: this.env,
+          packages: this.packages,
           consoleWrite: this.consoleWrite
         });
 
@@ -79,8 +77,8 @@ export default class AutoImport{
           outputFile: `ember-auto-import/test.js`,
           splitter,
           bundle: 'tests',
-          config: pack.autoImportOptions,
           environment: this.env,
+          packages: this.packages,
           consoleWrite: this.consoleWrite
         });
 

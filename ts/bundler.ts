@@ -8,6 +8,8 @@ import WebpackBundler from './webpack';
 import { join } from 'path';
 import Splitter from './splitter';
 import { shallowEqual } from './util';
+import Package from './package';
+import { merge } from 'lodash';
 
 const debug = makeDebug('ember-auto-import:bundler');
 const debugTree = buildDebugCallback('ember-auto-import');
@@ -18,7 +20,7 @@ export interface BundlerPluginOptions {
   environment: string;
   splitter: Splitter;
   outputFile: string;
-  config;
+  packages: Set<Package>;
 }
 
 export class BundlerPlugin extends Plugin {
@@ -34,9 +36,8 @@ export class BundlerPlugin extends Plugin {
 
   get bundlerHook(){
     if (!this.cachedBundlerHook){
-      // FIXME
-      let extraWebpackConfig = {};
-
+      let extraWebpackConfig = merge({}, ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig));
+      debug('extraWebpackConfig %j', extraWebpackConfig);
       this.cachedBundlerHook = new WebpackBundler(
         join(this.outputPath, this.options.outputFile),
         this.options.environment,
@@ -68,7 +69,7 @@ export default class Bundler {
   private plugin : BundlerPlugin;
   tree: Tree;
 
-  constructor(options) {
+  constructor(options: BundlerPluginOptions) {
     quickTemp.makeOrRemake(this, 'placeholder', 'ember-auto-import');
     this.placeholderTree = new UnwatchedDir(this.placeholder, { annotation: 'ember-auto-import' });
     this.plugin = new BundlerPlugin(this.placeholderTree, options);

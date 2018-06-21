@@ -34,22 +34,20 @@ import { capitalize } from 'lodash-es';
 
 There is no step two. Works from both app code and test code.
 
-Customizing
+Customizing Build Behavior
 ------------------------------------------------------------------------------
 
-While most NPM packages authored in CommonJS or ES Modules will Just Work,
-for others you may need some give ember-auto-import a hint on what to
-do.
+While most NPM packages authored in CommonJS or ES Modules will Just Work, for others you may need some give ember-auto-import a hint about what to do.
 
-You can set options per-package by providing them like this in your
-ember-cli-build.js:
+You can set options like this in your ember-cli-build.js:
 
 ```js
 // In your ember-cli-build.js file
 let app = new EmberApp(defaults, {
   autoImport: {
-    modules: {
-      qunit: { include: false }
+    exclude: ['some-package'],
+    webpack: {
+      // extra webpack configuration goes here
     }
   }
 });
@@ -57,77 +55,42 @@ let app = new EmberApp(defaults, {
 
 Suported Options
 
- - `cache`: _boolean, defaults to true_. If set to false, we will always rebuild this package. Useful when you're in the middle of developing the package itself. (This doesn't establish any watching for automatic rebuilds, it just ensures that if your app rebuilds, it will pick up any changes in the package.)
- - `include`: _boolean, defaults to true_. If set to false, ember-auto-imports will ignore this package. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
- - `bundler`: _function, defaults to our webpack bundler_, Allows you to completely replace the bundling strategy used for packaging up this module. See Custom Bundlers below.
- - `webpackConfig`: _object_, The default webpack-based `bundler` merges this object into the webpack config.
+ - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
+ - `webpack`: _object_, An object that will get merged into the configuration we pass to webpack. This lets you work around quirks in underlying libraries and otherwise customize the way Webpack will assemble your dependencies.
 
-Configuring the Default Webpack Bundler
----------------------------
+Usage from Addons
+------------------------------------------------------------------------------
 
-By default, we will package up each module you import using webpack. The default settings usually work, but sometimes tweaking is required. For example, the `yamljs` library tries to `require('fs')` inside a function, which only works on node and will break a webpack build by default. But [we can tell webpack to treat it as empty instead](https://github.com/jeremyfa/yaml.js/issues/102):
+Using ember-auto-import inside an addon is almost exactly the same as inside an app. The only differences are:
 
-```js
-// In your ember-cli-build.js file
-let app = new EmberApp(defaults, {
-  autoImport: {
-    modules: {
-      yamljs: {
-        webpackConfig: {
-          node: {
-            fs: 'empty'
+ - ember-auto-import must be in the  `dependencies` of your addon, not in `devDependencies`. Otherwise it won't come along when people install your addon.
+ - ember-auto-import will refuse to import `devDependencies` of your addon, for the same reason. Whatever you're importing must be in `dependencies`.
+ - you configure ember-auto-import in your `index.js` file (not your `ember-cli-build.js` file), like this:
+
+    ```js
+    // In your addon's index.js file
+    module.exports = {
+      name: 'sample-addon',
+      options: {
+        autoImport:{
+          exclude: ['some-package'],
+          webpack: {
+            // extra webpack configuration goes here
           }
         }
       }
-    }
-  }
-});
-```
-
-Custom Bundlers
----------------
-
-You can completely replace the bundler strategy for a given module by passing a function:
-
-```js
-// In your ember-cli-build.js file
-
-function customBundler({ moduleName, entrypoint, outputFile, consoleWrite, environment }, moduleConfig) {
-  // - read from the file `entrypoint`
-  // - write to the file `outputFile`
-  // - make sure the resulting module is loadable as AMD with the name `moduleName`
-  // - `moduleConfig` is the per-module, user-provided configuration for this module. In this example, 
-  //   we could read `moduleConfig.customBundlerOptions`.
-  // - return a Promise that resolves when you're done
-}
-
-let app = new EmberApp(defaults, {
-  autoImport: {
-    modules: {
-      qunit: {
-        bundler: customBundler
-        customBundlerOptions: { ... }
-      }
-    }
-  }
-});
-```
-
-Your bundler gets access to `moduleConfig` and may define custom options there. You should include the name of your bundler in the name(s) of the options, to avoid collision with future options added by ember-auto-import. (For example, the default webpack bundler adds the `webpackConfig` option.)
-
-If you want to wrap the default bundler strategy, it's available via `require('ember-auto-import').webpackBundler`.
+    };
+    ```
 
 Debugging Tips
 --------------
 
-Set the environment variable `DEBUG="ember-auto-import:*"` to see debug logging.
+Set the environment variable `DEBUG="ember-auto-import:*"` to see debug logging during the build.
 
 Credit / History
 ------------------------------------------------------------------------------
 
-Takes inspiration and some code from ember-browserify and
-ember-cli-cjs-transform. This package is basically what you get when
-you combine the ideas from those two addons.
+Takes inspiration and some code from ember-browserify and ember-cli-cjs-transform. This package is basically what you get when you combine the ideas from those two addons.
 
 
 Contributing

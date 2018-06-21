@@ -19,19 +19,15 @@ const resolver = ResolverFactory.createResolver({
 export interface SplitterOptions {
   // list of bundle names in priority order
   bundles: string[];
-  config;
   analyzers: Map<Analyzer, Package>;
   bundleForPath: (string) => string;
 }
 
 export default class Splitter {
-  private config;
   private lastImports = null;
   private lastDeps = null;
 
-  constructor(private options : SplitterOptions) {
-    this.config = (options.config && options.config.modules) || {};
-  }
+  constructor(private options : SplitterOptions) {}
 
   async depsForBundle(bundleName) {
     if (this.importsChanged()){
@@ -49,7 +45,7 @@ export default class Splitter {
     }
   }
 
-  private flatImports(analyzers){
+  private flatImports(analyzers: Map<Analyzer, Package>) : { specifier: string, paths: string[], pkg: Package }[] {
     return flatMap([...analyzers.entries()], ([analyzer, pkg]) => {
       return Object.keys(analyzer.imports).map(specifier => {
         return {
@@ -80,8 +76,7 @@ export default class Splitter {
         packageName = parts[0];
       }
 
-      let config = this.config[packageName];
-      if (config && typeof config.include === 'boolean' && !config.include) {
+      if (pkg.excludesDependency(packageName)){
         // This package has been explicitly excluded.
         return;
       }
