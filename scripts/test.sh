@@ -1,6 +1,6 @@
 #!/bin/bash
 
-parallel --tag <<EOF
+./scripts/parallel --tag <<EOF
 cd test-apps/sample-direct   && yarn test
 cd test-apps/sample-direct   && yarn test:fastboot
 cd test-apps/sample-indirect && yarn test
