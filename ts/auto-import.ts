@@ -31,6 +31,7 @@ export default class AutoImport{
         if (!this.env) { throw new Error("Bug in ember-auto-import: did not discover environment"); }
 
         this.consoleWrite = (...args) => appOrAddon.project.ui.write(...args);
+        this.bundlers = this.makeBundlers();
     }
 
     isPrimary(appOrAddon){
@@ -46,7 +47,7 @@ export default class AutoImport{
         return analyzer;
     }
 
-    treeForVendor(tree){
+    private makeBundlers() {
         // The Splitter takes the set of imports from the Analyzer and
         // decides which ones to include in which bundles
         let splitter = new Splitter({
@@ -81,13 +82,10 @@ export default class AutoImport{
           packages: this.packages,
           consoleWrite: this.consoleWrite
         });
+        return [appBundler, testsBundler];
+    }
 
-        this.bundlers = [appBundler, testsBundler];
-
-        return new MergeTrees([
-          tree,
-          debugTree(appBundler.tree, 'app'),
-          debugTree(testsBundler.tree, 'tests')
-        ].filter(Boolean));
+    treeForVendor(tree){
+        return new MergeTrees([tree].concat(this.bundlers.map(b => b.tree)).filter(Boolean));
     }
 }
