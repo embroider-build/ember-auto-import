@@ -17,6 +17,8 @@ env:
     # See https://git.io/vdao3 for details.
     - JOBS=1
   matrix:
+    - EAI_SCENARIO=2.12
+    - EAI_SCENARIO=2.16
     - EAI_SCENARIO=2.18
     - EAI_SCENARIO=3.0
     - EAI_SCENARIO=stable
@@ -31,7 +33,6 @@ matrix:
 before_install:
   - curl -o- -L https://yarnpkg.com/install.sh | bash
   - export PATH=$HOME/.yarn/bin:$PATH
-  - curl pi.dk/3/ | bash # gnu parallel
 
 install:
   - ./scripts/change-ember-cli-version.sh
