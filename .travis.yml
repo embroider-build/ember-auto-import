@@ -18,9 +18,7 @@ env:
     - JOBS=1
   matrix:
     - EAI_SCENARIO=2.12
-    - EAI_SCENARIO=2.16
     - EAI_SCENARIO=2.18
-    - EAI_SCENARIO=3.0
     - EAI_SCENARIO=stable
     - EAI_SCENARIO=beta
     - EAI_SCENARIO=canary
