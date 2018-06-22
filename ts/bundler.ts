@@ -2,8 +2,6 @@ import Plugin, { Tree } from 'broccoli-plugin';
 import makeDebug from 'debug';
 import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
-import concat from 'broccoli-concat';
-import { buildDebugCallback }  from 'broccoli-debug';
 import WebpackBundler from './webpack';
 import { join } from 'path';
 import Splitter from './splitter';
@@ -12,7 +10,6 @@ import Package from './package';
 import { merge } from 'lodash';
 
 const debug = makeDebug('ember-auto-import:bundler');
-const debugTree = buildDebugCallback('ember-auto-import');
 
 export interface BundlerPluginOptions {
   bundle: string;
@@ -66,27 +63,16 @@ export class BundlerPlugin extends Plugin {
 export default class Bundler {
   private placeholder: string;
   private placeholderTree : Tree;
-  private plugin : BundlerPlugin;
   tree: Tree;
 
   constructor(options: BundlerPluginOptions) {
     quickTemp.makeOrRemake(this, 'placeholder', 'ember-auto-import');
     this.placeholderTree = new UnwatchedDir(this.placeholder, { annotation: 'ember-auto-import' });
-    this.plugin = new BundlerPlugin(this.placeholderTree, options);
-
-    // The bundler plugin generates one file per imported module, here
-    // we combine them into a single file so we can share a single
-    // constant app.import.
-    this.tree = concat(debugTree(this.plugin, 'bundler'), {
-      outputFile: options.outputFile,
-      inputFiles: ['**/*'],
-      sourceMapConfig: { enabled: true },
-      allowNone: true
-    });
+    this.tree = new BundlerPlugin(this.placeholderTree, options);
   }
 
   unsafeConnect(tree: Tree){
-    let plugin = this.plugin as any;
+    let plugin = this.tree as any;
     plugin._inputNodes.push(tree);
   }
 }
