@@ -16,6 +16,17 @@ env:
   global:
     # See https://git.io/vdao3 for details.
     - JOBS=1
+  matrix:
+    - EAI_SCENARIO=2.18
+    - EAI_SCENARIO=3.0
+    - EAI_SCENARIO=stable
+    - EAI_SCENARIO=beta
+    - EAI_SCENARIO=canary
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - env: EAI_SCENARIO=canary
 
 before_install:
   - curl -o- -L https://yarnpkg.com/install.sh | bash
@@ -23,7 +34,7 @@ before_install:
   - curl pi.dk/3/ | bash # gnu parallel
 
 install:
-  - yarn install --no-lockfile --non-interactive
+  - ./scripts/change-ember-cli-version.sh
 
 script:
   - yarn lint
