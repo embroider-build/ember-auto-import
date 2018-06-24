@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0
+ - BUGFIX: fixed an exception after a file with imports was deleted
+ - Making this 1.0.0 because no major issues have surfaced in the alpha and I think the public API is fairly stable. My outstanding TODO list is all either additive or internals-only for compatibility with ember-cli canary.
+
 ## 1.0.0-alpha.0
  - ENHANCEMENT: we now run a single Webpack build for an entire application, regardless of how many addons and/or the app itself are using ember-auto-import. This provides the best possible deduplication and minimal size. 
  - BREAKING: the build customization options have changed. It's no longer possible to customize webpack per-module, since we're running a single global webpack build. I also removed documentation on how to swap out the webpack bundler with something else, because in practice we'll want addons to be able to standardize on one strategy.
