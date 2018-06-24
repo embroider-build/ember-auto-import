@@ -85,9 +85,11 @@ export default class Analyzer extends Plugin {
 
   removeImports(relativePath) {
     debug(`removing imports for ${relativePath}`);
-    if (this.paths[relativePath] && this.paths[relativePath].length > 0){
-      this.paths[relativePath] = null;
-      this.modules = null; // invalidates cache
+    if (this.paths[relativePath]) {
+      if (this.paths[relativePath].length > 0){
+        this.modules = null; // invalidates cache
+      }
+      delete this.paths[relativePath];
     }
   }
 
