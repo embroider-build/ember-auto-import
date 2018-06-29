@@ -3,12 +3,15 @@ import { join, dirname, basename } from 'path';
 import { merge } from 'lodash';
 import quickTemp from 'quick-temp';
 import { writeFileSync } from 'fs';
-import { compile } from 'handlebars';
+import { compile, registerHelper } from 'handlebars';
+import jsStringEscape from 'js-string-escape';
+
+registerHelper('js-string-escape', jsStringEscape);
 
 const entryTemplate = compile(`
 module.exports = (function(){
   {{#each modules as |module|}}
-    window.define('{{module.specifier}}', [], function() { return require('{{module.entrypoint}}'); });
+    window.define('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.entrypoint}}'); });
   {{/each}}
 })();
 `);
@@ -41,7 +44,7 @@ export default class WebpackBundler {
   }
 
   private writeEntryFile(modules){
-    let moduleList = Object.keys(modules).map(specifier => ({ specifier, entrypoint: modules[specifier].entrypoint}));
+    let moduleList = Object.keys(modules).map(specifier => ({ specifier, entrypoint: modules[specifier].entrypoint }));
     writeFileSync(join(this.stagingDir, 'entry.js'), entryTemplate({ modules: moduleList }));
   }
 
