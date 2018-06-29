@@ -41,8 +41,12 @@ export default class WebpackBundler {
   }
 
   private writeEntryFile(modules){
-    let moduleList = Object.keys(modules).map(specifier => ({ specifier, entrypoint: modules[specifier].entrypoint}));
+    let moduleList = Object.keys(modules).map(specifier => ({ specifier, entrypoint: this.normalizePath(modules[specifier].entrypoint) }));
     writeFileSync(join(this.stagingDir, 'entry.js'), entryTemplate({ modules: moduleList }));
+  }
+
+  private normalizePath(entrypoint) {
+    return entrypoint.replace(/\\/g, '\\\\');
   }
 
   private async runWebpack(){
