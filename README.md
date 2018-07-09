@@ -45,6 +45,19 @@ You can set options like this in your ember-cli-build.js:
 // In your ember-cli-build.js file
 let app = new EmberApp(defaults, {
   autoImport: {
+    alias: {
+      // when the app tries to import from "plotly.js", use
+      // the real package "plotly.js-basic-dist" instead.
+      'plotly.js': 'plotly.js-basic-dist',
+
+      // you can also use alises to pick a different entrypoint
+      // within the same package. This can come up when the default
+      // entrypoint only works in Node, but there is also a browser
+      // build available (and the author didn't provide a "browser"
+      // field in package.json that would let us detect it
+      // automatically).
+      'handlebars': 'handlebars/dist/handlebars'
+    },
     exclude: ['some-package'],
     webpack: {
       // extra webpack configuration goes here
@@ -55,6 +68,7 @@ let app = new EmberApp(defaults, {
 
 Suported Options
 
+ - `alias`: _object_, Map from package names to substitute packages that will be used instead.
  - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
  - `webpack`: _object_, An object that will get merged into the configuration we pass to webpack. This lets you work around quirks in underlying libraries and otherwise customize the way Webpack will assemble your dependencies.
 
@@ -109,7 +123,7 @@ Contributing
 
 ### Running tests
 
-Our test setup is not typical for an Ember addon. While there is a normal Ember addon dummy app that you can run the normal way (with `ember test`), we also have multiple other apps under `/test-apps`. This lets us test how ember-auto-import gets integrated under multiple scenarios. 
+Our test setup is not typical for an Ember addon. While there is a normal Ember addon dummy app that you can run the normal way (with `ember test`), we also have multiple other apps under `/test-apps`. This lets us test how ember-auto-import gets integrated under multiple scenarios.
 
 The test apps share the top-level node_modules automatically, no need to run separate npm installs for them. They should get symlinked to each other automatically when you install the top-level deps (see `./scripts/link-them.sh`). You can also `cd` directly into any of the test apps and run its tests like a normal Ember app.
 

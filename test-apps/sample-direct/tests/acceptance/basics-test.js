@@ -9,4 +9,10 @@ module('sample-direct | Acceptance | basics', function(hooks) {
     await visit('/');
     assert.equal(document.querySelector('.hello-world').textContent.trim(), '2018-05-31');
   });
+
+  test('using an aliased module', async function(assert) {
+    await visit('/');
+    assert.equal(document.querySelector('.aliased').textContent.trim(), 'innerlib2 loaded');
+  });
+
 });

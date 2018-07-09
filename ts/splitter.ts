@@ -68,9 +68,10 @@ export default class Splitter {
         return;
       }
 
-      let parts = specifier.split('/');
+      let aliasedSpecifier = pkg.aliasFor(specifier);
+      let parts = aliasedSpecifier.split('/');
       let packageName;
-      if (specifier[0] === '@') {
+      if (aliasedSpecifier[0] === '@') {
         packageName = `${parts[0]}/${parts[1]}`;
       } else {
         packageName = parts[0];
@@ -86,7 +87,7 @@ export default class Splitter {
       }
       pkg.assertAllowedDependency(packageName);
 
-      let entrypoint = await resolveEntrypoint(specifier, pkg);
+      let entrypoint = await resolveEntrypoint(aliasedSpecifier, pkg);
       let seenAlready = specifiers[specifier];
       if (seenAlready){
         if (seenAlready.entrypoint !== entrypoint) {

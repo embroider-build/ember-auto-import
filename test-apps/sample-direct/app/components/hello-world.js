@@ -2,12 +2,17 @@ import Component from '@ember/component';
 import layout from '../templates/components/hello-world';
 import moment from 'moment';
 import { computed } from '@ember/object';
+import innerLib2 from 'my-aliased-module';
 
 export default Component.extend({
   layout,
 
   formattedDate: computed(function() {
     return moment('2018-05-31T18:03:01.791Z').format('YYYY-MM-DD');
+  }),
+
+  aliasedResult: computed(function () {
+    return innerLib2();
   }),
 
   // Our test suite imports lodash-es, but our app does not, so it
