@@ -12,27 +12,27 @@ export default class Package {
     private nonDevDeps;
     private isAddonCache = new Map<string, boolean>();
 
-    static lookup(appOrAddon){
-        if (!cache.has(appOrAddon)){
-            cache.set(appOrAddon, new this(appOrAddon));
+    static lookup(autoImportInstance){
+        if (!cache.has(autoImportInstance)){
+            cache.set(autoImportInstance, new this(autoImportInstance));
         }
-        return cache.get(appOrAddon);
+        return cache.get(autoImportInstance);
     }
 
-    constructor(appOrAddon){
-        this.name = appOrAddon.parent.pkg.name;
-        this.root = appOrAddon.parent.root;
-        this.isAddon = appOrAddon.parent !== appOrAddon.project;
+    constructor(autoImportInstance){
+        this.name = autoImportInstance.parent.pkg.name;
+        this.root = autoImportInstance.parent.root;
+        this.isAddon = autoImportInstance.parent !== autoImportInstance.project;
 
         // This is the per-package options from ember-cli
-        let options = this.isAddon ? appOrAddon.parent.options : appOrAddon.app.options;
+        let options = this.isAddon ? autoImportInstance.parent.options : autoImportInstance.app.options;
 
         // Stash our own config options
         this.autoImportOptions = options.autoImport;
 
-        this.babelOptions = this.buildBabelOptions(appOrAddon, options);
+        this.babelOptions = this.buildBabelOptions(autoImportInstance, options);
 
-        let pkg = appOrAddon.parent.pkg;
+        let pkg = autoImportInstance.parent.pkg;
         this.deps = Object.assign({}, pkg.dependencies, pkg.devDependencies);
         this.nonDevDeps = pkg.dependencies;
     }

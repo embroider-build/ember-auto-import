@@ -17,29 +17,29 @@ export default class AutoImport{
     private analyzers: Map<Analyzer, Package> = new Map();
     private bundlers: Bundler[];
 
-    static lookup(appOrAddon) : AutoImport {
+    static lookup(autoImportInstance) : AutoImport {
         if (!global[protocol]) {
-            global[protocol] = new this(appOrAddon);
+            global[protocol] = new this(autoImportInstance);
         }
         return global[protocol];
     }
 
-    constructor(appOrAddon) {
-        this.primaryPackage = appOrAddon;
+    constructor(autoImportInstance) {
+        this.primaryPackage = autoImportInstance;
         // _findHost is private API but it's been stable in ember-cli for two years.
-        this.env = appOrAddon._findHost().env;
+        this.env = autoImportInstance._findHost().env;
         if (!this.env) { throw new Error("Bug in ember-auto-import: did not discover environment"); }
 
-        this.consoleWrite = (...args) => appOrAddon.project.ui.write(...args);
+        this.consoleWrite = (...args) => autoImportInstance.project.ui.write(...args);
         this.bundlers = this.makeBundlers();
     }
 
-    isPrimary(appOrAddon){
-        return this.primaryPackage === appOrAddon;
+    isPrimary(autoImportInstance){
+        return this.primaryPackage === autoImportInstance;
     }
 
-    analyze(tree, appOrAddon){
-        let pack = Package.lookup(appOrAddon);
+    analyze(tree, autoImportInstance){
+        let pack = Package.lookup(autoImportInstance);
         this.packages.add(pack);
         let analyzer = new Analyzer(debugTree(tree, `preprocessor:input`), pack.babelOptions);
         this.analyzers.set(analyzer, pack);
