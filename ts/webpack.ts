@@ -1,6 +1,6 @@
 import webpack from 'webpack';
-import { join, dirname, basename } from 'path';
-import { merge } from 'lodash';
+import { join } from 'path';
+import { mergeWith } from 'lodash';
 import quickTemp from 'quick-temp';
 import { writeFileSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
@@ -20,21 +20,12 @@ export default class WebpackBundler {
   private stagingDir;
   private webpack;
 
-  constructor(outputFile, environment, extraWebpackConfig, private consoleWrite){
+  constructor(webpackConfigs, private consoleWrite){
     quickTemp.makeOrRemake(this, 'stagingDir', 'ember-auto-import-webpack');
     let config = {
-      mode: environment === 'production' ? 'production' : 'development',
       entry: join(this.stagingDir, 'entry.js'),
-      output: {
-        path: dirname(outputFile),
-        filename: basename(outputFile),
-        libraryTarget: 'var',
-        library: '__ember_auto_import__'
-      }
     };
-    if (extraWebpackConfig) {
-      merge(config, extraWebpackConfig);
-    }
+    mergeWith(config, ...webpackConfigs, arrayConcat);
     this.webpack = webpack(config);
   }
 
@@ -69,4 +60,10 @@ export default class WebpackBundler {
     });
   }
 
+}
+
+function arrayConcat(objValue, srcValue) {
+  if (Array.isArray(objValue)) {
+    return objValue.concat(srcValue);
+  }
 }

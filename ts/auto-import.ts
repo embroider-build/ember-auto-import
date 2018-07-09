@@ -16,6 +16,7 @@ export default class AutoImport{
     private consoleWrite: (string) => void;
     private analyzers: Map<Analyzer, Package> = new Map();
     private bundlers: Bundler[];
+    private appPackage;
 
     static lookup(autoImportInstance) : AutoImport {
         if (!global[protocol]) {
@@ -31,6 +32,7 @@ export default class AutoImport{
         if (!this.env) { throw new Error("Bug in ember-auto-import: did not discover environment"); }
 
         this.consoleWrite = (...args) => autoImportInstance.project.ui.write(...args);
+        this.appPackage = Package.lookupApp(autoImportInstance);
         this.bundlers = this.makeBundlers();
     }
 
@@ -71,7 +73,8 @@ export default class AutoImport{
           bundle: 'app',
           environment: this.env,
           packages: this.packages,
-          consoleWrite: this.consoleWrite
+          consoleWrite: this.consoleWrite,
+          babelOptions: this.appPackage.babelOptions
         });
 
         let testsBundler = new Bundler({
@@ -80,7 +83,8 @@ export default class AutoImport{
           bundle: 'tests',
           environment: this.env,
           packages: this.packages,
-          consoleWrite: this.consoleWrite
+          consoleWrite: this.consoleWrite,
+          babelOptions: this.appPackage.babelOptions
         });
         return [appBundler, testsBundler];
     }

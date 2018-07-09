@@ -3,13 +3,13 @@ import makeDebug from 'debug';
 import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
 import WebpackBundler from './webpack';
-import { join } from 'path';
+import { join, basename, dirname } from 'path';
 import Splitter from './splitter';
 import { shallowEqual } from './util';
 import Package from './package';
-import { merge } from 'lodash';
 
 const debug = makeDebug('ember-auto-import:bundler');
+const transpilePatternCache = new WeakMap();
 
 export interface BundlerPluginOptions {
   bundle: string;
@@ -18,11 +18,13 @@ export interface BundlerPluginOptions {
   splitter: Splitter;
   outputFile: string;
   packages: Set<Package>;
+  babelOptions: any;
 }
 
 export class BundlerPlugin extends Plugin {
   private lastDeps = null;
   private cachedBundlerHook;
+  private currentDependencies;
 
   constructor(placeholderTree, private options : BundlerPluginOptions) {
     // we need to have at least one valid input tree during
@@ -33,16 +35,37 @@ export class BundlerPlugin extends Plugin {
 
   get bundlerHook(){
     if (!this.cachedBundlerHook){
-      let extraWebpackConfig = merge({}, ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig));
-      debug('extraWebpackConfig %j', extraWebpackConfig);
+      let absOutputFile = join(this.outputPath, this.options.outputFile);
+      let webpackConfigs = [{
+        mode: this.options.environment === 'production' ? 'production' : 'development',
+        output: {
+          path: dirname(absOutputFile),
+          filename: basename(absOutputFile),
+          libraryTarget: 'var',
+          library: '__ember_auto_import__'
+        },
+        "module": {
+          rules: [
+            {
+              test: (filename) => this.shouldTranspile(filename),
+              use: {
+                loader: 'babel-loader',
+                options: this.options.babelOptions
+              }
+            }
+          ]
+        }
+      }].concat([...this.options.packages.values()].map(pkg => pkg.webpackConfig));
       this.cachedBundlerHook = new WebpackBundler(
-        join(this.outputPath, this.options.outputFile),
-        this.options.environment,
-        extraWebpackConfig,
+        webpackConfigs,
         this.options.consoleWrite
       );
     }
     return this.cachedBundlerHook;
+  }
+
+  shouldTranspile(filename) {
+    return false;
   }
 
   async build() {
@@ -53,6 +76,9 @@ export class BundlerPlugin extends Plugin {
     if (shallowEqual(moduleNames, this.lastDeps)) {
       return;
     }
+
+    // stash this for use in shouldTranspile
+    this.currentDependencies = dependencies;
 
     debug("building %s bundle with dependencies: %j", bundle, moduleNames);
     await this.bundlerHook.build(dependencies);

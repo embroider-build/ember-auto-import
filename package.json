@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "babel-core": "^6.26.3",
+    "babel-loader": "^7.1.5",
     "babylon": "^6.18.0",
     "broccoli-concat": "^3.2.2",
     "broccoli-debug": "^0.6.4",

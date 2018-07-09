@@ -88,17 +88,20 @@ export default class Splitter {
       pkg.assertAllowedDependency(packageName);
 
       let entrypoint = await resolveEntrypoint(aliasedSpecifier, pkg);
+      let shouldTranspile = pkg.shouldTranspile(packageName);
       let seenAlready = specifiers[specifier];
       if (seenAlready){
         if (seenAlready.entrypoint !== entrypoint) {
           throw new Error(`${pkg.name} and ${seenAlready.pkg.name} are using different versions of ${specifier} (${entrypoint} vs ${seenAlready.entrypoint})`);
         }
         seenAlready.paths = seenAlready.paths.concat(paths);
+        seenAlready.shouldTranspile = seenAlready.shouldTranspile || shouldTranspile;
       } else {
         specifiers[specifier] = {
           entrypoint,
           paths,
-          pkg
+          pkg,
+          shouldTranspile
         };
       }
     }));

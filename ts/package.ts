@@ -7,6 +7,7 @@ export default class Package {
     public root: string;
     public isAddon: boolean;
     public babelOptions;
+    public shouldTranspile: (packageName: string) => boolean;
     private autoImportOptions;
     private deps;
     private nonDevDeps;
@@ -19,7 +20,15 @@ export default class Package {
         return cache.get(autoImportInstance);
     }
 
-    constructor(autoImportInstance){
+    static lookupApp(addonInstance) {
+      let instance = addonInstance;
+      while (instance.parent !== instance.project) {
+        instance = instance.parent;
+      }
+      return this.lookup(instance);
+    }
+
+    private constructor(autoImportInstance){
         this.name = autoImportInstance.parent.pkg.name;
         this.root = autoImportInstance.parent.root;
         this.isAddon = autoImportInstance.parent !== autoImportInstance.project;
@@ -29,6 +38,16 @@ export default class Package {
 
         // Stash our own config options
         this.autoImportOptions = options.autoImport;
+
+        if (options.autoImport && options.autoImport.applyBabel) {
+          if (typeof options.autoImport.applyBabel === 'function') {
+            this.shouldTranspile = options.autoImport.applyBabel;
+          } else {
+            this.shouldTranspile = (packageName) => options.autoImport.applyBabel.indexOf(packageName) !== -1;
+          }
+        } else {
+          this.shouldTranspile = () => false;
+        }
 
         this.babelOptions = this.buildBabelOptions(autoImportInstance, options);
 

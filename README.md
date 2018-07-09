@@ -69,8 +69,38 @@ let app = new EmberApp(defaults, {
 Suported Options
 
  - `alias`: _object_, Map from package names to substitute packages that will be used instead.
+ - `applyBabel`: _list of strings_ or _function_, Allows you to apply Babel transpilation to some of your auto-imported dependencies. By default they don't get transpiled. See "Babel Transpilation" section below.
  - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
  - `webpack`: _object_, An object that will get merged into the configuration we pass to webpack. This lets you work around quirks in underlying libraries and otherwise customize the way Webpack will assemble your dependencies.
+
+
+Babel Transpilation
+-------------------
+
+Out of the box, we don't apply any transpilation to the dependencies you are auto-importing. But you can use the `applyBabel` option to customize this behavior. You can either provide a list of package names:
+
+```js
+let app = new EmberApp(defaults, {
+  autoImport: {
+    applyBabel: ['some-package']
+  }
+});
+```
+
+Or a function for testing package names:
+
+```js
+let app = new EmberApp(defaults, {
+  autoImport: {
+    applyBabel(packageName) {
+      return packageName !== 'everyting-but-this-one';
+    }
+  }
+});
+```
+
+In either case, we use the application's Babel configuration, because it's up to the application to decide how much transpilation is needed to support its target browsers.
+
 
 Usage from Addons
 ------------------------------------------------------------------------------
@@ -95,6 +125,8 @@ Using ember-auto-import inside an addon is almost exactly the same as inside an 
       }
     };
     ```
+ - you can opt your dependencies into babel transpilation just like an app would, but you don't get any direct say over the Babel options that the app is using, so you should stick to importing non-exotic Javascript that the standard ember-cli-babel configuration can handle. Keep in mind that the app or another addon may also auto-import the same dependency as you, so you're potentially not the only consumer. Transpilation will occur if any consumer asks for it.
+ - you can add to the webpack configuration, but it's better when you don't need to. File upstream issues to get your dependencies packaging cleanly without customizations. File issues here if there's a webpack feature you need that we don't already standardize.
 
 Debugging Tips
 --------------
