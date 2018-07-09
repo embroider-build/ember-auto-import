@@ -13,7 +13,7 @@ import { Pipeline, File } from 'babel-core';
 import { parse } from 'babylon';
 import symlinkOrCopy from 'symlink-or-copy';
 import mkdirp from 'mkdirp';
-import { join, dirname } from 'path';
+import { join, dirname, extname } from 'path';
 import { isEqual } from 'lodash';
 
 const debug = makeDebug('ember-auto-import:analyzer');
@@ -56,7 +56,9 @@ export default class Analyzer extends Plugin {
 
       switch (operation) {
       case 'unlink':
-        this.removeImports(relativePath);
+        if (extname(relativePath) === '.js') {
+          this.removeImports(relativePath);
+        }
         unlinkSync(outputPath);
         break;
       case 'rmdir' :
@@ -69,7 +71,9 @@ export default class Analyzer extends Plugin {
       case 'change':
         {
           let absoluteInputPath  = join(this.inputPaths[0], relativePath);
-          this.updateImports(relativePath, readFileSync(absoluteInputPath, 'utf8'));
+          if (extname(relativePath) === '.js') {
+            this.updateImports(relativePath, readFileSync(absoluteInputPath, 'utf8'));
+          }
           copy(absoluteInputPath, outputPath);
         }
       }
@@ -77,7 +81,7 @@ export default class Analyzer extends Plugin {
   }
 
   private getPatchset() {
-    let input = walkSync.entries(this.inputPaths[0], [ '**/*.js' ]);
+    let input = walkSync.entries(this.inputPaths[0], [ '**/*' ]);
     let previous  = this.previousTree;
     let next = this.previousTree = FSTree.fromEntries(input);
     return previous.calculatePatch(next);
