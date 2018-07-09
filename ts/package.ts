@@ -84,4 +84,12 @@ export default class Package {
     get webpackConfig() : any{
         return this.autoImportOptions && this.autoImportOptions.webpack;
     }
+
+    aliasFor(name) : string {
+      return (
+        this.autoImportOptions &&
+        this.autoImportOptions.alias &&
+        this.autoImportOptions.alias[name]
+      ) || name;
+    }
 }

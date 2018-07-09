@@ -46,7 +46,8 @@
     "loader.js": "*",
     "lodash-es": "*",
     "moment": "*",
-    "qunit": "*"
+    "qunit": "*",
+    "inner-lib2": "*"
   },
   "engines": {
     "node": ">= 8.*"
