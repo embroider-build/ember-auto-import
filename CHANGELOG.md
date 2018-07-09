@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0
+ - BUGFIX: play nicer with other preprocessors by preserving non-JS files in the trees we analyze.
+ - ENHANCEMENT: add an "alias" config option for redirecting imports from one module to another.
+
 ## 1.0.1
  - BUGFIX: fixed a string escaping issue that was breaking windows builds. Thanks @houfeng0923.
 
