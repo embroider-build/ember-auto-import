@@ -47,7 +47,8 @@
     "lodash-es": "*",
     "moment": "*",
     "qunit": "*",
-    "inner-lib2": "*"
+    "inner-lib2": "*",
+    "a-dependency": "*"
   },
   "engines": {
     "node": ">= 8.*"

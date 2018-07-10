@@ -9,6 +9,9 @@ module.exports = function(defaults) {
       alias: {
         'my-aliased-module': 'inner-lib2'
       }
+    },
+    babel: {
+      plugins: [require('ember-auto-import/babel-plugin')]
     }
   });
 

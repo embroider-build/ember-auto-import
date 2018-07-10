@@ -34,6 +34,42 @@ import { capitalize } from 'lodash-es';
 
 There is no step two. Works from both app code and test code.
 
+Dynamic Import
+------------------------------------------------------------------------------
+
+In addition to static top-level `import` statements, you can use dynamic `import()` to lazily load your dependencies. This can be great for reducing your initial bundle size.
+
+Dynamic import is currently a Stage 3 ECMA feature, so to use it there are a few extra setup steps:
+
+1. `npm install --save-dev babel-eslint`
+2. In your `.eslintrc.js` file, add
+
+        parser: 'babel-eslint'
+3. In your `ember-cli-build.js` file, enable the babel plugin provided by ember-auto-import:
+
+        let app = new EmberApp(defaults, {
+          babel: {
+            plugins: [ require('ember-auto-import/babel-plugin') ]
+          }
+        });
+
+Once you're setup, you can use dynamic `import()` and it will result in loading that particular dependency (and all its recursive dependencies) via a separate Javascript file at runtime. Here's an example of using dynamic import from within a `Route`, so that the extra library needed for the route is loaded at the same time the data is loaded:
+
+```js
+export default Route.extend({
+  model({ id }) {
+    return Promise.all([
+      fetch(`/data-for-chart/${id}`).then(response => response.json()),
+      import('highcharts').then(module => module.default)
+    ]).then(([ dataPoints, highcharts ]) => {
+      return { dataPoints, highcharts };
+    });
+  }
+});
+```
+
+If you're using custom deployment code, make sure it will include all the Javascript files in `dist/assets`, not just the default `app.js` and `vendor.js`.
+
 Customizing Build Behavior
 ------------------------------------------------------------------------------
 
