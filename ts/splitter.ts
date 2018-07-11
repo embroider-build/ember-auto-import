@@ -40,12 +40,12 @@ export default class Splitter {
 
   constructor(private options : SplitterOptions) {}
 
-  async depsForBundle(bundleName) {
+  async deps() {
     if (this.importsChanged()){
       this.lastDeps = await this.computeDeps(this.options.analyzers);
       debug('output %j', this.lastDeps);
     }
-    return this.lastDeps.get(bundleName);
+    return this.lastDeps;
   }
 
   private importsChanged() : boolean {

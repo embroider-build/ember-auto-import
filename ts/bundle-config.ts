@@ -9,6 +9,14 @@ const testsPattern = new RegExp(`^/?[^/]+/(tests|test-support)/`);
 // needs a given import will end up with that import.
 export const bundles = Object.freeze(['app', 'tests']);
 
+// Options we will pass to app.import when adding the bundle to the application.
+export function bundleOptions(name) {
+  if (name === 'tests') {
+    return { type: 'test' };
+  }
+  return {};
+}
+
 // For any relative path to a module in our application, return which bundle its
 // imports go into.
 export function bundleForPath(path) {

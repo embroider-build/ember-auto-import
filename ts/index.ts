@@ -25,8 +25,7 @@ module.exports = {
     let autoImport = AutoImport.lookup(this);
     this._super.included.apply(this, arguments);
     if (autoImport.isPrimary(this)){
-      this.import(`vendor/ember-auto-import/app.js`);
-      this.import(`vendor/ember-auto-import/tests.js`, { type: 'test' });
+      autoImport.appImports(this.import.bind(this));
     }
   },
 

@@ -3,27 +3,25 @@ import makeDebug from 'debug';
 import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
 import WebpackBundler from './webpack';
-import { join } from 'path';
 import Splitter, { BundleDependencies } from './splitter';
 import Package from './package';
-import { merge, isEqual } from 'lodash';
+import { merge } from 'lodash';
+import { bundles } from './bundle-config';
 
 const debug = makeDebug('ember-auto-import:bundler');
 
 export interface BundlerPluginOptions {
-  bundle: string;
   consoleWrite: (string) => void;
   environment: string;
   splitter: Splitter;
-  outputFile: string;
   packages: Set<Package>;
 }
 
 export interface BundlerHook {
-  build(modules: BundleDependencies): Promise<void>;
+  build(modules: Map<string, BundleDependencies>): Promise<void>;
 }
 
-export class BundlerPlugin extends Plugin {
+class BundlerPlugin extends Plugin {
   private lastDeps = null;
   private cachedBundlerHook;
 
@@ -39,7 +37,8 @@ export class BundlerPlugin extends Plugin {
       let extraWebpackConfig = merge({}, ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig));
       debug('extraWebpackConfig %j', extraWebpackConfig);
       this.cachedBundlerHook = new WebpackBundler(
-        join(this.outputPath, this.options.outputFile),
+        bundles,
+        this.outputPath,
         this.options.environment,
         extraWebpackConfig,
         this.options.consoleWrite
@@ -49,20 +48,12 @@ export class BundlerPlugin extends Plugin {
   }
 
   async build() {
-    let { splitter, bundle} = this.options;
-    let dependencies = await splitter.depsForBundle(bundle);
-    let moduleNames = {
-      staticImports: dependencies.staticImports.map(d => d.specifier),
-      dynamicImports: dependencies.dynamicImports.map(d => d.specifier)
-    };
-
-    if (isEqual(moduleNames, this.lastDeps)) {
-      return;
+    let { splitter } = this.options;
+    let bundleDeps = await splitter.deps();
+    if (bundleDeps !== this.lastDeps) {
+      await this.bundlerHook.build(bundleDeps);
+      this.lastDeps = bundleDeps;
     }
-
-    debug("building %s bundle with dependencies: %j", bundle, moduleNames);
-    await this.bundlerHook.build(dependencies);
-    this.lastDeps = moduleNames;
   }
 }
 
