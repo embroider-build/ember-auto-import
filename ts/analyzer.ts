@@ -17,6 +17,15 @@ import { join, dirname, extname } from 'path';
 import { isEqual, flatten } from 'lodash';
 import Package from './package';
 
+makeDebug.formatters.m = (modules) => {
+  return JSON.stringify(modules.map(m => ({
+    specifier: m.specifier,
+    path: m.path,
+    isDynamic: m.isDynamic,
+    package: m.package.name
+  })), null, 2);
+};
+
 const debug = makeDebug('ember-auto-import:analyzer');
 
 export interface Import {
@@ -46,7 +55,7 @@ export default class Analyzer extends Plugin {
   get imports() : Import[] {
     if (!this.modules) {
       this.modules = flatten([...this.paths.values()]);
-      debug("imports %j", this.modules);
+      debug("imports %m", this.modules);
     }
     return this.modules;
   }
