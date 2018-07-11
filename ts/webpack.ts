@@ -42,12 +42,16 @@ export default class WebpackBundler implements BundlerHook {
 
   constructor(outputFile, environment, extraWebpackConfig, private consoleWrite){
     quickTemp.makeOrRemake(this, 'stagingDir', 'ember-auto-import-webpack');
+    let filename = basename(outputFile, '.js');
     let config = {
       mode: environment === 'production' ? 'production' : 'development',
       entry: join(this.stagingDir, 'entry.js'),
       output: {
         path: dirname(outputFile),
-        filename: basename(outputFile),
+        filename: `${filename}.js`,
+        // this is chosen so we can easily find all the chunks when we want to
+        // consume them in fastboot
+        chunkFilename: `chunk.${filename}.[id].js`,
         libraryTarget: 'var',
         library: '__ember_auto_import__'
       }
