@@ -5,6 +5,7 @@ import quickTemp from 'quick-temp';
 import { writeFileSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
+import { ResolvedImport } from './splitter';
 
 registerHelper('js-string-escape', jsStringEscape);
 
@@ -38,14 +39,13 @@ export default class WebpackBundler {
     this.webpack = webpack(config);
   }
 
-  async build(modules){
+  async build(modules: ResolvedImport[]){
     this.writeEntryFile(modules);
     await this.runWebpack();
   }
 
   private writeEntryFile(modules){
-    let moduleList = Object.keys(modules).map(specifier => ({ specifier, entrypoint: modules[specifier].entrypoint }));
-    writeFileSync(join(this.stagingDir, 'entry.js'), entryTemplate({ modules: moduleList }));
+    writeFileSync(join(this.stagingDir, 'entry.js'), entryTemplate({ modules }));
   }
 
   private async runWebpack(){
