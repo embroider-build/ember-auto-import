@@ -11,6 +11,9 @@ registerHelper('js-string-escape', jsStringEscape);
 
 const entryTemplate = compile(`
 module.exports = (function(){
+  window.emberAutoImportDynamic = function(specifier) {
+    return Promise.resolve(window.require(specifier));
+  };
   {{#each modules as |module|}}
     window.define('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.entrypoint}}'); });
   {{/each}}
