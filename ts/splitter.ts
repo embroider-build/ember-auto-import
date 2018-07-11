@@ -1,8 +1,8 @@
 import makeDebug from 'debug';
-import Analyzer from './analyzer';
+import Analyzer, { Import } from './analyzer';
 import Package from './package';
 import { shallowEqual } from './util';
-import { flatMap } from 'lodash';
+import { flatten } from 'lodash';
 import {
   NodeJsInputFileSystem,
   CachedInputFileSystem,
@@ -16,6 +16,12 @@ const resolver = ResolverFactory.createResolver({
   mainFields: ['browser', 'module', 'main']
 });
 
+export interface ResolvedImport {
+  specifier: string;
+  entrypoint: string;
+  importedBy: Import[];
+}
+
 export interface SplitterOptions {
   // list of bundle names in priority order
   bundles: string[];
@@ -25,7 +31,7 @@ export interface SplitterOptions {
 
 export default class Splitter {
   private lastImports = null;
-  private lastDeps = null;
+  private lastDeps : Map<string, ResolvedImport[]> | null = null;
 
   constructor(private options : SplitterOptions) {}
 
@@ -34,7 +40,7 @@ export default class Splitter {
       this.lastDeps = await this.computeDeps(this.options.analyzers);
       debug('output %j', this.lastDeps);
     }
-    return this.lastDeps[bundleName];
+    return this.lastDeps.get(bundleName);
   }
 
   private importsChanged() : boolean {
@@ -45,30 +51,18 @@ export default class Splitter {
     }
   }
 
-  private flatImports(analyzers: Map<Analyzer, Package>) : { specifier: string, paths: string[], pkg: Package }[] {
-    return flatMap([...analyzers.entries()], ([analyzer, pkg]) => {
-      return Object.keys(analyzer.imports).map(specifier => {
-        return {
-          specifier,
-          paths: analyzer.imports[specifier],
-          pkg
-        };
-      });
-    });
-  }
-
   private async computeTargets(analyzers : Map<Analyzer, Package>){
-    let specifiers = Object.create(null);
-    let imports = this.flatImports(analyzers);
-    await Promise.all(imports.map(async ({ specifier, paths, pkg }) => {
+    let specifiers : Map<string, ResolvedImport>  = new Map();
+    let imports = flatten([...analyzers.keys()].map(analyzer => analyzer.imports));
+    await Promise.all(imports.map(async imp => {
 
-      if (specifier[0] === '.' || specifier[0] === '/') {
+      if (imp.specifier[0] === '.' || imp.specifier[0] === '/') {
         // we're only trying to identify imports of external NPM
         // packages, so relative imports are never relevant.
         return;
       }
 
-      let aliasedSpecifier = pkg.aliasFor(specifier);
+      let aliasedSpecifier = imp.package.aliasFor(imp.specifier);
       let parts = aliasedSpecifier.split('/');
       let packageName;
       if (aliasedSpecifier[0] === '@') {
@@ -77,29 +71,29 @@ export default class Splitter {
         packageName = parts[0];
       }
 
-      if (pkg.excludesDependency(packageName)){
+      if (imp.package.excludesDependency(packageName)){
         // This package has been explicitly excluded.
         return;
       }
 
-      if (!pkg.hasDependency(packageName) || pkg.isEmberAddonDependency(packageName)) {
+      if (!imp.package.hasDependency(packageName) || imp.package.isEmberAddonDependency(packageName)) {
         return;
       }
-      pkg.assertAllowedDependency(packageName);
+      imp.package.assertAllowedDependency(packageName);
 
-      let entrypoint = await resolveEntrypoint(aliasedSpecifier, pkg);
-      let seenAlready = specifiers[specifier];
+      let entrypoint = await resolveEntrypoint(aliasedSpecifier, imp.package);
+      let seenAlready = specifiers.get(imp.specifier);
       if (seenAlready){
         if (seenAlready.entrypoint !== entrypoint) {
-          throw new Error(`${pkg.name} and ${seenAlready.pkg.name} are using different versions of ${specifier} (${entrypoint} vs ${seenAlready.entrypoint})`);
+          throw new Error(`${imp.package.name} and ${seenAlready.importedBy[0].package.name} are using different versions of ${imp.specifier} (${entrypoint} vs ${seenAlready.entrypoint})`);
         }
-        seenAlready.paths = seenAlready.paths.concat(paths);
+        seenAlready.importedBy.push(imp);
       } else {
-        specifiers[specifier] = {
+        specifiers.set(imp.specifier, {
+          specifier: imp.specifier,
           entrypoint,
-          paths,
-          pkg
-        };
+          importedBy: [imp]
+        });
       }
     }));
     return specifiers;
@@ -107,38 +101,36 @@ export default class Splitter {
 
   private async computeDeps(analyzers) {
     let targets = await this.computeTargets(analyzers);
-    let deps = {};
+    let deps: Map<string, ResolvedImport[] > = new Map();
 
     this.options.bundles.forEach(bundleName => {
-      deps[bundleName] = {};
+      deps.set(bundleName, []);
     });
 
-    await Promise.all(Object.keys(targets).map(async specifier => {
-      let bundleName = this.chooseBundle(targets[specifier].paths);
-      deps[bundleName][specifier] = {
-        entrypoint: targets[specifier].entrypoint
-      };
-    }));
+    for (let target of targets.values()) {
+      let bundleName = this.chooseBundle(target.importedBy);
+      deps.get(bundleName).push(target);
+    }
 
     return deps;
   }
 
   // given that a module is imported by the given list of paths, which
   // bundle should it go in?
-  private chooseBundle(paths) {
+  private chooseBundle(importedBy: Import[]) {
     let usedInBundles = {};
-    paths.forEach(path => {
-      usedInBundles[this.bundleForPath(path)] = true;
+    importedBy.forEach(usage => {
+      usedInBundles[this.bundleForPath(usage)] = true;
     });
     return this.options.bundles.find(bundle => usedInBundles[bundle]);
   }
 
-  private bundleForPath(path) {
-    let bundleName = this.options.bundleForPath(path);
+  private bundleForPath(usage: Import) {
+    let bundleName = this.options.bundleForPath(usage.path);
     if (this.options.bundles.indexOf(bundleName) === -1) {
-      throw new Error(`bundleForPath("${path}") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.join(',')}`);
+      throw new Error(`bundleForPath("${usage.path}") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.join(',')}`);
     }
-    debug('bundleForPath("%s")=%s', path, bundleName);
+    debug('bundleForPath("%s")=%s', usage.path, bundleName);
     return bundleName;
   }
 }

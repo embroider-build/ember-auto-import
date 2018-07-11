@@ -14,9 +14,16 @@ import { parse } from 'babylon';
 import symlinkOrCopy from 'symlink-or-copy';
 import mkdirp from 'mkdirp';
 import { join, dirname, extname } from 'path';
-import { isEqual } from 'lodash';
+import { isEqual, flatten } from 'lodash';
+import Package from './package';
 
 const debug = makeDebug('ember-auto-import:analyzer');
+
+export interface Import {
+  path: string;
+  package: Package;
+  specifier: string;
+}
 
 /*
   Analyzer discovers and maintains info on all the module imports that
@@ -25,20 +32,20 @@ const debug = makeDebug('ember-auto-import:analyzer');
 export default class Analyzer extends Plugin {
   private previousTree = new FSTree();
   private parserOptions;
-  private modules = Object.create(null);
-  private paths = Object.create(null);
+  private modules: Import[] | null = [];
+  private paths: Map<string, Import[]> = new Map();
 
-  constructor(inputTree: Tree, babelOptions) {
+  constructor(inputTree: Tree, private pack: Package) {
     super([inputTree], {
       annotation: 'ember-auto-import-analyzer',
       persistentOutput: true
     });
-    this.parserOptions = this.buildParserOptions(babelOptions);
+    this.parserOptions = this.buildParserOptions(pack.babelOptions);
   }
 
-  get imports() {
+  get imports() : Import[] {
     if (!this.modules) {
-      this.modules = groupModules(this.paths);
+      this.modules = flatten([...this.paths.values()]);
       debug("imports %j", this.modules);
     }
     return this.modules;
@@ -89,24 +96,25 @@ export default class Analyzer extends Plugin {
 
   removeImports(relativePath) {
     debug(`removing imports for ${relativePath}`);
-    if (this.paths[relativePath]) {
-      if (this.paths[relativePath].length > 0){
+    let imports = this.paths.get(relativePath);
+    if (imports) {
+      if (imports.length > 0){
         this.modules = null; // invalidates cache
       }
-      delete this.paths[relativePath];
+      this.paths.delete(relativePath);
     }
   }
 
   updateImports(relativePath, source) {
     debug(`updating imports for ${relativePath}, ${source.length}`);
-    let newImports = this.parseImports(source);
-    if (!isEqual(this.paths[relativePath], newImports)) {
-      this.paths[relativePath] = newImports;
+    let newImports = this.parseImports(relativePath, source);
+    if (!isEqual(this.paths.get(relativePath), newImports)) {
+      this.paths.set(relativePath, newImports);
       this.modules = null; // invalidates cache
     }
   }
 
-  private parseImports(source) {
+  private parseImports(relativePath, source) : Import[] {
     let ast;
     try {
       ast = parse(source, this.parserOptions);
@@ -116,19 +124,28 @@ export default class Analyzer extends Plugin {
       }
       debug('Ignoring an unparseable file');
     }
-    if (ast){
-      // No need to recurse here, because we only deal with top-level static import declarations
-      return ast.program.body.map(node => {
-        if (node.type === 'ImportDeclaration'){
-          return node.source.value;
-        }
-        if (node.type === 'ExportNamedDeclaration' && node.source){
-          return node.source.value;
-        }
-      }).filter(Boolean);
-    } else {
-      return [];
+    let imports : Import[] = [];
+    if (!ast){
+      return imports;
     }
+    // No need to recurse here, because we only deal with top-level static import declarations
+    for (let node of ast.program.body) {
+      let specifier : string|null;
+      if (node.type === 'ImportDeclaration'){
+        specifier = node.source.value;
+      }
+      if (node.type === 'ExportNamedDeclaration' && node.source){
+        specifier = node.source.value;
+      }
+      if (specifier) {
+        imports.push({
+          specifier,
+          path: relativePath,
+          package: this.pack
+        });
+      }
+    }
+    return imports;
   }
 }
 
@@ -148,17 +165,4 @@ function copy(sourcePath, destPath) {
     }
     symlinkOrCopy.sync(sourcePath, destPath);
   }
-}
-
-function groupModules(paths) {
-  let targets = Object.create(null);
-  Object.keys(paths).forEach(inPath => {
-    paths[inPath].forEach(module => {
-      if (!targets[module]) {
-        targets[module] = [];
-      }
-      targets[module].push(inPath);
-    });
-  });
-  return targets;
 }

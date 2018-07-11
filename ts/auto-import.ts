@@ -41,7 +41,7 @@ export default class AutoImport{
     analyze(tree, appOrAddon){
         let pack = Package.lookup(appOrAddon);
         this.packages.add(pack);
-        let analyzer = new Analyzer(debugTree(tree, `preprocessor:input`), pack.babelOptions);
+        let analyzer = new Analyzer(debugTree(tree, `preprocessor:input`), pack);
         this.analyzers.set(analyzer, pack);
         this.bundlers.forEach(bundler => bundler.unsafeConnect(analyzer));
         return analyzer;

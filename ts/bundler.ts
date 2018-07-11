@@ -48,7 +48,7 @@ export class BundlerPlugin extends Plugin {
   async build() {
     let { splitter, bundle} = this.options;
     let dependencies = await splitter.depsForBundle(bundle);
-    let moduleNames = Object.keys(dependencies);
+    let moduleNames = dependencies.map(d => d.specifier);
 
     if (shallowEqual(moduleNames, this.lastDeps)) {
       return;
