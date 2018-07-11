@@ -4,10 +4,9 @@ import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
 import WebpackBundler from './webpack';
 import { join } from 'path';
-import Splitter from './splitter';
-import { shallowEqual } from './util';
+import Splitter, { BundleDependencies } from './splitter';
 import Package from './package';
-import { merge } from 'lodash';
+import { merge, isEqual } from 'lodash';
 
 const debug = makeDebug('ember-auto-import:bundler');
 
@@ -18,6 +17,10 @@ export interface BundlerPluginOptions {
   splitter: Splitter;
   outputFile: string;
   packages: Set<Package>;
+}
+
+export interface BundlerHook {
+  build(modules: BundleDependencies): Promise<void>;
 }
 
 export class BundlerPlugin extends Plugin {
@@ -31,7 +34,7 @@ export class BundlerPlugin extends Plugin {
     super([placeholderTree], { persistentOutput: true });
   }
 
-  get bundlerHook(){
+  get bundlerHook() : BundlerHook {
     if (!this.cachedBundlerHook){
       let extraWebpackConfig = merge({}, ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig));
       debug('extraWebpackConfig %j', extraWebpackConfig);
@@ -48,9 +51,12 @@ export class BundlerPlugin extends Plugin {
   async build() {
     let { splitter, bundle} = this.options;
     let dependencies = await splitter.depsForBundle(bundle);
-    let moduleNames = dependencies.map(d => d.specifier);
+    let moduleNames = {
+      staticImports: dependencies.staticImports.map(d => d.specifier),
+      dynamicImports: dependencies.dynamicImports.map(d => d.specifier)
+    };
 
-    if (shallowEqual(moduleNames, this.lastDeps)) {
+    if (isEqual(moduleNames, this.lastDeps)) {
       return;
     }
 

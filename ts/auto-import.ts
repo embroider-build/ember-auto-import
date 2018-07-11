@@ -4,9 +4,10 @@ import MergeTrees from 'broccoli-merge-trees';
 import Analyzer from './analyzer';
 import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
+import Funnel from 'broccoli-funnel';
+import { bundles, bundleForPath } from './bundle-config';
 
 const debugTree = buildDebugCallback('ember-auto-import');
-const testsPattern = new RegExp(`^/?[^/]+/(tests|test-support)/`);
 const protocol = '__ember_auto_import_protocol_v1__';
 
 export default class AutoImport{
@@ -16,6 +17,7 @@ export default class AutoImport{
     private consoleWrite: (string) => void;
     private analyzers: Map<Analyzer, Package> = new Map();
     private bundlers: Bundler[];
+    private tree;
 
     static lookup(appOrAddon) : AutoImport {
         if (!global[protocol]) {
@@ -52,40 +54,40 @@ export default class AutoImport{
         // decides which ones to include in which bundles
         let splitter = new Splitter({
             analyzers: this.analyzers,
-            bundles: ['app', 'tests'],
-            bundleForPath(path) {
-                if (testsPattern.test(path)) {
-                    return 'tests';
-                } else {
-                    return 'app';
-                }
-            }
+            bundles,
+            bundleForPath
         });
 
         // The Bundlers ask the splitter for deps they should include and
         // are responsible for packaging those deps up.
-
-        let appBundler = new Bundler({
-          outputFile: `ember-auto-import/app.js`,
-          splitter,
-          bundle: 'app',
-          environment: this.env,
-          packages: this.packages,
-          consoleWrite: this.consoleWrite
-        });
-
-        let testsBundler = new Bundler({
-          outputFile: `ember-auto-import/test.js`,
-          splitter,
-          bundle: 'tests',
-          environment: this.env,
-          packages: this.packages,
-          consoleWrite: this.consoleWrite
-        });
-        return [appBundler, testsBundler];
+        return bundles.map(bundle =>
+          new Bundler({
+            outputFile: `ember-auto-import/${bundle}.js`,
+            splitter,
+            bundle,
+            environment: this.env,
+            packages: this.packages,
+            consoleWrite: this.consoleWrite
+          })
+        );
     }
 
-    treeForVendor(tree){
-        return new MergeTrees([tree].concat(this.bundlers.map(b => b.tree)).filter(Boolean));
+    private makeTree() {
+      if (!this.tree) {
+        this.tree = debugTree(new MergeTrees(this.bundlers.map(b => b.tree)), 'output');
+      }
+      return this.tree;
+    }
+
+    treeForVendor(){
+      return this.makeTree();
+    }
+
+    treeForPublic() {
+      return debugTree(new Funnel(this.makeTree(), {
+        srcDir: 'ember-auto-import',
+        destDir: 'assets',
+        exclude: bundles.map(b => `${b}.js`)
+      }), 'public');
     }
 }

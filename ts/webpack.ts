@@ -5,22 +5,38 @@ import quickTemp from 'quick-temp';
 import { writeFileSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
-import { ResolvedImport } from './splitter';
+import { BundleDependencies } from './splitter';
+import { BundlerHook } from './bundler';
 
 registerHelper('js-string-escape', jsStringEscape);
 
 const entryTemplate = compile(`
+{{! locate the webpack lazy loaded chunks relative to our vendor script }}
+{{#if dynamicImports}}
+if (typeof document !== 'undefined') {
+__webpack_public_path__ = Array.prototype.slice.apply(document.querySelectorAll('script'))
+  .find(function(s){ return /\\/vendor/.test(s.src); })
+  .src.replace(/\\/vendor.*/, '/');
+}
+{{/if}}
+
 module.exports = (function(){
-  window.emberAutoImportDynamic = function(specifier) {
-    return Promise.resolve(window.require(specifier));
+  var w = window;
+  var d = w.define;
+  var r = w.require;
+  w.emberAutoImportDynamic = function(specifier) {
+    return r('_eai_dyn_' + specifier);
   };
-  {{#each modules as |module|}}
-    window.define('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.entrypoint}}'); });
+  {{#each staticImports as |module|}}
+    d('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.entrypoint}}'); });
+  {{/each}}
+  {{#each dynamicImports as |module|}}
+    d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.entrypoint}}'); });
   {{/each}}
 })();
 `);
 
-export default class WebpackBundler {
+export default class WebpackBundler implements BundlerHook {
   private stagingDir;
   private webpack;
 
@@ -42,13 +58,13 @@ export default class WebpackBundler {
     this.webpack = webpack(config);
   }
 
-  async build(modules: ResolvedImport[]){
+  async build(modules: BundleDependencies){
     this.writeEntryFile(modules);
     await this.runWebpack();
   }
 
   private writeEntryFile(modules){
-    writeFileSync(join(this.stagingDir, 'entry.js'), entryTemplate({ modules }));
+    writeFileSync(join(this.stagingDir, 'entry.js'), entryTemplate(modules));
   }
 
   private async runWebpack(){
