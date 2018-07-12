@@ -2,7 +2,7 @@ import webpack from 'webpack';
 import { join } from 'path';
 import { merge } from 'lodash';
 import quickTemp from 'quick-temp';
-import { writeFileSync, readFileSync, unlinkSync, readdirSync } from 'fs';
+import { writeFileSync, readFileSync, readdirSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies } from './splitter';
@@ -75,8 +75,8 @@ export default class WebpackBundler implements BundlerHook {
       this.writeEntryFile(bundle, deps);
     }
     let stats = await this.runWebpack();
-    this.aggregateEntryChunks(stats);
-    this.aggregateLazyChunks(stats);
+    let entryChunks = this.aggregateEntryChunks(stats);
+    this.aggregateLazyChunks(stats, entryChunks);
   }
 
   // We're allowing webpack to split even our entrypoint Javascript into
@@ -86,28 +86,29 @@ export default class WebpackBundler implements BundlerHook {
   // entrypoint chunks for each of those into the respective standard Ember
   // Javascript files, which is in turn easier to do if we aggregate them here.
   private aggregateEntryChunks(stats) {
+    let seen = new Set();
     for (let id of Object.keys(stats.entrypoints)) {
       let entrypoint = stats.entrypoints[id];
       let chunks = entrypoint.chunks.map(chunkId => stats.chunks.find(c => c.id === chunkId));
       chunks.sort(entryFirst);
       let chunkContents = chunks.map(chunk => {
         let filename = join(stats.outputPath, chunk.files[0]);
-        let contents = readFileSync(filename, 'utf8');
-        unlinkSync(filename);
-        return contents;
+        seen.add(chunk.files[0]);
+        return readFileSync(filename, 'utf8');
       });
       writeFileSync(join(stats.outputPath, `combined-${id}.js`), chunkContents.join("\n"), 'utf8');
     }
+    return seen;
   }
 
   // Lazy chunks are loaded normally in the browser app, just as webpack
   // intends. But in Fastboot we load them all eagerly once when the server is
   // starting up, which is easier to do if we have a file available that
   // concatenates them all.
-  private aggregateLazyChunks(stats) {
+  private aggregateLazyChunks(stats, entryChunks) {
     let destDir = stats.outputPath;
     let lazyChunks = readdirSync(destDir)
-      .filter(filename => !/^combined-/.test(filename))
+      .filter(filename => !entryChunks.has(filename) && !/^combined-/.test(filename))
       .map(filename => readFileSync(join(destDir, filename)));
     writeFileSync(join(destDir, 'auto-import-fastboot.js'), lazyChunks.join("\n"));
   }
