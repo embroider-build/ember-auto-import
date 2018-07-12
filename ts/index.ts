@@ -25,17 +25,33 @@ module.exports = {
     let autoImport = AutoImport.lookup(this);
     this._super.included.apply(this, arguments);
     if (autoImport.isPrimary(this)){
-      this.import(`vendor/ember-auto-import/app.js`);
-      this.import(`vendor/ember-auto-import/test.js`, { type: 'test' });
+      autoImport.appImports(this.import.bind(this));
     }
   },
 
   treeForVendor(tree) {
     let autoImport = AutoImport.lookup(this);
     if (autoImport.isPrimary(this)){
-      return autoImport.treeForVendor(tree);
+      return autoImport.treeForVendor();
     } else {
       return tree;
     }
+  },
+
+  treeForPublic(tree) {
+    let autoImport = AutoImport.lookup(this);
+    if (autoImport.isPrimary(this)){
+      return autoImport.treeForPublic();
+    } else {
+      return tree;
+    }
+  },
+
+  updateFastBootManifest(manifest) {
+    let autoImport = AutoImport.lookup(this);
+    if (autoImport.isPrimary(this)) {
+      manifest.vendorFiles.push('assets/auto-import-fastboot.js');
+    }
+    return manifest;
   }
 };

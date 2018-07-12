@@ -3,24 +3,25 @@ import makeDebug from 'debug';
 import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
 import WebpackBundler from './webpack';
-import { join } from 'path';
-import Splitter from './splitter';
-import { shallowEqual } from './util';
+import Splitter, { BundleDependencies } from './splitter';
 import Package from './package';
 import { merge } from 'lodash';
+import { bundles } from './bundle-config';
 
 const debug = makeDebug('ember-auto-import:bundler');
 
 export interface BundlerPluginOptions {
-  bundle: string;
   consoleWrite: (string) => void;
   environment: string;
   splitter: Splitter;
-  outputFile: string;
   packages: Set<Package>;
 }
 
-export class BundlerPlugin extends Plugin {
+export interface BundlerHook {
+  build(modules: Map<string, BundleDependencies>): Promise<void>;
+}
+
+class BundlerPlugin extends Plugin {
   private lastDeps = null;
   private cachedBundlerHook;
 
@@ -31,12 +32,13 @@ export class BundlerPlugin extends Plugin {
     super([placeholderTree], { persistentOutput: true });
   }
 
-  get bundlerHook(){
+  get bundlerHook() : BundlerHook {
     if (!this.cachedBundlerHook){
       let extraWebpackConfig = merge({}, ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig));
       debug('extraWebpackConfig %j', extraWebpackConfig);
       this.cachedBundlerHook = new WebpackBundler(
-        join(this.outputPath, this.options.outputFile),
+        bundles,
+        this.outputPath,
         this.options.environment,
         extraWebpackConfig,
         this.options.consoleWrite
@@ -46,17 +48,12 @@ export class BundlerPlugin extends Plugin {
   }
 
   async build() {
-    let { splitter, bundle} = this.options;
-    let dependencies = await splitter.depsForBundle(bundle);
-    let moduleNames = dependencies.map(d => d.specifier);
-
-    if (shallowEqual(moduleNames, this.lastDeps)) {
-      return;
+    let { splitter } = this.options;
+    let bundleDeps = await splitter.deps();
+    if (bundleDeps !== this.lastDeps) {
+      await this.bundlerHook.build(bundleDeps);
+      this.lastDeps = bundleDeps;
     }
-
-    debug("building %s bundle with dependencies: %j", bundle, moduleNames);
-    await this.bundlerHook.build(dependencies);
-    this.lastDeps = moduleNames;
   }
 }
 

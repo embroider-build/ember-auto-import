@@ -46,6 +46,14 @@ for package in "sample-addon" "sample-merged" "sample-direct"; do
     popd > /dev/null
 done
 
+# These packages get to depend on a-dependency
+for package in "sample-direct"; do
+    pushd ./test-apps/$package/node_modules > /dev/null
+    rm -rf ./a-dependency
+    ln -s ../../a-dependency ./a-dependency
+    popd > /dev/null
+done
+
 # sample-conflict is supposed to have an extra copy of inner-lib
 rm -rf ./test-apps/sample-conflict/node_modules/inner-lib
 cp -r ./test-apps/inner-lib ./test-apps/sample-conflict/node_modules/inner-lib

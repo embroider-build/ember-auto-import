@@ -2,7 +2,7 @@ import makeDebug from 'debug';
 import Analyzer, { Import } from './analyzer';
 import Package from './package';
 import { shallowEqual } from './util';
-import { flatten } from 'lodash';
+import { flatten, partition } from 'lodash';
 import {
   NodeJsInputFileSystem,
   CachedInputFileSystem,
@@ -22,25 +22,30 @@ export interface ResolvedImport {
   importedBy: Import[];
 }
 
+export interface BundleDependencies {
+  staticImports: ResolvedImport[];
+  dynamicImports: ResolvedImport[];
+}
+
 export interface SplitterOptions {
   // list of bundle names in priority order
-  bundles: string[];
+  bundles: ReadonlyArray<string>;
   analyzers: Map<Analyzer, Package>;
   bundleForPath: (string) => string;
 }
 
 export default class Splitter {
   private lastImports = null;
-  private lastDeps : Map<string, ResolvedImport[]> | null = null;
+  private lastDeps : Map<string, BundleDependencies> | null = null;
 
   constructor(private options : SplitterOptions) {}
 
-  async depsForBundle(bundleName) {
+  async deps() {
     if (this.importsChanged()){
       this.lastDeps = await this.computeDeps(this.options.analyzers);
       debug('output %j', this.lastDeps);
     }
-    return this.lastDeps.get(bundleName);
+    return this.lastDeps;
   }
 
   private importsChanged() : boolean {
@@ -101,15 +106,22 @@ export default class Splitter {
 
   private async computeDeps(analyzers) {
     let targets = await this.computeTargets(analyzers);
-    let deps: Map<string, ResolvedImport[] > = new Map();
+    let deps: Map<string, BundleDependencies > = new Map();
 
     this.options.bundles.forEach(bundleName => {
-      deps.set(bundleName, []);
+      deps.set(bundleName, { staticImports: [], dynamicImports: [] });
     });
 
     for (let target of targets.values()) {
-      let bundleName = this.chooseBundle(target.importedBy);
-      deps.get(bundleName).push(target);
+      let [ dynamicUses, staticUses ] = partition(target.importedBy, imp => imp.isDynamic);
+      if (staticUses.length > 0) {
+        let bundleName = this.chooseBundle(staticUses);
+        deps.get(bundleName).staticImports.push(target);
+      }
+      if (dynamicUses.length > 0) {
+        let bundleName = this.chooseBundle(dynamicUses);
+        deps.get(bundleName).dynamicImports.push(target);
+      }
     }
 
     return deps;

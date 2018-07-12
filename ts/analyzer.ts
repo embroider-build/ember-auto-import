@@ -32,6 +32,7 @@ export interface Import {
   path: string;
   package: Package;
   specifier: string;
+  isDynamic: boolean;
 }
 
 /*
@@ -137,6 +138,19 @@ export default class Analyzer extends Plugin {
     if (!ast){
       return imports;
     }
+
+    forEachNode(ast.program.body, node => {
+      if (node.type === 'CallExpression' && node.callee && node.callee.type === 'Import') {
+        // it's a syntax error to have anything other than exactly one
+        // argument, so we can just assume this exists
+        let argument = node.arguments[0];
+        if (argument.type !== 'StringLiteral') {
+          throw new Error('ember-auto-import only supports dynamic import() with a string literal argument.');
+        }
+        imports.push({ isDynamic: true, specifier: argument.value, path: relativePath, package: this.pack });
+      }
+    });
+
     // No need to recurse here, because we only deal with top-level static import declarations
     for (let node of ast.program.body) {
       let specifier : string|null;
@@ -148,6 +162,7 @@ export default class Analyzer extends Plugin {
       }
       if (specifier) {
         imports.push({
+          isDynamic: false,
           specifier,
           path: relativePath,
           package: this.pack
@@ -173,5 +188,25 @@ function copy(sourcePath, destPath) {
       // swallow the error
     }
     symlinkOrCopy.sync(sourcePath, destPath);
+  }
+}
+
+const skipKeys = {
+  'loc': true,
+  'type': true,
+  'start': true,
+  'end': true
+};
+
+function forEachNode(node, visit) {
+  visit(node);
+  for (let key in node) {
+    if (skipKeys[key]) {
+      continue;
+    }
+    let child = node[key];
+    if (child && typeof child === 'object' && (child.type || Array.isArray(child))) {
+      forEachNode(child, visit);
+    }
   }
 }

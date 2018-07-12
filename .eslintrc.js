@@ -1,5 +1,6 @@
 module.exports = {
   root: true,
+  parser: 'babel-eslint',
   parserOptions: {
     ecmaVersion: 2017,
     sourceType: 'module'
@@ -27,7 +28,8 @@ module.exports = {
         'config/**/*.js',
         'tests/dummy/config/**/*.js',
         'lib/**/*.js',
-        'fastboot-tests/**/*.js'
+        'fastboot-tests/**/*.js',
+        'babel-plugin/**.js'
       ],
       excludedFiles: [
         'addon/**',
