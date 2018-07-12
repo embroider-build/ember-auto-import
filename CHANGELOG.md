@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.1
+ - BUGFIX: the previous release accidentally broke interactive rebuilds!
+
 ## 1.2.0
  - ENHANCEMENT: dynamic import(). See https://github.com/ef4/ember-auto-import#dynamic-import
 
