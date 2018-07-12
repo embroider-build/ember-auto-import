@@ -86,6 +86,8 @@ export default class AutoImport{
     }
 
     treeForVendor(tree){
-        return new MergeTrees([tree].concat(this.bundlers.map(b => b.tree)).filter(Boolean));
+        let trees = [tree].concat(this.bundlers.map(b => b.tree)).filter(Boolean);
+
+        return debugTree(new MergeTrees(trees), 'vendor:output');
     }
 }
