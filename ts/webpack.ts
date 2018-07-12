@@ -2,7 +2,7 @@ import webpack from 'webpack';
 import { join } from 'path';
 import { merge } from 'lodash';
 import quickTemp from 'quick-temp';
-import { writeFileSync, readFileSync, unlinkSync } from 'fs';
+import { writeFileSync, readFileSync, unlinkSync, readdirSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies } from './splitter';
@@ -75,6 +75,17 @@ export default class WebpackBundler implements BundlerHook {
       this.writeEntryFile(bundle, deps);
     }
     let stats = await this.runWebpack();
+    this.aggregateEntryChunks(stats);
+    this.aggregateLazyChunks(stats);
+  }
+
+  // We're allowing webpack to split even our entrypoint Javascript into
+  // multiple chunks. That gives it the maximum flexibility to break shared
+  // things up between entrypoints. But in practice right now, our entrypoints
+  // are just "app" and "tests", and it's easier to just stick all the
+  // entrypoint chunks for each of those into the respective standard Ember
+  // Javascript files, which is in turn easier to do if we aggregate them here.
+  private aggregateEntryChunks(stats) {
     for (let id of Object.keys(stats.entrypoints)) {
       let entrypoint = stats.entrypoints[id];
       let chunks = entrypoint.chunks.map(chunkId => stats.chunks.find(c => c.id === chunkId));
@@ -87,6 +98,18 @@ export default class WebpackBundler implements BundlerHook {
       });
       writeFileSync(join(stats.outputPath, `combined-${id}.js`), chunkContents.join("\n"), 'utf8');
     }
+  }
+
+  // Lazy chunks are loaded normally in the browser app, just as webpack
+  // intends. But in Fastboot we load them all eagerly once when the server is
+  // starting up, which is easier to do if we have a file available that
+  // concatenates them all.
+  private aggregateLazyChunks(stats) {
+    let destDir = stats.outputPath;
+    let lazyChunks = readdirSync(destDir)
+      .filter(filename => !/^combined-/.test(filename))
+      .map(filename => readFileSync(join(destDir, filename)));
+    writeFileSync(join(destDir, 'auto-import-fastboot.js'), lazyChunks.join("\n"));
   }
 
   private writeEntryFile(name, deps){
