@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.0
+ - ENHANCEMENT: dynamic import(). See https://github.com/ef4/ember-auto-import#dynamic-import
+
 ## 1.1.0
  - BUGFIX: play nicer with other preprocessors by preserving non-JS files in the trees we analyze.
  - ENHANCEMENT: add an "alias" config option for redirecting imports from one module to another.
