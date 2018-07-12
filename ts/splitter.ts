@@ -43,7 +43,7 @@ export default class Splitter {
   async deps() {
     if (this.importsChanged()){
       this.lastDeps = await this.computeDeps(this.options.analyzers);
-      debug('output %j', this.lastDeps);
+      debug('output %s', new LazyPrintDeps(this.lastDeps));
     }
     return this.lastDeps;
   }
@@ -157,4 +157,35 @@ async function resolveEntrypoint(specifier, pkg) : Promise<string> {
       }
     });
   }) as Promise<string>;
+}
+
+class LazyPrintDeps {
+  constructor(private deps: Map<string, BundleDependencies>){}
+
+  private describeResolvedImport(imp : ResolvedImport) {
+    return {
+      specifier: imp.specifier,
+      entrypoint: imp.entrypoint,
+      importedBy: imp.importedBy.map(this.describeImport.bind(this))
+    };
+  }
+
+  private describeImport(imp: Import) {
+    return {
+      package: imp.package.name,
+      path: imp.path,
+      isDynamic: imp.isDynamic
+    };
+  }
+
+  toString() {
+    let output = {};
+    for (let [bundle, { staticImports, dynamicImports }] of this.deps.entries()) {
+      output[bundle] = {
+        "static": staticImports.map(this.describeResolvedImport.bind(this)),
+        "dynamic": dynamicImports.map(this.describeResolvedImport.bind(this))
+      };
+    }
+    return JSON.stringify(output, null, 2);
+  }
 }
