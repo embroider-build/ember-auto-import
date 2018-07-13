@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.2
+ - BUGFIX: some chunk files could appear in the final built app even though they weren't needed. Harmless, but fixed.
+ - ENHANCEMENT: reload package.json during development so you don't need to restart ember-cli after adding new dependencies.
+ - ENHANCEMENT: automatically configure production asset fingerprinting so it doesn't interfere with dynamic chunk loading.
+ - ENHANCEMENT: add an env var that causes webpack's console output to be visible.
+
 ## 1.2.1
  - BUGFIX: the previous release accidentally broke interactive rebuilds!
 
