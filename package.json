@@ -38,6 +38,7 @@
     "debug": "^3.1.0",
     "ember-cli-babel": "^6.6.0",
     "enhanced-resolve": "^4.0.0",
+    "fs-extra": "^6.0.1",
     "fs-tree-diff": "^0.5.7",
     "handlebars": "^4.0.11",
     "js-string-escape": "^1.0.1",
@@ -51,6 +52,7 @@
     "webpack": "^4.12.0"
   },
   "devDependencies": {
+    "@types/fs-extra": "^5.0.4",
     "@types/lodash": "^4.14.110",
     "@types/node": "^10.3.4",
     "babel-eslint": "^8.2.5",

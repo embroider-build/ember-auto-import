@@ -80,7 +80,7 @@ export default class AutoImport{
 
     treeForPublic() {
       return debugTree(new Funnel(this.makeTree(), {
-        srcDir: 'ember-auto-import',
+        srcDir: 'ember-auto-import/lazy',
         destDir: 'assets',
         // these files were already app.imported from treeForVendor. Anything
         // else that remains is a lazy chunk.
@@ -90,7 +90,7 @@ export default class AutoImport{
 
     appImports(importFn) {
       for (let bundle of bundles) {
-        importFn(`vendor/ember-auto-import/combined-${bundle}.js`, bundleOptions(bundle));
+        importFn(`vendor/ember-auto-import/entry/${bundle}.js`, bundleOptions(bundle));
       }
     }
 }
