@@ -137,6 +137,8 @@ Debugging Tips
 
 Set the environment variable `DEBUG="ember-auto-import:*"` to see debug logging during the build.
 
+To see Webpack's console output, set the environment variable `AUTO_IMPORT_VERBOSE=true`.
+
 Credit / History
 ------------------------------------------------------------------------------
 

@@ -136,7 +136,7 @@ export default class WebpackBundler implements BundlerHook {
           reject(new Error('webpack returned errors to ember-auto-import'));
           return;
         }
-        if (stats.hasWarnings()) {
+        if (stats.hasWarnings() || process.env.AUTO_IMPORT_VERBOSE) {
           this.consoleWrite(stats.toString());
         }
         resolve(stats.toJson());
