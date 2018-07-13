@@ -25,7 +25,7 @@ module.exports = {
     let autoImport = AutoImport.lookup(this);
     this._super.included.apply(this, arguments);
     if (autoImport.isPrimary(this)){
-      autoImport.appImports(this.import.bind(this));
+      autoImport.included(this);
     }
   },
 

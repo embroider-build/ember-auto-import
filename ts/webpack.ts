@@ -54,9 +54,7 @@ export default class WebpackBundler implements BundlerHook {
       output: {
         path: join(this.outputDir, 'webpack-out'),
         filename: `[id].js`,
-        // this is chosen so we can easily find all the chunks when we want to
-        // consume them in fastboot
-        chunkFilename: `chunk.[id].js`,
+        chunkFilename: `chunk.[chunkhash].js`,
         libraryTarget: 'var',
         library: '__ember_auto_import__'
       },

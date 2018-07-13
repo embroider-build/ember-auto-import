@@ -81,16 +81,29 @@ export default class AutoImport{
     treeForPublic() {
       return debugTree(new Funnel(this.makeTree(), {
         srcDir: 'ember-auto-import/lazy',
-        destDir: 'assets',
-        // these files were already app.imported from treeForVendor. Anything
-        // else that remains is a lazy chunk.
-        exclude: bundles.map(b => `combined-${b}.js`)
+        destDir: 'assets'
       }), 'public');
     }
 
-    appImports(importFn) {
+    included(addonInstance) {
       for (let bundle of bundles) {
-        importFn(`vendor/ember-auto-import/entry/${bundle}.js`, bundleOptions(bundle));
+        addonInstance.import(`vendor/ember-auto-import/entry/${bundle}.js`, bundleOptions(bundle));
+      }
+      this.configureFingerprints(addonInstance._findHost());
+    }
+
+    // We need to disable fingerprinting of chunks, because (1) they already
+    // have their own webpack-generated hashes and (2) the runtime loader code
+    // can't easily be told about broccoli-asset-rev's hashes.
+    private configureFingerprints(host) {
+      let pattern = "assets/chunk.*.js";
+      if (!host.options.fingerprint) {
+        host.options.fingerprint = {};
+      }
+      if (!host.options.fingerprint.hasOwnProperty('exclude')) {
+        host.options.fingerprint.exclude = [pattern];
+      } else {
+        host.options.fingerprint.exclude.push(pattern);
       }
     }
 }
