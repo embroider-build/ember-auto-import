@@ -4,7 +4,7 @@ import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
 import WebpackBundler from './webpack';
 import Splitter, { BundleDependencies } from './splitter';
-import Package from './package';
+import Package, { reloadDevPackages } from './package';
 import { merge } from 'lodash';
 import { bundles } from './bundle-config';
 
@@ -48,6 +48,7 @@ class BundlerPlugin extends Plugin {
   }
 
   async build() {
+    reloadDevPackages();
     let { splitter } = this.options;
     let bundleDeps = await splitter.deps();
     if (bundleDeps !== this.lastDeps) {

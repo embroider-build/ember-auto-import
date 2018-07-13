@@ -1,6 +1,13 @@
 import resolve from 'resolve';
+import { join } from 'path';
+import { readFileSync } from 'fs';
 
 const cache : WeakMap<any, Package> = new WeakMap();
+let pkgGeneration = 0;
+
+export function reloadDevPackages() {
+  pkgGeneration++;
+}
 
 export default class Package {
     public name: string;
@@ -8,9 +15,10 @@ export default class Package {
     public isAddon: boolean;
     public babelOptions;
     private autoImportOptions;
-    private deps;
-    private nonDevDeps;
     private isAddonCache = new Map<string, boolean>();
+    private isDeveloping: boolean;
+    private pkgGeneration: number;
+    private pkgCache;
 
     static lookup(appOrAddon){
         if (!cache.has(appOrAddon)){
@@ -23,6 +31,7 @@ export default class Package {
         this.name = appOrAddon.parent.pkg.name;
         this.root = appOrAddon.parent.root;
         this.isAddon = appOrAddon.parent !== appOrAddon.project;
+        this.isDeveloping = !this.isAddon || this.root === appOrAddon.project.root;
 
         // This is the per-package options from ember-cli
         let options = this.isAddon ? appOrAddon.parent.options : appOrAddon.app.options;
@@ -32,9 +41,8 @@ export default class Package {
 
         this.babelOptions = this.buildBabelOptions(appOrAddon, options);
 
-        let pkg = appOrAddon.parent.pkg;
-        this.deps = Object.assign({}, pkg.dependencies, pkg.devDependencies);
-        this.nonDevDeps = pkg.dependencies;
+        this.pkgCache = appOrAddon.parent.pkg;
+        this.pkgGeneration = pkgGeneration;
     }
 
     private buildBabelOptions(instance, options){
@@ -52,6 +60,16 @@ export default class Package {
         return babelOptions;
     }
 
+    private get pkg() {
+      if (!this.pkgCache || (this.isDeveloping && pkgGeneration !== this.pkgGeneration)) {
+        // avoiding `require` here because we don't want to go through the
+        // require cache.
+        this.pkgCache = JSON.parse(readFileSync(join(this.root, 'package.json'), 'utf-8'));
+        this.pkgGeneration = pkgGeneration;
+      }
+      return this.pkgCache;
+    }
+
     get namespace() : string {
         // This namespacing ensures we can be used by multiple packages as
         // well as by an addon and its dummy app simultaneously
@@ -59,7 +77,14 @@ export default class Package {
     }
 
     hasDependency(name) : boolean {
-        return Boolean(this.deps[name]);
+      let pkg = this.pkg;
+      return (pkg.dependencies && Boolean(pkg.dependencies[name])) ||
+        (pkg.devDependencies && Boolean(pkg.devDependencies[name]));
+    }
+
+    private hasNonDevDependency(name): boolean {
+      let pkg = this.pkg;
+      return pkg.dependencies && Boolean(pkg.dependencies[name]);
     }
 
     isEmberAddonDependency(name) : boolean {
@@ -72,7 +97,7 @@ export default class Package {
     }
 
     assertAllowedDependency(name) {
-      if (this.isAddon && !this.nonDevDeps[name]) {
+      if (this.isAddon && !this.hasNonDevDependency(name)) {
         throw new Error(`${this.name} tried to import "${name}" from addon code, but "${name}" is a devDependency. You may need to move it into dependencies.`);
       }
     }
