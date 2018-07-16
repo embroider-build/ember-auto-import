@@ -9,5 +9,6 @@ cd test-apps/sample-addon    && yarn test
 cd test-apps/sample-failure  && yarn test
 cd test-apps/sample-merged   && yarn test
 cd test-apps/sample-conflict && yarn test
+cd test-apps/sample-noconflict && yarn test
 yarn test:root
 EOF

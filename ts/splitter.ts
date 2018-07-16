@@ -8,6 +8,8 @@ import {
   CachedInputFileSystem,
   ResolverFactory
 } from 'enhanced-resolve';
+import pkgUp from 'pkg-up';
+import { dirname } from 'path';
 
 const debug = makeDebug('ember-auto-import:splitter');
 const resolver = ResolverFactory.createResolver({
@@ -37,6 +39,7 @@ export interface SplitterOptions {
 export default class Splitter {
   private lastImports = null;
   private lastDeps : Map<string, BundleDependencies> | null = null;
+  private packageVersions : Map<string,string> = new Map();
 
   constructor(private options : SplitterOptions) {}
 
@@ -89,9 +92,7 @@ export default class Splitter {
       let entrypoint = await resolveEntrypoint(aliasedSpecifier, imp.package);
       let seenAlready = specifiers.get(imp.specifier);
       if (seenAlready){
-        if (seenAlready.entrypoint !== entrypoint) {
-          throw new Error(`${imp.package.name} and ${seenAlready.importedBy[0].package.name} are using different versions of ${imp.specifier} (${entrypoint} vs ${seenAlready.entrypoint})`);
-        }
+        await this.assertSafeVersion(seenAlready, imp, entrypoint);
         seenAlready.importedBy.push(imp);
       } else {
         specifiers.set(imp.specifier, {
@@ -102,6 +103,36 @@ export default class Splitter {
       }
     }));
     return specifiers;
+  }
+
+  private async versionOfPackage(entrypoint: string) {
+    if (this.packageVersions.has(entrypoint)) {
+      return this.packageVersions.get(entrypoint);
+    }
+    let pkgPath = await pkgUp(dirname(entrypoint));
+    let version = null;
+    if (pkgPath) {
+      let pkg = require(pkgPath);
+      version = pkg.version;
+    }
+    this.packageVersions.set(entrypoint, version);
+    return version;
+  }
+
+  private async assertSafeVersion(have: ResolvedImport, nextImport: Import, entrypoint: string) {
+    if (have.entrypoint === entrypoint) {
+      // both import statements are resolving to the exact same entrypoint --
+      // this is the normal and happy case
+      return;
+    }
+
+    let [haveVersion, nextVersion] = await Promise.all([
+      this.versionOfPackage(have.entrypoint),
+      this.versionOfPackage(entrypoint)
+    ]);
+    if (haveVersion !== nextVersion) {
+      throw new Error(`${nextImport.package.name} and ${have.importedBy[0].package.name} are using different versions of ${have.specifier} (${nextVersion} located at ${entrypoint} vs ${haveVersion} located at ${have.entrypoint})`);
+    }
   }
 
   private async computeDeps(analyzers) {

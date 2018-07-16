@@ -44,6 +44,7 @@
     "js-string-escape": "^1.0.1",
     "lodash": "^4.17.10",
     "mkdirp": "^0.5.1",
+    "pkg-up": "^2.0.0",
     "quick-temp": "^0.1.8",
     "resolve": "^1.7.1",
     "rimraf": "^2.6.2",

@@ -3,7 +3,7 @@
 set -e
 
 # All packages get a node_modules directory and a .bin link
-for package in "sample-direct" "sample-indirect" "sample-addon" "sample-failure" "sample-merged" "sample-intermediate-addon" "sample-double-indirect" "sample-conflict"; do
+for package in "sample-direct" "sample-indirect" "sample-addon" "sample-failure" "sample-merged" "sample-intermediate-addon" "sample-double-indirect" "sample-conflict" "sample-noconflict"; do
     mkdir -p ./test-apps/$package/node_modules
     pushd ./test-apps/$package/node_modules > /dev/null
     rm -rf .bin
@@ -12,7 +12,7 @@ for package in "sample-direct" "sample-indirect" "sample-addon" "sample-failure"
 done
 
 # These packages get to depend on ember-auto-import
-for package in "sample-direct" "sample-addon" "sample-failure" "sample-merged" "sample-conflict"; do
+for package in "sample-direct" "sample-addon" "sample-failure" "sample-merged" "sample-conflict" "sample-noconflict"; do
     pushd ./test-apps/$package/node_modules > /dev/null
     rm -rf ./ember-auto-import
     ln -s ../../.. ./ember-auto-import
@@ -20,7 +20,7 @@ for package in "sample-direct" "sample-addon" "sample-failure" "sample-merged" "
 done
 
 # These packages get to depend on our sample-addon
-for package in "sample-indirect" "sample-intermediate-addon" "sample-merged" "sample-conflict"; do
+for package in "sample-indirect" "sample-intermediate-addon" "sample-merged" "sample-conflict" "sample-noconflict"; do
     pushd ./test-apps/$package/node_modules > /dev/null
     rm -rf ./sample-addon
     ln -s ../../sample-addon ./sample-addon
@@ -54,6 +54,11 @@ for package in "sample-direct"; do
     popd > /dev/null
 done
 
-# sample-conflict is supposed to have an extra copy of inner-lib
+# sample-conflict is supposed to have an extra copy of inner-lib with a different version number
 rm -rf ./test-apps/sample-conflict/node_modules/inner-lib
 cp -r ./test-apps/inner-lib ./test-apps/sample-conflict/node_modules/inner-lib
+node ./scripts/change-package-version.js ./test-apps/sample-conflict/node_modules/inner-lib/package.json '4.3.2'
+
+# sample-noconflict is supposed to have an extra copy of inner-lib (with the same version as the other copy)
+rm -rf ./test-apps/sample-noconflict/node_modules/inner-lib
+cp -r ./test-apps/inner-lib ./test-apps/sample-noconflict/node_modules/inner-lib
