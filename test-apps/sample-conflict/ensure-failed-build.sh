@@ -9,17 +9,17 @@ if [[ "$output" =~ "sample-addon and sample-conflict are using different version
 then
     echo "OK message"
 else
-    echo "Failed message"
+    echo "Failed message: $output"
     own_status=1
 fi
 
 if [[ "$code" != "0" ]]; then
     echo "OK status code"
 else
-    echo "Failed status code"
+    echo "Failed status code: $code"
     own_status=1
 fi
 
 exit $own_status
-   
-   
+
+
