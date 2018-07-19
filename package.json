@@ -98,6 +98,7 @@
       "ember-cli-babel"
     ],
     "after": [
+      "ember-cli-coffeescript",
       "ember-cli-typescript"
     ]
   }
