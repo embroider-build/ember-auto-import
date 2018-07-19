@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.4
+ - ENHANCEMENT: discover imports in coffeescript.
+
+## 1.2.3
+
+ - BUGFIX: tolerate multiple copies of the same dependency as long as they have the same version number (only one will be included in the app).
+
 ## 1.2.2
  - BUGFIX: some chunk files could appear in the final built app even though they weren't needed. Harmless, but fixed.
  - ENHANCEMENT: reload package.json during development so you don't need to restart ember-cli after adding new dependencies.
