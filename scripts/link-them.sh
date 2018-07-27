@@ -46,6 +46,15 @@ for package in "sample-addon" "sample-merged" "sample-direct"; do
     popd > /dev/null
 done
 
+# These packages get to depend on @ef4/scoped-lib
+for package in "sample-direct"; do
+    pushd ./test-apps/$package/node_modules > /dev/null
+    rm -rf ./@ef4
+    mkdir -p ./@ef4
+    ln -s ../../../@ef4/scoped-lib ./@ef4/scoped-lib
+    popd > /dev/null
+done
+
 # These packages get to depend on a-dependency
 for package in "sample-direct"; do
     pushd ./test-apps/$package/node_modules > /dev/null

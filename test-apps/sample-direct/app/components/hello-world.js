@@ -3,6 +3,7 @@ import layout from '../templates/components/hello-world';
 import moment from 'moment';
 import { computed } from '@ember/object';
 import innerLib2 from 'my-aliased-module';
+import fromScoped from '@ef4/scoped-lib';
 
 export default Component.extend({
   layout,
@@ -13,6 +14,10 @@ export default Component.extend({
 
   aliasedResult: computed(function () {
     return innerLib2();
+  }),
+
+  fromScoped: computed(function() {
+    return fromScoped();
   }),
 
   // Our test suite imports lodash-es, but our app does not, so it
