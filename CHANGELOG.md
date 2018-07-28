@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.5
+ - BUGFIX: use correct asset path when dynamic imports only appear within dependencies (and not within the app itself)
+
 ## 1.2.4
  - ENHANCEMENT: discover imports in coffeescript.
 
