@@ -12,13 +12,11 @@ registerHelper('js-string-escape', jsStringEscape);
 
 const entryTemplate = compile(`
 {{! locate the webpack lazy loaded chunks relative to our vendor script }}
-{{#if dynamicImports}}
 if (typeof document !== 'undefined') {
 __webpack_public_path__ = Array.prototype.slice.apply(document.querySelectorAll('script'))
   .find(function(s){ return /\\/vendor/.test(s.src); })
   .src.replace(/\\/vendor.*/, '/');
 }
-{{/if}}
 
 module.exports = (function(){
   var w = window;
