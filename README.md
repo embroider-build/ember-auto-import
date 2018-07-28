@@ -154,6 +154,16 @@ Contributing
 * `cd ember-auto-import`
 * `yarn install`
 
+### Building
+
+You can build the TypeScript into Javascript with
+
+    yarn compile
+
+If you're making interactive changes, you can leave the compiler watching:
+
+    yarn compile --watch
+
 ### Linting
 
 * `yarn lint:js`
