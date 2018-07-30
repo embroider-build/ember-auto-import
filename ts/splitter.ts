@@ -2,7 +2,7 @@ import makeDebug from 'debug';
 import Analyzer, { Import } from './analyzer';
 import Package from './package';
 import { shallowEqual } from './util';
-import { flatten, partition } from 'lodash';
+import { flatten, partition, values } from 'lodash';
 import {
   NodeJsInputFileSystem,
   CachedInputFileSystem,
@@ -137,7 +137,7 @@ export default class Splitter {
 
   private async computeDeps(analyzers) {
     let targets = await this.computeTargets(analyzers);
-    let deps: Map<string, BundleDependencies > = new Map();
+    let deps: Map<string, BundleDependencies> = new Map();
 
     this.options.bundles.forEach(bundleName => {
       deps.set(bundleName, { staticImports: [], dynamicImports: [] });
@@ -155,7 +155,21 @@ export default class Splitter {
       }
     }
 
+    this.sortDependencies(deps);
+
     return deps;
+  }
+
+  private sortDependencies(deps: Map<string, BundleDependencies>) {
+    for (const bundle of deps.values()) {
+      this.sortBundle(bundle);
+    }
+  }
+
+  private sortBundle(bundle: BundleDependencies) {
+    for (const imports of values(bundle)) {
+      imports.sort((a, b) => a.specifier.localeCompare(b.specifier));
+    }
   }
 
   // given that a module is imported by the given list of paths, which
