@@ -79,12 +79,14 @@ export default class Package {
     hasDependency(name) : boolean {
       let pkg = this.pkg;
       return (pkg.dependencies && Boolean(pkg.dependencies[name])) ||
-        (pkg.devDependencies && Boolean(pkg.devDependencies[name]));
+        (pkg.devDependencies && Boolean(pkg.devDependencies[name])) ||
+        (pkg.peerDependencies && Boolean(pkg.peerDependencies[name]));
     }
 
     private hasNonDevDependency(name): boolean {
       let pkg = this.pkg;
-      return pkg.dependencies && Boolean(pkg.dependencies[name]);
+      return (pkg.dependencies && Boolean(pkg.dependencies[name])) ||
+        (pkg.peerDependencies && Boolean(pkg.peerDependencies[name]));
     }
 
     isEmberAddonDependency(name) : boolean {
