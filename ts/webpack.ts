@@ -14,7 +14,7 @@ const entryTemplate = compile(`
 {{! locate the webpack lazy loaded chunks relative to our vendor script }}
 if (typeof document !== 'undefined') {
 __webpack_public_path__ = Array.prototype.slice.apply(document.querySelectorAll('script'))
-  .find(function(s){ return /\\/vendor/.test(s.src); })
+  .filter(function(s){ return /\\/vendor/.test(s.src); })[0]
   .src.replace(/\\/vendor.*/, '/');
 }
 
