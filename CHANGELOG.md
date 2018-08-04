@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.6
+ - BUGFIX: fix IE11 support by @zonkyio
+ - ENHANCEMENT: allow resolution of peerDependencies
+
 ## 1.2.5
  - BUGFIX: use correct asset path when dynamic imports only appear within dependencies (and not within the app itself)
 
