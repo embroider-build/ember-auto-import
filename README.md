@@ -155,7 +155,7 @@ let app = new EmberApp(defaults, {
 });
 ```
 
-Also, some jQuery plugins like masonry and flickity have [required manual steps to connect hem to jQuery](https://github.com/ef4/ember-auto-import/issues/59#issuecomment-405391414).
+Also, some jQuery plugins like masonry and flickity have [required manual steps to connect them to jQuery](https://github.com/ef4/ember-auto-import/issues/59#issuecomment-405391414).
 
 Debugging Tips
 --------------
