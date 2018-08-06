@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.8
+ - BUGFIX: previous release broke production builds for a silly reason.
+
 ## 1.2.7
  - HOUSEKEEPING: changes for compatibility with ember-cli 3.4-beta.
  - ENHANCEMENT: more robust heuristic for detecting the public asset path, plus the option to configure it manually.
