@@ -2,11 +2,11 @@ import webpack from 'webpack';
 import { join } from 'path';
 import { merge } from 'lodash';
 import quickTemp from 'quick-temp';
-import { writeFileSync, readFileSync, readdirSync, emptyDirSync } from 'fs-extra';
+import { writeFileSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies } from './splitter';
-import { BundlerHook } from './bundler';
+import { BundlerHook, BuildResult } from './bundler';
 
 registerHelper('js-string-escape', jsStringEscape);
 
@@ -50,19 +50,18 @@ export default class WebpackBundler implements BundlerHook {
   private webpack;
   private outputDir;
 
-  constructor(bundles, outputDir, environment, extraWebpackConfig, private consoleWrite, private publicAssetURL){
+  constructor(bundles, environment, extraWebpackConfig, private consoleWrite, private publicAssetURL){
     quickTemp.makeOrRemake(this, 'stagingDir', 'ember-auto-import-webpack');
+    quickTemp.makeOrRemake(this, 'outputDir', 'ember-auto-import-webpack');
     let entry = {};
     bundles.forEach(bundle => entry[bundle] = join(this.stagingDir, `${bundle}.js`));
-
-    this.outputDir = join(outputDir, 'ember-auto-import');
 
     let config = {
       mode: environment === 'production' ? 'production' : 'development',
       entry,
       output: {
-        path: join(this.outputDir, 'webpack-out'),
-        filename: `[id].js`,
+        path: this.outputDir,
+        filename: `chunk.[chunkhash].js`,
         chunkFilename: `chunk.[chunkhash].js`,
         libraryTarget: 'var',
         library: '__ember_auto_import__'
@@ -84,48 +83,27 @@ export default class WebpackBundler implements BundlerHook {
       this.writeEntryFile(bundle, deps);
     }
     let stats = await this.runWebpack();
-    let entryChunks = this.aggregateEntryChunks(stats);
-    this.aggregateLazyChunks(stats, entryChunks);
+    return this.summarizeStats(stats);
   }
 
-  // We're allowing webpack to split even our entrypoint Javascript into
-  // multiple chunks. That gives it the maximum flexibility to break shared
-  // things up between entrypoints. But in practice right now, our entrypoints
-  // are just "app" and "tests", and it's easier to just stick all the
-  // entrypoint chunks for each of those into the respective standard Ember
-  // Javascript files, which is in turn easier to do if we aggregate them here.
-  private aggregateEntryChunks(stats) {
-    let seen = new Set();
-    emptyDirSync(join(this.outputDir, 'entry'));
+  private summarizeStats(stats) : BuildResult {
+    let output = {
+      entrypoints: new Map(),
+      lazyAssets: [],
+      dir: this.outputDir
+    };
+    let nonLazyAssets = new Set();
     for (let id of Object.keys(stats.entrypoints)) {
       let entrypoint = stats.entrypoints[id];
-      let chunks = entrypoint.chunks.map(chunkId => stats.chunks.find(c => c.id === chunkId));
-      chunks.sort(entryFirst);
-      let chunkContents = chunks.map(chunk => {
-        let filename = join(stats.outputPath, chunk.files[0]);
-        seen.add(chunk.files[0]);
-        return readFileSync(filename, 'utf8');
-      });
-      writeFileSync(join(this.outputDir, 'entry', `${id}.js`), chunkContents.join("\n"), 'utf8');
+      output.entrypoints.set(id, entrypoint.assets);
+      entrypoint.assets.forEach(asset => nonLazyAssets.add(asset));
     }
-    return seen;
-  }
-
-  // Lazy chunks are loaded normally in the browser app, just as webpack
-  // intends. But in Fastboot we load them all eagerly once when the server is
-  // starting up, which is easier to do if we have a file available that
-  // concatenates them all.
-  private aggregateLazyChunks(stats, entryChunks) {
-    let destDir = join(this.outputDir, 'lazy');
-    emptyDirSync(destDir);
-    let lazyChunks = readdirSync(stats.outputPath)
-      .filter(filename => !entryChunks.has(filename))
-      .map(filename => {
-        let contents = readFileSync(join(stats.outputPath, filename));
-        writeFileSync(join(destDir, filename), contents);
-        return contents;
-      });
-    writeFileSync(join(destDir, 'auto-import-fastboot.js'), lazyChunks.join("\n"));
+    for (let asset of stats.assets) {
+      if (!nonLazyAssets.has(asset.name)) {
+        output.lazyAssets.push(asset.name);
+      }
+    }
+    return output;
   }
 
   private writeEntryFile(name, deps){
@@ -157,14 +135,4 @@ export default class WebpackBundler implements BundlerHook {
     });
   }
 
-}
-
-function entryFirst(a, b){
-  if (a.entry === b.entry) {
-    return 0;
-  }
-  if (a.entry < b.entry) {
-    return 1;
-  }
-  return -1;
 }

@@ -3,8 +3,8 @@ import Bundler from './bundler';
 import Analyzer from './analyzer';
 import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
-import Funnel from 'broccoli-funnel';
-import { bundles, bundleForPath, bundleOptions } from './bundle-config';
+import { bundles, bundleForPath } from './bundle-config';
+import mergeTrees from 'broccoli-merge-trees';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 const protocol = '__ember_auto_import_protocol_v1__';
@@ -15,8 +15,6 @@ export default class AutoImport{
     private env: string;
     private consoleWrite: (string) => void;
     private analyzers: Map<Analyzer, Package> = new Map();
-    private bundler: Bundler;
-    private tree;
 
     static lookup(appOrAddon) : AutoImport {
         if (!global[protocol]) {
@@ -32,7 +30,6 @@ export default class AutoImport{
         if (!this.env) { throw new Error("Bug in ember-auto-import: did not discover environment"); }
 
         this.consoleWrite = (...args) => appOrAddon.project.ui.write(...args);
-        this.bundler = this.makeBundler();
     }
 
     isPrimary(appOrAddon){
@@ -44,11 +41,10 @@ export default class AutoImport{
         this.packages.add(pack);
         let analyzer = new Analyzer(debugTree(tree, `preprocessor:input-${this.analyzers.size}`), pack);
         this.analyzers.set(analyzer, pack);
-        this.bundler.unsafeConnect(analyzer);
         return analyzer;
     }
 
-    private makeBundler() {
+    addTo(allAppTree) {
         // The Splitter takes the set of imports from the Analyzer and
         // decides which ones to include in which bundles
         let splitter = new Splitter({
@@ -59,37 +55,41 @@ export default class AutoImport{
 
         // The Bundler asks the splitter for deps it should include and
         // is responsible for packaging those deps up.
-        return new Bundler({
+        let bundler = new Bundler(allAppTree, {
           splitter,
           environment: this.env,
           packages: this.packages,
           consoleWrite: this.consoleWrite
         });
-    }
 
-    private makeTree() {
-      if (!this.tree) {
-        this.tree = debugTree(this.bundler.tree, 'output');
-      }
-      return this.tree;
-    }
-
-    treeForVendor(){
-      return this.makeTree();
-    }
-
-    treeForPublic() {
-      return debugTree(new Funnel(this.makeTree(), {
-        srcDir: 'ember-auto-import/lazy',
-        destDir: 'assets'
-      }), 'public');
+        return mergeTrees([
+          allAppTree,
+          debugTree(bundler, 'output')
+        ], { overwrite: true });
     }
 
     included(addonInstance) {
-      for (let bundle of bundles) {
-        addonInstance.import(`vendor/ember-auto-import/entry/${bundle}.js`, bundleOptions(bundle));
-      }
-      this.configureFingerprints(addonInstance._findHost());
+      let host = addonInstance._findHost();
+      this.configureFingerprints(host);
+
+      // ember-cli as of 3.4-beta has introduced architectural changes that make
+      // it impossible for us to nicely emit the built dependencies via our own
+      // vendor and public trees, because it now considers those as *inputs* to
+      // the trees that we analyze, causing a circle, even though there is no
+      // real circular data dependency.
+      //
+      // We also cannot use postprocessTree('all'), because that only works in
+      // first-level addons.
+      //
+      // So we are forced to monkey patch EmberApp. We insert ourselves right at
+      // the beginning of addonPostprocessTree.
+      let original = host.addonPostprocessTree.bind(host);
+      host.addonPostprocessTree = (which, tree) => {
+        if (which === 'all') {
+          tree = this.addTo(tree);
+        }
+        return original(which, tree);
+      };
     }
 
     // We need to disable fingerprinting of chunks, because (1) they already
