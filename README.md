@@ -144,18 +144,18 @@ You need to either add "unsafe-eval" to your policy, or use [one of the suggesti
 
 Ember apps typically get jQuery from the `ember-source` or `@ember/jquery` packages. Neither of these is the real `jquery` NPM package, so ember-auto-import cannot "see" it statically at build time. You will need to give webpack a hint to treat jQuery as external:
 
-    ```js
-    // In your ember-cli-build.js file
-    let app = new EmberApp(defaults, {
-      autoImport: {
-        webpack: {
-          externals: { jquery: 'jQuery' }
-        }
-      }
-    });
-    ```
+```js
+// In your ember-cli-build.js file
+let app = new EmberApp(defaults, {
+  autoImport: {
+    webpack: {
+      externals: { jquery: 'jQuery' }
+    }
+  }
+});
+```
 
-  Also, some jQuery plugins like masonry and flickity have [required manual steps to connect them to jQuery](https://github.com/ef4/ember-auto-import/issues/59#issuecomment-405391414).
+Also, some jQuery plugins like masonry and flickity have [required manual steps to connect hem to jQuery](https://github.com/ef4/ember-auto-import/issues/59#issuecomment-405391414).
 
 Debugging Tips
 --------------
