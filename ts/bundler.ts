@@ -6,7 +6,12 @@ import Package, { reloadDevPackages } from './package';
 import { merge } from 'lodash';
 import { bundles, bundleEntrypoint } from './bundle-config';
 import { join, dirname } from 'path';
-import { readFileSync, writeFileSync, ensureDirSync } from 'fs-extra';
+import {
+  readFileSync,
+  writeFileSync,
+  ensureDirSync,
+  existsSync
+} from 'fs-extra';
 
 const debug = makeDebug('ember-auto-import:bundler');
 
@@ -94,9 +99,12 @@ export default class Bundler extends Plugin {
     for (let bundle of bundles) {
       if (entrypoints.has(bundle)) {
         let target = bundleEntrypoint(bundle);
-        let sources = entrypoints.get(bundle).map(asset => readFileSync(join(dir, asset), 'utf8'));
-        sources.unshift(readFileSync(join(this.inputPaths[0], target), 'utf8'));
-        writeFileSync(join(this.outputPath, target), sources.join("\n"), 'utf8');
+        let inputTargetPath = join(this.inputPaths[0], target);
+        if (existsSync(inputTargetPath)) {
+          let sources = entrypoints.get(bundle).map(asset => readFileSync(join(dir, asset), 'utf8'));
+          sources.unshift(readFileSync(inputTargetPath, 'utf8'));
+          writeFileSync(join(this.outputPath, target), sources.join("\n"), 'utf8');
+        }
       }
     }
   }
