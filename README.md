@@ -106,6 +106,7 @@ Suported Options
 
  - `alias`: _object_, Map from package names to substitute packages that will be used instead.
  - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
+ - `publicAssetURL`: where to load additional dynamic javascript files from. You usually don't need to set this -- the default works for any Ember app that isn't doing something unusual.
  - `webpack`: _object_, An object that will get merged into the configuration we pass to webpack. This lets you work around quirks in underlying libraries and otherwise customize the way Webpack will assemble your dependencies.
 
 Usage from Addons

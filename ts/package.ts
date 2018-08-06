@@ -119,4 +119,8 @@ export default class Package {
         this.autoImportOptions.alias[name]
       ) || name;
     }
+
+    get publicAssetURL(): string|undefined {
+      return this.autoImportOptions && this.autoImportOptions.publicAssetURL;
+    }
 }
