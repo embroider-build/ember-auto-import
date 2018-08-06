@@ -29,24 +29,6 @@ module.exports = {
     }
   },
 
-  treeForVendor(tree) {
-    let autoImport = AutoImport.lookup(this);
-    if (autoImport.isPrimary(this)){
-      return autoImport.treeForVendor();
-    } else {
-      return tree;
-    }
-  },
-
-  treeForPublic(tree) {
-    let autoImport = AutoImport.lookup(this);
-    if (autoImport.isPrimary(this)){
-      return autoImport.treeForPublic();
-    } else {
-      return tree;
-    }
-  },
-
   updateFastBootManifest(manifest) {
     let autoImport = AutoImport.lookup(this);
     if (autoImport.isPrimary(this)) {
