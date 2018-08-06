@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.7
+ - HOUSEKEEPING: changes for compatibility with ember-cli 3.4-beta.
+ - ENHANCEMENT: more robust heuristic for detecting the public asset path, plus the option to configure it manually.
+
 ## 1.2.6
  - BUGFIX: fix IE11 support by @zonkyio
  - ENHANCEMENT: allow resolution of peerDependencies
