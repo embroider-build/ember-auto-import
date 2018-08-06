@@ -11,11 +11,22 @@ import { BundlerHook } from './bundler';
 registerHelper('js-string-escape', jsStringEscape);
 
 const entryTemplate = compile(`
-{{! locate the webpack lazy loaded chunks relative to our vendor script }}
 if (typeof document !== 'undefined') {
-__webpack_public_path__ = Array.prototype.slice.apply(document.querySelectorAll('script'))
-  .filter(function(s){ return /\\/vendor/.test(s.src); })[0]
-  .src.replace(/\\/vendor.*/, '/');
+  {{#if publicAssetURL}}
+  __webpack_public_path__ = '{{js-string-escape publicAssetURL}}';
+  {{else}}
+  {{!
+      locate the webpack lazy loaded chunks relative to the currently executing
+      script. The last <script> in DOM should be us, assuming that we are being
+      synchronously loaded, which is the normal thing to do. If people are doing
+      weirder things than that, they may need to explicitly set a publicAssetURL
+      instead.
+  }}
+  __webpack_public_path__ = (function(){
+    var scripts = document.querySelectorAll('script');
+    return scripts[scripts.length - 1].src.replace(/\\/[^/]*$/, '/');
+  })();
+  {{/if}}
 }
 
 module.exports = (function(){
@@ -39,7 +50,7 @@ export default class WebpackBundler implements BundlerHook {
   private webpack;
   private outputDir;
 
-  constructor(bundles, outputDir, environment, extraWebpackConfig, private consoleWrite){
+  constructor(bundles, outputDir, environment, extraWebpackConfig, private consoleWrite, private publicAssetURL){
     quickTemp.makeOrRemake(this, 'stagingDir', 'ember-auto-import-webpack');
     let entry = {};
     bundles.forEach(bundle => entry[bundle] = join(this.stagingDir, `${bundle}.js`));
@@ -118,7 +129,11 @@ export default class WebpackBundler implements BundlerHook {
   }
 
   private writeEntryFile(name, deps){
-    writeFileSync(join(this.stagingDir, `${name}.js`), entryTemplate(deps));
+    writeFileSync(join(this.stagingDir, `${name}.js`), entryTemplate({
+      staticImports: deps.staticImports,
+      dynamicImports: deps.dynamicImports,
+      publicAssetURL: this.publicAssetURL
+    }));
   }
 
   private async runWebpack() : Promise<any>{
