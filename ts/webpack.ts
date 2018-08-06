@@ -48,9 +48,11 @@ module.exports = (function(){
 export default class WebpackBundler implements BundlerHook {
   private stagingDir;
   private webpack;
+  private outputDir;
 
-  constructor(bundles, outputDir, environment, extraWebpackConfig, private consoleWrite, private publicAssetURL){
+  constructor(bundles, environment, extraWebpackConfig, private consoleWrite, private publicAssetURL){
     quickTemp.makeOrRemake(this, 'stagingDir', 'ember-auto-import-webpack');
+    quickTemp.makeOrRemake(this, 'outputDir', 'ember-auto-import-webpack');
     let entry = {};
     bundles.forEach(bundle => entry[bundle] = join(this.stagingDir, `${bundle}.js`));
 
@@ -58,7 +60,7 @@ export default class WebpackBundler implements BundlerHook {
       mode: environment === 'production' ? 'production' : 'development',
       entry,
       output: {
-        path: outputDir,
+        path: this.outputDir,
         filename: `chunk.[chunkhash].js`,
         chunkFilename: `chunk.[chunkhash].js`,
         libraryTarget: 'var',
@@ -87,7 +89,8 @@ export default class WebpackBundler implements BundlerHook {
   private summarizeStats(stats) : BuildResult {
     let output = {
       entrypoints: new Map(),
-      lazyAssets: []
+      lazyAssets: [],
+      dir: this.outputDir
     };
     let nonLazyAssets = new Set();
     for (let id of Object.keys(stats.entrypoints)) {
