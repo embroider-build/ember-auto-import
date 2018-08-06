@@ -94,8 +94,7 @@
   "ember-addon": {
     "configPath": "tests/dummy/config",
     "before": [
-      "ember-cli-babel",
-      "ember-cli-concat"
+      "ember-cli-babel"
     ],
     "after": [
       "ember-cli-coffeescript",

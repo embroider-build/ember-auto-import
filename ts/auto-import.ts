@@ -81,10 +81,14 @@ export default class AutoImport{
       // We also cannot use postprocessTree('all'), because that only works in
       // first-level addons.
       //
-      // So we are forced to monkey patch EmberApp.
-      let originalToTree = host.toTree.bind(host);
-      host.toTree = (...args) => {
-        return this.addTo(originalToTree(...args));
+      // So we are forced to monkey patch EmberApp. We insert ourselves right at
+      // the beginning of addonPostprocessTree.
+      let original = host.addonPostprocessTree.bind(host);
+      host.addonPostprocessTree = (which, tree) => {
+        if (which === 'all') {
+          tree = this.addTo(tree);
+        }
+        return original(which, tree);
       };
     }
 
