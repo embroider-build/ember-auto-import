@@ -27,6 +27,7 @@ matrix:
   fast_finish: true
   allow_failures:
     - env: EAI_SCENARIO=canary
+    - env: EAI_SCENARIO=beta
 
 before_install:
   - curl -o- -L https://yarnpkg.com/install.sh | bash
