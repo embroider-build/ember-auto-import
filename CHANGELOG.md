@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.10
+ - BUGFIX: 1.2.9 re-broke production builds. Now that is fixed *and* we have test coverage for it. Ahem.
+
 ## 1.2.9
  - BUGFIX: the compatibility workaround in 1.2.7 had the side-effect of breaking live-reload of addon code.
 
