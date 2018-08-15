@@ -17,6 +17,7 @@ export default class AutoImport {
   private env: string;
   private consoleWrite: (string) => void;
   private analyzers: Map<Analyzer, Package> = new Map();
+  private bundles: ReadonlyArray<string>;
 
   static lookup(appOrAddon): AutoImport {
     if (!global[protocol]) {
@@ -28,7 +29,9 @@ export default class AutoImport {
   constructor(appOrAddon) {
     this.primaryPackage = appOrAddon;
     // _findHost is private API but it's been stable in ember-cli for two years.
-    this.env = appOrAddon._findHost().env;
+    let host = appOrAddon._findHost();
+    this.env = host.env;
+    this.bundles = bundles(host);
     if (!this.env) {
       throw new Error('Bug in ember-auto-import: did not discover environment');
     }
@@ -56,7 +59,7 @@ export default class AutoImport {
     // decides which ones to include in which bundles
     let splitter = new Splitter({
       analyzers: this.analyzers,
-      bundles,
+      bundles: this.bundles,
       bundleForPath
     });
 
@@ -66,14 +69,15 @@ export default class AutoImport {
       splitter,
       environment: this.env,
       packages: this.packages,
-      consoleWrite: this.consoleWrite
+      consoleWrite: this.consoleWrite,
+      bundles: this.bundles
     });
   }
 
   addTo(allAppTree) {
     let bundler = debugTree(this.makeBundler(allAppTree), 'output');
 
-    let combinedEntrypoints = bundles.map(bundleName => {
+    let combinedEntrypoints = this.bundles.map(bundleName => {
       let target = bundleEntrypoint(bundleName);
       let original = new Funnel(allAppTree, {
         include: [target, target.replace('.js', '.map')]

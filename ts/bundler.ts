@@ -4,7 +4,6 @@ import WebpackBundler from './webpack';
 import Splitter, { BundleDependencies } from './splitter';
 import Package, { reloadDevPackages } from './package';
 import { merge } from 'lodash';
-import { bundles } from './bundle-config';
 import { join } from 'path';
 import {
   readFileSync,
@@ -20,6 +19,7 @@ export interface BundlerPluginOptions {
   environment: string;
   splitter: Splitter;
   packages: Set<Package>;
+  bundles: ReadonlyArray<string>;
 }
 
 export interface BuildResult {
@@ -66,7 +66,7 @@ export default class Bundler extends Plugin {
       );
       debug('extraWebpackConfig %j', extraWebpackConfig);
       this.cachedBundlerHook = new WebpackBundler(
-        bundles,
+        this.options.bundles,
         this.options.environment,
         extraWebpackConfig,
         this.options.consoleWrite,
@@ -94,14 +94,14 @@ export default class Bundler extends Plugin {
       return;
     }
     emptyDirSync(join(this.outputPath, 'assets'));
-    for (let bundle of bundles) {
+    for (let bundle of this.options.bundles) {
       emptyDirSync(join(this.outputPath, 'entrypoints', bundle));
     }
     this.didEnsureDirs = true;
   }
 
   private addEntrypoints({ entrypoints, dir }) {
-    for (let bundle of bundles) {
+    for (let bundle of this.options.bundles) {
       if (entrypoints.has(bundle)) {
         entrypoints
           .get(bundle)
