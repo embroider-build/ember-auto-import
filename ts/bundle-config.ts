@@ -7,7 +7,13 @@ const testsPattern = new RegExp(`^/?[^/]+/(tests|test-support)/`);
 
 // This list of valid bundles, in priority order. The first one in the list that
 // needs a given import will end up with that import.
-export const bundles = Object.freeze(['app', 'tests']);
+export function bundles(emberApp) {
+  if (emberApp.tests) {
+    return Object.freeze(['app', 'tests']);
+  } else {
+    return Object.freeze(['app']);
+  }
+}
 
 // Which final JS file the given bundle's dependencies should go into.
 export function bundleEntrypoint(name) {
