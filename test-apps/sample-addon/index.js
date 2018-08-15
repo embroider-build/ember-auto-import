@@ -1,5 +1,8 @@
 'use strict';
 
 module.exports = {
-  name: 'sample-addon'
+  name: 'sample-addon',
+  isDevelopingAddon(){
+    return true;
+  }
 };

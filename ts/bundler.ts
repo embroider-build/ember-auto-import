@@ -4,13 +4,13 @@ import WebpackBundler from './webpack';
 import Splitter, { BundleDependencies } from './splitter';
 import Package, { reloadDevPackages } from './package';
 import { merge } from 'lodash';
-import { bundles, bundleEntrypoint } from './bundle-config';
-import { join, dirname } from 'path';
+import { bundles } from './bundle-config';
+import { join } from 'path';
 import {
   readFileSync,
   writeFileSync,
-  ensureDirSync,
-  existsSync
+  emptyDirSync,
+  copySync,
 } from 'fs-extra';
 
 const debug = makeDebug('ember-auto-import:bundler');
@@ -93,9 +93,9 @@ export default class Bundler extends Plugin {
     if (this.didEnsureDirs) {
       return;
     }
-    ensureDirSync(join(this.outputPath, 'assets'));
+    emptyDirSync(join(this.outputPath, 'assets'));
     for (let bundle of bundles) {
-      ensureDirSync(dirname(join(this.outputPath, bundleEntrypoint(bundle))));
+      emptyDirSync(join(this.outputPath, 'entrypoints', bundle));
     }
     this.didEnsureDirs = true;
   }
@@ -103,19 +103,11 @@ export default class Bundler extends Plugin {
   private addEntrypoints({ entrypoints, dir }) {
     for (let bundle of bundles) {
       if (entrypoints.has(bundle)) {
-        let target = bundleEntrypoint(bundle);
-        let inputTargetPath = join(this.inputPaths[0], target);
-        if (existsSync(inputTargetPath)) {
-          let sources = entrypoints
-            .get(bundle)
-            .map(asset => readFileSync(join(dir, asset), 'utf8'));
-          sources.unshift(readFileSync(inputTargetPath, 'utf8'));
-          writeFileSync(
-            join(this.outputPath, target),
-            sources.join('\n'),
-            'utf8'
-          );
-        }
+        entrypoints
+          .get(bundle)
+          .forEach(asset => {
+            copySync(join(dir, asset), join(this.outputPath, 'entrypoints', bundle, asset));
+          });
       }
     }
   }
