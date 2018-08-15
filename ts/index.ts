@@ -15,7 +15,7 @@ module.exports = {
     // it will see all the consumer app or addon's javascript
     registry.add('js', {
       name: 'ember-auto-import-analyzer',
-      toTree: (tree) => {
+      toTree: tree => {
         return AutoImport.lookup(this).analyze(tree, this);
       }
     });
@@ -24,7 +24,7 @@ module.exports = {
   included() {
     let autoImport = AutoImport.lookup(this);
     this._super.included.apply(this, arguments);
-    if (autoImport.isPrimary(this)){
+    if (autoImport.isPrimary(this)) {
       autoImport.included(this);
     }
   },

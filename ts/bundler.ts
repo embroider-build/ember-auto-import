@@ -37,18 +37,20 @@ export default class Bundler extends Plugin {
   private cachedBundlerHook;
   private didEnsureDirs = false;
 
-  constructor(allAppTree: Tree, private options : BundlerPluginOptions) {
+  constructor(allAppTree: Tree, private options: BundlerPluginOptions) {
     super([allAppTree], { persistentOutput: true });
   }
 
-  private get publicAssetURL() : string|undefined {
+  private get publicAssetURL(): string | undefined {
     // Only the app (not an addon) can customize the public asset URL, because
     // it's an app concern.
-    let rootPackage = [...this.options.packages.values()].find(pkg => !pkg.isAddon);
+    let rootPackage = [...this.options.packages.values()].find(
+      pkg => !pkg.isAddon
+    );
     if (rootPackage) {
       let url = rootPackage.publicAssetURL;
       if (url) {
-        if (url[url.length-1] !== '/') {
+        if (url[url.length - 1] !== '/') {
           url = url + '/';
         }
         return url;
@@ -56,9 +58,12 @@ export default class Bundler extends Plugin {
     }
   }
 
-  get bundlerHook() : BundlerHook {
-    if (!this.cachedBundlerHook){
-      let extraWebpackConfig = merge({}, ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig));
+  get bundlerHook(): BundlerHook {
+    if (!this.cachedBundlerHook) {
+      let extraWebpackConfig = merge(
+        {},
+        ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig)
+      );
       debug('extraWebpackConfig %j', extraWebpackConfig);
       this.cachedBundlerHook = new WebpackBundler(
         bundles,
@@ -101,9 +106,15 @@ export default class Bundler extends Plugin {
         let target = bundleEntrypoint(bundle);
         let inputTargetPath = join(this.inputPaths[0], target);
         if (existsSync(inputTargetPath)) {
-          let sources = entrypoints.get(bundle).map(asset => readFileSync(join(dir, asset), 'utf8'));
+          let sources = entrypoints
+            .get(bundle)
+            .map(asset => readFileSync(join(dir, asset), 'utf8'));
           sources.unshift(readFileSync(inputTargetPath, 'utf8'));
-          writeFileSync(join(this.outputPath, target), sources.join("\n"), 'utf8');
+          writeFileSync(
+            join(this.outputPath, target),
+            sources.join('\n'),
+            'utf8'
+          );
         }
       }
     }
@@ -115,6 +126,9 @@ export default class Bundler extends Plugin {
       writeFileSync(join(this.outputPath, 'assets', asset), content, 'utf8');
       return content;
     });
-    writeFileSync(join(this.outputPath, 'assets', 'auto-import-fastboot.js'), contents.join("\n"));
+    writeFileSync(
+      join(this.outputPath, 'assets', 'auto-import-fastboot.js'),
+      contents.join('\n')
+    );
   }
 }

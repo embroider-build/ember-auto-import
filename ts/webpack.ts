@@ -50,11 +50,19 @@ export default class WebpackBundler implements BundlerHook {
   private webpack;
   private outputDir;
 
-  constructor(bundles, environment, extraWebpackConfig, private consoleWrite, private publicAssetURL){
+  constructor(
+    bundles,
+    environment,
+    extraWebpackConfig,
+    private consoleWrite,
+    private publicAssetURL
+  ) {
     quickTemp.makeOrRemake(this, 'stagingDir', 'ember-auto-import-webpack');
     quickTemp.makeOrRemake(this, 'outputDir', 'ember-auto-import-webpack');
     let entry = {};
-    bundles.forEach(bundle => entry[bundle] = join(this.stagingDir, `${bundle}.js`));
+    bundles.forEach(
+      bundle => (entry[bundle] = join(this.stagingDir, `${bundle}.js`))
+    );
 
     let config = {
       mode: environment === 'production' ? 'production' : 'development',
@@ -78,7 +86,7 @@ export default class WebpackBundler implements BundlerHook {
     this.webpack = webpack(config);
   }
 
-  async build(bundleDeps: Map<string, BundleDependencies>){
+  async build(bundleDeps: Map<string, BundleDependencies>) {
     for (let [bundle, deps] of bundleDeps.entries()) {
       this.writeEntryFile(bundle, deps);
     }
@@ -86,7 +94,7 @@ export default class WebpackBundler implements BundlerHook {
     return this.summarizeStats(stats);
   }
 
-  private summarizeStats(stats) : BuildResult {
+  private summarizeStats(stats): BuildResult {
     let output = {
       entrypoints: new Map(),
       lazyAssets: [],
@@ -106,15 +114,18 @@ export default class WebpackBundler implements BundlerHook {
     return output;
   }
 
-  private writeEntryFile(name, deps){
-    writeFileSync(join(this.stagingDir, `${name}.js`), entryTemplate({
-      staticImports: deps.staticImports,
-      dynamicImports: deps.dynamicImports,
-      publicAssetURL: this.publicAssetURL
-    }));
+  private writeEntryFile(name, deps) {
+    writeFileSync(
+      join(this.stagingDir, `${name}.js`),
+      entryTemplate({
+        staticImports: deps.staticImports,
+        dynamicImports: deps.dynamicImports,
+        publicAssetURL: this.publicAssetURL
+      })
+    );
   }
 
-  private async runWebpack() : Promise<any>{
+  private async runWebpack(): Promise<any> {
     return new Promise((resolve, reject) => {
       this.webpack.run((err, stats) => {
         if (err) {
@@ -134,5 +145,4 @@ export default class WebpackBundler implements BundlerHook {
       });
     });
   }
-
 }

@@ -38,70 +38,78 @@ export interface SplitterOptions {
 
 export default class Splitter {
   private lastImports = null;
-  private lastDeps : Map<string, BundleDependencies> | null = null;
-  private packageVersions : Map<string,string> = new Map();
+  private lastDeps: Map<string, BundleDependencies> | null = null;
+  private packageVersions: Map<string, string> = new Map();
 
-  constructor(private options : SplitterOptions) {}
+  constructor(private options: SplitterOptions) {}
 
   async deps() {
-    if (this.importsChanged()){
+    if (this.importsChanged()) {
       this.lastDeps = await this.computeDeps(this.options.analyzers);
       debug('output %s', new LazyPrintDeps(this.lastDeps));
     }
     return this.lastDeps;
   }
 
-  private importsChanged() : boolean {
-    let imports = [...this.options.analyzers.keys()].map(analyzer => analyzer.imports);
+  private importsChanged(): boolean {
+    let imports = [...this.options.analyzers.keys()].map(
+      analyzer => analyzer.imports
+    );
     if (!this.lastImports || !shallowEqual(this.lastImports, imports)) {
       this.lastImports = imports;
       return true;
     }
   }
 
-  private async computeTargets(analyzers : Map<Analyzer, Package>){
-    let specifiers : Map<string, ResolvedImport>  = new Map();
-    let imports = flatten([...analyzers.keys()].map(analyzer => analyzer.imports));
-    await Promise.all(imports.map(async imp => {
+  private async computeTargets(analyzers: Map<Analyzer, Package>) {
+    let specifiers: Map<string, ResolvedImport> = new Map();
+    let imports = flatten(
+      [...analyzers.keys()].map(analyzer => analyzer.imports)
+    );
+    await Promise.all(
+      imports.map(async imp => {
+        if (imp.specifier[0] === '.' || imp.specifier[0] === '/') {
+          // we're only trying to identify imports of external NPM
+          // packages, so relative imports are never relevant.
+          return;
+        }
 
-      if (imp.specifier[0] === '.' || imp.specifier[0] === '/') {
-        // we're only trying to identify imports of external NPM
-        // packages, so relative imports are never relevant.
-        return;
-      }
+        let aliasedSpecifier = imp.package.aliasFor(imp.specifier);
+        let parts = aliasedSpecifier.split('/');
+        let packageName;
+        if (aliasedSpecifier[0] === '@') {
+          packageName = `${parts[0]}/${parts[1]}`;
+        } else {
+          packageName = parts[0];
+        }
 
-      let aliasedSpecifier = imp.package.aliasFor(imp.specifier);
-      let parts = aliasedSpecifier.split('/');
-      let packageName;
-      if (aliasedSpecifier[0] === '@') {
-        packageName = `${parts[0]}/${parts[1]}`;
-      } else {
-        packageName = parts[0];
-      }
+        if (imp.package.excludesDependency(packageName)) {
+          // This package has been explicitly excluded.
+          return;
+        }
 
-      if (imp.package.excludesDependency(packageName)){
-        // This package has been explicitly excluded.
-        return;
-      }
+        if (
+          !imp.package.hasDependency(packageName) ||
+          imp.package.isEmberAddonDependency(packageName)
+        ) {
+          return;
+        }
+        imp.package.assertAllowedDependency(packageName);
 
-      if (!imp.package.hasDependency(packageName) || imp.package.isEmberAddonDependency(packageName)) {
-        return;
-      }
-      imp.package.assertAllowedDependency(packageName);
-
-      let entrypoint = await resolveEntrypoint(aliasedSpecifier, imp.package);
-      let seenAlready = specifiers.get(imp.specifier);
-      if (seenAlready){
-        await this.assertSafeVersion(seenAlready, imp, entrypoint);
-        seenAlready.importedBy.push(imp);
-      } else {
-        specifiers.set(imp.specifier, {
-          specifier: imp.specifier,
-          entrypoint,
-          importedBy: [imp]
-        });
-      }
-    }));
+        let entrypoint = await resolveEntrypoint(aliasedSpecifier, imp.package);
+        let seenAlready = specifiers.get(imp.specifier);
+        if (seenAlready) {
+          await this.assertSafeVersion(seenAlready, imp, entrypoint);
+          seenAlready.importedBy.push(imp);
+        } else {
+          specifiers.set(imp.specifier, {
+            specifier: imp.specifier,
+            entrypoint,
+            importedBy: [imp]
+          });
+        }
+      })
+    );
     return specifiers;
   }
 
@@ -119,7 +127,11 @@ export default class Splitter {
     return version;
   }
 
-  private async assertSafeVersion(have: ResolvedImport, nextImport: Import, entrypoint: string) {
+  private async assertSafeVersion(
+    have: ResolvedImport,
+    nextImport: Import,
+    entrypoint: string
+  ) {
     if (have.entrypoint === entrypoint) {
       // both import statements are resolving to the exact same entrypoint --
       // this is the normal and happy case
@@ -131,7 +143,15 @@ export default class Splitter {
       this.versionOfPackage(entrypoint)
     ]);
     if (haveVersion !== nextVersion) {
-      throw new Error(`${nextImport.package.name} and ${have.importedBy[0].package.name} are using different versions of ${have.specifier} (${nextVersion} located at ${entrypoint} vs ${haveVersion} located at ${have.entrypoint})`);
+      throw new Error(
+        `${nextImport.package.name} and ${
+          have.importedBy[0].package.name
+        } are using different versions of ${
+          have.specifier
+        } (${nextVersion} located at ${entrypoint} vs ${haveVersion} located at ${
+          have.entrypoint
+        })`
+      );
     }
   }
 
@@ -144,7 +164,10 @@ export default class Splitter {
     });
 
     for (let target of targets.values()) {
-      let [ dynamicUses, staticUses ] = partition(target.importedBy, imp => imp.isDynamic);
+      let [dynamicUses, staticUses] = partition(
+        target.importedBy,
+        imp => imp.isDynamic
+      );
       if (staticUses.length > 0) {
         let bundleName = this.chooseBundle(staticUses);
         deps.get(bundleName).staticImports.push(target);
@@ -185,14 +208,20 @@ export default class Splitter {
   private bundleForPath(usage: Import) {
     let bundleName = this.options.bundleForPath(usage.path);
     if (this.options.bundles.indexOf(bundleName) === -1) {
-      throw new Error(`bundleForPath("${usage.path}") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.join(',')}`);
+      throw new Error(
+        `bundleForPath("${
+          usage.path
+        }") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.join(
+          ','
+        )}`
+      );
     }
     debug('bundleForPath("%s")=%s', usage.path, bundleName);
     return bundleName;
   }
 }
 
-async function resolveEntrypoint(specifier, pkg) : Promise<string> {
+async function resolveEntrypoint(specifier, pkg): Promise<string> {
   return new Promise((resolvePromise, reject) => {
     resolver.resolve({}, pkg.root, specifier, {}, (err, path) => {
       if (err) {
@@ -205,9 +234,9 @@ async function resolveEntrypoint(specifier, pkg) : Promise<string> {
 }
 
 class LazyPrintDeps {
-  constructor(private deps: Map<string, BundleDependencies>){}
+  constructor(private deps: Map<string, BundleDependencies>) {}
 
-  private describeResolvedImport(imp : ResolvedImport) {
+  private describeResolvedImport(imp: ResolvedImport) {
     return {
       specifier: imp.specifier,
       entrypoint: imp.entrypoint,
@@ -225,10 +254,13 @@ class LazyPrintDeps {
 
   toString() {
     let output = {};
-    for (let [bundle, { staticImports, dynamicImports }] of this.deps.entries()) {
+    for (let [
+      bundle,
+      { staticImports, dynamicImports }
+    ] of this.deps.entries()) {
       output[bundle] = {
-        "static": staticImports.map(this.describeResolvedImport.bind(this)),
-        "dynamic": dynamicImports.map(this.describeResolvedImport.bind(this))
+        static: staticImports.map(this.describeResolvedImport.bind(this)),
+        dynamic: dynamicImports.map(this.describeResolvedImport.bind(this))
       };
     }
     return JSON.stringify(output, null, 2);

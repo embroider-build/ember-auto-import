@@ -1,12 +1,6 @@
 import Plugin, { Tree } from 'broccoli-plugin';
-import walkSync from  'walk-sync';
-import {
-  unlinkSync,
-  rmdirSync,
-  mkdirSync,
-  readFileSync,
-  existsSync
-} from 'fs';
+import walkSync from 'walk-sync';
+import { unlinkSync, rmdirSync, mkdirSync, readFileSync, existsSync } from 'fs';
 import FSTree from 'fs-tree-diff';
 import makeDebug from 'debug';
 import { Pipeline, File } from 'babel-core';
@@ -17,13 +11,17 @@ import { join, dirname, extname } from 'path';
 import { isEqual, flatten } from 'lodash';
 import Package from './package';
 
-makeDebug.formatters.m = (modules) => {
-  return JSON.stringify(modules.map(m => ({
-    specifier: m.specifier,
-    path: m.path,
-    isDynamic: m.isDynamic,
-    package: m.package.name
-  })), null, 2);
+makeDebug.formatters.m = modules => {
+  return JSON.stringify(
+    modules.map(m => ({
+      specifier: m.specifier,
+      path: m.path,
+      isDynamic: m.isDynamic,
+      package: m.package.name
+    })),
+    null,
+    2
+  );
 };
 
 const debug = makeDebug('ember-auto-import:analyzer');
@@ -53,10 +51,10 @@ export default class Analyzer extends Plugin {
     this.parserOptions = this.buildParserOptions(pack.babelOptions);
   }
 
-  get imports() : Import[] {
+  get imports(): Import[] {
     if (!this.modules) {
       this.modules = flatten([...this.paths.values()]);
-      debug("imports %m", this.modules);
+      debug('imports %m', this.modules);
     }
     return this.modules;
   }
@@ -72,24 +70,26 @@ export default class Analyzer extends Plugin {
       let outputPath = join(this.outputPath, relativePath);
 
       switch (operation) {
-      case 'unlink':
-        if (extname(relativePath) === '.js') {
-          this.removeImports(relativePath);
-        }
-        unlinkSync(outputPath);
-        break;
-      case 'rmdir' :
-        rmdirSync(outputPath);
-        break;
-      case 'mkdir' :
-        mkdirSync(outputPath);
-        break;
-      case 'create':
-      case 'change':
-        {
-          let absoluteInputPath  = join(this.inputPaths[0], relativePath);
+        case 'unlink':
           if (extname(relativePath) === '.js') {
-            this.updateImports(relativePath, readFileSync(absoluteInputPath, 'utf8'));
+            this.removeImports(relativePath);
+          }
+          unlinkSync(outputPath);
+          break;
+        case 'rmdir':
+          rmdirSync(outputPath);
+          break;
+        case 'mkdir':
+          mkdirSync(outputPath);
+          break;
+        case 'create':
+        case 'change': {
+          let absoluteInputPath = join(this.inputPaths[0], relativePath);
+          if (extname(relativePath) === '.js') {
+            this.updateImports(
+              relativePath,
+              readFileSync(absoluteInputPath, 'utf8')
+            );
           }
           copy(absoluteInputPath, outputPath);
         }
@@ -98,9 +98,9 @@ export default class Analyzer extends Plugin {
   }
 
   private getPatchset() {
-    let input = walkSync.entries(this.inputPaths[0], [ '**/*' ]);
-    let previous  = this.previousTree;
-    let next = this.previousTree = FSTree.fromEntries(input);
+    let input = walkSync.entries(this.inputPaths[0], ['**/*']);
+    let previous = this.previousTree;
+    let next = (this.previousTree = FSTree.fromEntries(input));
     return previous.calculatePatch(next);
   }
 
@@ -108,7 +108,7 @@ export default class Analyzer extends Plugin {
     debug(`removing imports for ${relativePath}`);
     let imports = this.paths.get(relativePath);
     if (imports) {
-      if (imports.length > 0){
+      if (imports.length > 0) {
         this.modules = null; // invalidates cache
       }
       this.paths.delete(relativePath);
@@ -124,40 +124,51 @@ export default class Analyzer extends Plugin {
     }
   }
 
-  private parseImports(relativePath, source) : Import[] {
+  private parseImports(relativePath, source): Import[] {
     let ast;
     try {
       ast = parse(source, this.parserOptions);
-    } catch(err){
+    } catch (err) {
       if (err.name !== 'SyntaxError') {
         throw err;
       }
       debug('Ignoring an unparseable file');
     }
-    let imports : Import[] = [];
-    if (!ast){
+    let imports: Import[] = [];
+    if (!ast) {
       return imports;
     }
 
     forEachNode(ast.program.body, node => {
-      if (node.type === 'CallExpression' && node.callee && node.callee.type === 'Import') {
+      if (
+        node.type === 'CallExpression' &&
+        node.callee &&
+        node.callee.type === 'Import'
+      ) {
         // it's a syntax error to have anything other than exactly one
         // argument, so we can just assume this exists
         let argument = node.arguments[0];
         if (argument.type !== 'StringLiteral') {
-          throw new Error('ember-auto-import only supports dynamic import() with a string literal argument.');
+          throw new Error(
+            'ember-auto-import only supports dynamic import() with a string literal argument.'
+          );
         }
-        imports.push({ isDynamic: true, specifier: argument.value, path: relativePath, package: this.pack });
+        imports.push({
+          isDynamic: true,
+          specifier: argument.value,
+          path: relativePath,
+          package: this.pack
+        });
       }
     });
 
     // No need to recurse here, because we only deal with top-level static import declarations
     for (let node of ast.program.body) {
-      let specifier : string|null;
-      if (node.type === 'ImportDeclaration'){
+      let specifier: string | null;
+      if (node.type === 'ImportDeclaration') {
         specifier = node.source.value;
       }
-      if (node.type === 'ExportNamedDeclaration' && node.source){
+      if (node.type === 'ExportNamedDeclaration' && node.source) {
         specifier = node.source.value;
       }
       if (specifier) {
@@ -192,10 +203,10 @@ function copy(sourcePath, destPath) {
 }
 
 const skipKeys = {
-  'loc': true,
-  'type': true,
-  'start': true,
-  'end': true
+  loc: true,
+  type: true,
+  start: true,
+  end: true
 };
 
 function forEachNode(node, visit) {
@@ -205,7 +216,11 @@ function forEachNode(node, visit) {
       continue;
     }
     let child = node[key];
-    if (child && typeof child === 'object' && (child.type || Array.isArray(child))) {
+    if (
+      child &&
+      typeof child === 'object' &&
+      (child.type || Array.isArray(child))
+    ) {
       forEachNode(child, visit);
     }
   }
