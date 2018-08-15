@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.9
+ - BUGFIX: the compatibility workaround in 1.2.7 had the side-effect of breaking live-reload of addon code.
+
 ## 1.2.8
  - BUGFIX: previous release broke production builds for a silly reason.
 
