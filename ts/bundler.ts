@@ -114,8 +114,8 @@ export default class Bundler extends Plugin {
 
   private addLazyAssets({ lazyAssets, dir }) {
     let contents = lazyAssets.map(asset => {
-      let content = readFileSync(join(dir, asset), 'utf8');
-      writeFileSync(join(this.outputPath, 'assets', asset), content, 'utf8');
+        let content = readFileSync(join(dir, asset));
+        writeFileSync(join(this.outputPath, 'assets', asset), content);
       return content;
     });
     writeFileSync(
