@@ -7,6 +7,7 @@ import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies } from './splitter';
 import { BundlerHook, BuildResult } from './bundler';
+import BundleConfig from './bundle-config';
 
 registerHelper('js-string-escape', jsStringEscape);
 
@@ -51,7 +52,7 @@ export default class WebpackBundler implements BundlerHook {
   private outputDir;
 
   constructor(
-    bundles,
+    bundles : BundleConfig,
     environment,
     extraWebpackConfig,
     private consoleWrite,
@@ -60,7 +61,7 @@ export default class WebpackBundler implements BundlerHook {
     quickTemp.makeOrRemake(this, 'stagingDir', 'ember-auto-import-webpack');
     quickTemp.makeOrRemake(this, 'outputDir', 'ember-auto-import-webpack');
     let entry = {};
-    bundles.forEach(
+    bundles.names.forEach(
       bundle => (entry[bundle] = join(this.stagingDir, `${bundle}.js`))
     );
 

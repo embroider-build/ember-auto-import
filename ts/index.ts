@@ -32,7 +32,7 @@ module.exports = {
   updateFastBootManifest(manifest) {
     let autoImport = AutoImport.lookup(this);
     if (autoImport.isPrimary(this)) {
-      manifest.vendorFiles.push('assets/auto-import-fastboot.js');
+      autoImport.updateFastBootManifest(manifest);
     }
     return manifest;
   }

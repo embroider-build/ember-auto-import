@@ -3,7 +3,7 @@ import Bundler from './bundler';
 import Analyzer from './analyzer';
 import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
-import { bundles, bundleForPath, bundleEntrypoint } from './bundle-config';
+import BundleConfig from './bundle-config';
 import mergeTrees from 'broccoli-merge-trees';
 import Funnel from 'broccoli-funnel';
 import concat from 'broccoli-concat';
@@ -17,7 +17,7 @@ export default class AutoImport {
   private env: string;
   private consoleWrite: (string) => void;
   private analyzers: Map<Analyzer, Package> = new Map();
-  private bundles: ReadonlyArray<string>;
+  private bundles: BundleConfig;
 
   static lookup(appOrAddon): AutoImport {
     if (!global[protocol]) {
@@ -31,7 +31,7 @@ export default class AutoImport {
     // _findHost is private API but it's been stable in ember-cli for two years.
     let host = appOrAddon._findHost();
     this.env = host.env;
-    this.bundles = bundles(host);
+    this.bundles = new BundleConfig(host);
     if (!this.env) {
       throw new Error('Bug in ember-auto-import: did not discover environment');
     }
@@ -59,8 +59,7 @@ export default class AutoImport {
     // decides which ones to include in which bundles
     let splitter = new Splitter({
       analyzers: this.analyzers,
-      bundles: this.bundles,
-      bundleForPath
+      bundles: this.bundles
     });
 
     // The Bundler asks the splitter for deps it should include and
@@ -77,8 +76,8 @@ export default class AutoImport {
   addTo(allAppTree) {
     let bundler = debugTree(this.makeBundler(allAppTree), 'output');
 
-    let combinedEntrypoints = this.bundles.map(bundleName => {
-      let target = bundleEntrypoint(bundleName);
+    let combinedEntrypoints = this.bundles.names.map(bundleName => {
+      let target = this.bundles.bundleEntrypoint(bundleName);
       let original = new Funnel(allAppTree, {
         include: [target, target.replace('.js', '.map')]
       });
@@ -90,7 +89,8 @@ export default class AutoImport {
     });
 
     let lazyChunks = new Funnel(bundler, {
-      include: ['assets/*']
+      srcDir: 'lazy',
+      destDir: this.bundles.lazyChunkPath
     });
 
     return mergeTrees([allAppTree, lazyChunks, ...combinedEntrypoints], {
@@ -136,4 +136,9 @@ export default class AutoImport {
       host.options.fingerprint.exclude.push(pattern);
     }
   }
+
+  updateFastBootManifest(manifest) {
+    manifest.vendorFiles.push(`${this.bundles.lazyChunkPath}/auto-import-fastboot.js`);
+  }
+
 }

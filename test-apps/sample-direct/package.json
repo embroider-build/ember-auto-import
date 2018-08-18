@@ -15,9 +15,10 @@
     "lint:js": "eslint ./*.js app config lib server tests",
     "start": "ember serve",
     "test": "ember test --test-port=0",
+    "test:custom-bundles": "CUSTOMIZE_BUNDLES=true ember test --test-port=0",
     "test:fastboot": "qunit fastboot-tests/dev-fastboot-test.js",
-    "test:prod": "qunit fastboot-tests/prod-fastboot-test.js",
-    "test:custom-bundles": "CUSTOMIZE_BUNDLES=true ember test --test-port=0"
+    "test:custom-bundles-fastboot": "CUSTOMIZE_BUNDLES=true qunit fastboot-tests/dev-fastboot-test.js",
+    "test:prod": "qunit fastboot-tests/prod-fastboot-test.js"
   },
   "devDependencies": {
     "@ef4/scoped-lib": "*",
@@ -55,5 +56,10 @@
   },
   "engines": {
     "node": ">= 8.*"
+  },
+  "ember-addon": {
+    "paths": [
+      "lib/bundle-switcher"
+    ]
   }
 }

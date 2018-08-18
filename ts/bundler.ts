@@ -11,6 +11,7 @@ import {
   emptyDirSync,
   copySync,
 } from 'fs-extra';
+import BundleConfig from './bundle-config';
 
 const debug = makeDebug('ember-auto-import:bundler');
 
@@ -19,7 +20,7 @@ export interface BundlerPluginOptions {
   environment: string;
   splitter: Splitter;
   packages: Set<Package>;
-  bundles: ReadonlyArray<string>;
+  bundles: BundleConfig;
 }
 
 export interface BuildResult {
@@ -93,15 +94,15 @@ export default class Bundler extends Plugin {
     if (this.didEnsureDirs) {
       return;
     }
-    emptyDirSync(join(this.outputPath, 'assets'));
-    for (let bundle of this.options.bundles) {
+    emptyDirSync(join(this.outputPath, 'lazy'));
+    for (let bundle of this.options.bundles.names) {
       emptyDirSync(join(this.outputPath, 'entrypoints', bundle));
     }
     this.didEnsureDirs = true;
   }
 
   private addEntrypoints({ entrypoints, dir }) {
-    for (let bundle of this.options.bundles) {
+    for (let bundle of this.options.bundles.names) {
       if (entrypoints.has(bundle)) {
         entrypoints
           .get(bundle)
@@ -114,12 +115,20 @@ export default class Bundler extends Plugin {
 
   private addLazyAssets({ lazyAssets, dir }) {
     let contents = lazyAssets.map(asset => {
-        let content = readFileSync(join(dir, asset));
-        writeFileSync(join(this.outputPath, 'assets', asset), content);
-      return content;
-    });
+      // we copy every lazy asset into place here
+      let content = readFileSync(join(dir, asset));
+      writeFileSync(join(this.outputPath, 'lazy', asset), content);
+
+      // and then for JS assets, we also save a copy to put into the fastboot
+      // combined bundle. We don't want to include other things like WASM here
+      // that can't be concatenated.
+      if (/\.js$/i.test(asset)) {
+        return content;
+      }
+
+    }).filter(Boolean);
     writeFileSync(
-      join(this.outputPath, 'assets', 'auto-import-fastboot.js'),
+      join(this.outputPath, 'lazy', 'auto-import-fastboot.js'),
       contents.join('\n')
     );
   }
