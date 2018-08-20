@@ -98,7 +98,7 @@ export default class Analyzer extends Plugin {
   }
 
   private getPatchset() {
-    let input = walkSync.entries(this.inputPaths[0], ['**/*']);
+    let input = walkSync.entries(this.inputPaths[0], { globs: ['**/*'] });
     let previous = this.previousTree;
     let next = (this.previousTree = FSTree.fromEntries(input));
     return previous.calculatePatch(next);
