@@ -17,7 +17,6 @@ env:
     # See https://git.io/vdao3 for details.
     - JOBS=1
   matrix:
-    - EAI_SCENARIO=2.12
     - EAI_SCENARIO=2.18
     - EAI_SCENARIO=stable
     - EAI_SCENARIO=beta

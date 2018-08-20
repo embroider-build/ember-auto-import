@@ -3,7 +3,7 @@
 const EmberApp = require('ember-cli/lib/broccoli/ember-app');
 
 module.exports = function(defaults) {
-  let app = new EmberApp(defaults, {
+  let options = {
     autoImport: {
       exclude: ['qunit'],
       alias: {
@@ -13,7 +13,17 @@ module.exports = function(defaults) {
     babel: {
       plugins: [require('ember-auto-import/babel-plugin')]
     }
-  });
+  };
+
+  if (process.env.CUSTOMIZE_BUNDLES) {
+    options.outputPaths = {
+      vendor: {
+        js: '/js/vendor.js'
+      }
+    };
+  }
+
+  let app = new EmberApp(defaults, options);
 
   // Use `app.import` to add additional libraries to the generated
   // output files.

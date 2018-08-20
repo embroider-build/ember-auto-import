@@ -10,6 +10,7 @@ import {
 } from 'enhanced-resolve';
 import pkgUp from 'pkg-up';
 import { dirname } from 'path';
+import BundleConfig from './bundle-config';
 
 const debug = makeDebug('ember-auto-import:splitter');
 const resolver = ResolverFactory.createResolver({
@@ -31,9 +32,8 @@ export interface BundleDependencies {
 
 export interface SplitterOptions {
   // list of bundle names in priority order
-  bundles: ReadonlyArray<string>;
+  bundles: BundleConfig;
   analyzers: Map<Analyzer, Package>;
-  bundleForPath: (string) => string;
 }
 
 export default class Splitter {
@@ -159,7 +159,7 @@ export default class Splitter {
     let targets = await this.computeTargets(analyzers);
     let deps: Map<string, BundleDependencies> = new Map();
 
-    this.options.bundles.forEach(bundleName => {
+    this.options.bundles.names.forEach(bundleName => {
       deps.set(bundleName, { staticImports: [], dynamicImports: [] });
     });
 
@@ -202,16 +202,16 @@ export default class Splitter {
     importedBy.forEach(usage => {
       usedInBundles[this.bundleForPath(usage)] = true;
     });
-    return this.options.bundles.find(bundle => usedInBundles[bundle]);
+    return this.options.bundles.names.find(bundle => usedInBundles[bundle]);
   }
 
   private bundleForPath(usage: Import) {
-    let bundleName = this.options.bundleForPath(usage.path);
-    if (this.options.bundles.indexOf(bundleName) === -1) {
+    let bundleName = this.options.bundles.bundleForPath(usage.path);
+    if (this.options.bundles.names.indexOf(bundleName) === -1) {
       throw new Error(
         `bundleForPath("${
           usage.path
-        }") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.join(
+        }") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.names.join(
           ','
         )}`
       );
