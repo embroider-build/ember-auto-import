@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.11
+ - BUGFIX: apps with customized outputPaths work again.
+ - BUGFIX: fixed issues around building when tests are disabled.
+ - ENHANCEMENT: preserve pre-existing vendor sourcemaps
+
 ## 1.2.10
  - BUGFIX: 1.2.9 re-broke production builds. Now that is fixed *and* we have test coverage for it. Ahem.
 
