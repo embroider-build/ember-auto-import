@@ -5,6 +5,7 @@ import { unlinkSync, rmdirSync, mkdirSync, readFileSync, existsSync, writeFileSy
 import FSTree from 'fs-tree-diff';
 import symlinkOrCopy from 'symlink-or-copy';
 import uniqBy from 'lodash/uniqBy';
+import sourceMappingURL from 'source-map-url';
 
 /*
   This is a fairly specialized broccoli transform that we use to get the output
@@ -158,18 +159,21 @@ export default class Append extends Plugin {
       return;
     }
 
-    let upstreamContent = readFileSync(upstreamPath, 'utf8');
     let sourceDir = join(this.appendedDir, this.reverseMappings.get(relativePath));
-    let appendedContent;
-    if (existsSync(sourceDir)) {
-      appendedContent = readdirSync(sourceDir).map(name => {
-        if (/\.js$/.test(name)) {
-          return readFileSync(join(sourceDir, name), 'utf8');
-        }
-      }).filter(Boolean);
-    } else {
-      appendedContent = [];
+    if (!existsSync(sourceDir)) {
+      symlinkOrCopy.sync(upstreamPath, outputPath);
+      return;
     }
-    writeFileSync(outputPath, [upstreamContent, ...appendedContent].join(";\n"));
+
+    let appendedContent = readdirSync(sourceDir).map(name => {
+      if (/\.js$/.test(name)) {
+        return readFileSync(join(sourceDir, name), 'utf8');
+      }
+    }).filter(Boolean).join(";\n");
+    let upstreamContent = readFileSync(upstreamPath, 'utf8');
+    if (appendedContent.length > 0) {
+      upstreamContent = sourceMappingURL.insertBefore(upstreamContent, ";\n" + appendedContent);
+    }
+    writeFileSync(outputPath, upstreamContent, 'utf8');
   }
 }
