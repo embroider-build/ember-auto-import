@@ -16,6 +16,8 @@ ember-cli-build.js
 testem.js
 /js/tests
 /ts/tests
+/scripts
+/types
 
 # ember-try
 .node_modules.ember-try/
