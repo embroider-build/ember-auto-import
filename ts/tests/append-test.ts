@@ -169,13 +169,12 @@ Qmodule('broccoli-append', function(hooks) {
     outputFileSync(join(appended, 'app/2.js'), "two");
     await builder.build();
 
-    outputFileSync(join(appended, 'app/1.js'), "uno");
-
+    outputFileSync(join(appended, 'app/1.js'), "updated");
     await builder.build();
 
     let content = readFileSync(out, 'utf8');
     assert.ok(/^hello;\n/.test(content), 'original vendor.js and separator');
-    assert.ok(/\buno\b/.test(content), 'found uno');
+    assert.ok(/\bupdated\b/.test(content), 'found updated');
     assert.ok(/\btwo\b/.test(content), 'found two');
   });
 
@@ -192,13 +191,13 @@ Qmodule('broccoli-append', function(hooks) {
     await builder.build();
 
     outputFileSync(join(upstream, 'assets/vendor.js'), "hola");
-    outputFileSync(join(appended, 'app/1.js'), "uno");
+    outputFileSync(join(appended, 'app/1.js'), "updated");
 
     await builder.build();
 
     let content = readFileSync(out, 'utf8');
     assert.ok(/^hola;\n/.test(content), 'original vendor.js and separator');
-    assert.ok(/\buno\b/.test(content), 'found uno');
+    assert.ok(/\bupdated\b/.test(content), 'found updated');
     assert.ok(/\btwo\b/.test(content), 'found two');
   });
 
@@ -289,10 +288,10 @@ Qmodule('broccoli-append', function(hooks) {
     outputFileSync(join(appended, 'lazy/1.js'), "one");
     await builder.build();
 
-    outputFileSync(join(appended, 'lazy/1.js'), "uno");
+    outputFileSync(join(appended, 'lazy/1.js'), "updated");
     await builder.build();
 
-    assert.equal(readFileSync(out, 'utf8'), 'uno');
+    assert.equal(readFileSync(out, 'utf8'), 'updated');
   });
 
   test('passthrough file deleted', async function(assert) {
