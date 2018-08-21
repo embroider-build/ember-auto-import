@@ -4,9 +4,7 @@ import Analyzer from './analyzer';
 import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
-import mergeTrees from 'broccoli-merge-trees';
-import Funnel from 'broccoli-funnel';
-import concat from 'broccoli-concat';
+import Append from './broccoli-append';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 const protocol = '__ember_auto_import_protocol_v1__';
@@ -76,25 +74,17 @@ export default class AutoImport {
   addTo(allAppTree) {
     let bundler = debugTree(this.makeBundler(allAppTree), 'output');
 
-    let combinedEntrypoints = this.bundles.names.map(bundleName => {
-      let target = this.bundles.bundleEntrypoint(bundleName);
-      let original = new Funnel(allAppTree, {
-        include: [target, target.replace('.js', '.map')]
-      });
-      return concat(mergeTrees([original, bundler]), {
-        outputFile: target,
-        headerFiles: [target],
-        inputFiles: [`entrypoints/${bundleName}/*.js`]
-      });
-    });
+    let mappings = new Map();
+    for (let name of this.bundles.names) {
+      let target = this.bundles.bundleEntrypoint(name);
+      mappings.set(`entrypoints/${name}`, target);
+    }
 
-    let lazyChunks = new Funnel(bundler, {
-      srcDir: 'lazy',
-      destDir: this.bundles.lazyChunkPath
-    });
+    let passthrough = new Map();
+    passthrough.set('lazy', this.bundles.lazyChunkPath);
 
-    return mergeTrees([allAppTree, lazyChunks, ...combinedEntrypoints], {
-      overwrite: true
+    return new Append(allAppTree, bundler, {
+      mappings, passthrough
     });
   }
 

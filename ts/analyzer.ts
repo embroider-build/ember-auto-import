@@ -1,15 +1,14 @@
 import Plugin, { Tree } from 'broccoli-plugin';
 import walkSync from 'walk-sync';
-import { unlinkSync, rmdirSync, mkdirSync, readFileSync, existsSync } from 'fs';
+import { unlinkSync, rmdirSync, mkdirSync, readFileSync, removeSync } from 'fs-extra';
 import FSTree from 'fs-tree-diff';
 import makeDebug from 'debug';
 import { Pipeline, File } from 'babel-core';
 import { parse } from 'babylon';
-import symlinkOrCopy from 'symlink-or-copy';
-import mkdirp from 'mkdirp';
-import { join, dirname, extname } from 'path';
+import { join, extname } from 'path';
 import { isEqual, flatten } from 'lodash';
 import Package from './package';
+import symlinkOrCopy from 'symlink-or-copy';
 
 makeDebug.formatters.m = modules => {
   return JSON.stringify(
@@ -83,6 +82,8 @@ export default class Analyzer extends Plugin {
           mkdirSync(outputPath);
           break;
         case 'create':
+          removeSync(outputPath);
+          // deliberate fallthrough
         case 'change': {
           let absoluteInputPath = join(this.inputPaths[0], relativePath);
           if (extname(relativePath) === '.js') {
@@ -91,14 +92,14 @@ export default class Analyzer extends Plugin {
               readFileSync(absoluteInputPath, 'utf8')
             );
           }
-          copy(absoluteInputPath, outputPath);
+          symlinkOrCopy.sync(absoluteInputPath, outputPath);
         }
       }
     });
   }
 
   private getPatchset() {
-    let input = walkSync.entries(this.inputPaths[0], { globs: ['**/*'] });
+    let input = walkSync.entries(this.inputPaths[0]);
     let previous = this.previousTree;
     let next = (this.previousTree = FSTree.fromEntries(input));
     return previous.calculatePatch(next);
@@ -181,24 +182,6 @@ export default class Analyzer extends Plugin {
       }
     }
     return imports;
-  }
-}
-
-function copy(sourcePath, destPath) {
-  let destDir = dirname(destPath);
-
-  try {
-    symlinkOrCopy.sync(sourcePath, destPath);
-  } catch (e) {
-    if (!existsSync(destDir)) {
-      mkdirp.sync(destDir);
-    }
-    try {
-      unlinkSync(destPath);
-    } catch (e) {
-      // swallow the error
-    }
-    symlinkOrCopy.sync(sourcePath, destPath);
   }
 }
 

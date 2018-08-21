@@ -14,4 +14,5 @@ cd test-apps/sample-merged   && yarn test
 cd test-apps/sample-conflict && yarn test
 cd test-apps/sample-noconflict && yarn test
 yarn test:root
+yarn test:node
 EOF
