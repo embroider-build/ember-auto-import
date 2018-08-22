@@ -81,10 +81,10 @@ export default class Analyzer extends Plugin {
         case 'mkdir':
           mkdirSync(outputPath);
           break;
-        case 'create':
+        case 'change':
           removeSync(outputPath);
           // deliberate fallthrough
-        case 'change': {
+        case 'create': {
           let absoluteInputPath = join(this.inputPaths[0], relativePath);
           if (extname(relativePath) === '.js') {
             this.updateImports(
