@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.12
+ - BUGFIX: an analyzer rebuild bug. Hopefully the last one since I added a bunch of new test coverage around it.
+ - BUGFIX: we weren't matching the exact sort order required by fs-tree-diff.
+
 ## 1.2.11
  - BUGFIX: apps with customized outputPaths work again.
  - BUGFIX: fixed issues around building when tests are disabled.
