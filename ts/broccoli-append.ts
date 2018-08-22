@@ -122,7 +122,7 @@ export default class Append extends Plugin {
     let input = walkSync.entries(this.upstreamDir).concat(passthroughEntries);
 
     // FSTree requires the entries to be sorted and uniq
-    input.sort((a,b) => a.relativePath.localeCompare(b.relativePath));
+    input.sort(compareByRelativePath);
     input = uniqBy(input, e => (e as any).relativePath);
 
     let previous = this.previousUpstreamTree;
@@ -176,4 +176,16 @@ export default class Append extends Plugin {
     }
     writeFileSync(outputPath, upstreamContent, 'utf8');
   }
+}
+
+function compareByRelativePath(entryA, entryB) {
+  let pathA = entryA.relativePath;
+  let pathB = entryB.relativePath;
+
+  if (pathA < pathB) {
+    return -1;
+  } else if (pathA > pathB) {
+    return 1;
+  }
+  return 0;
 }
