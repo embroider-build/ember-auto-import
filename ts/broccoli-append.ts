@@ -5,7 +5,7 @@ import { unlinkSync, rmdirSync, mkdirSync, readFileSync, existsSync, writeFileSy
 import FSTree from 'fs-tree-diff';
 import symlinkOrCopy from 'symlink-or-copy';
 import uniqBy from 'lodash/uniqBy';
-import sourceMappingURL from 'source-map-url';
+import { insertBefore} from './source-map-url';
 
 /*
   This is a fairly specialized broccoli transform that we use to get the output
@@ -172,7 +172,7 @@ export default class Append extends Plugin {
     }).filter(Boolean).join(";\n");
     let upstreamContent = readFileSync(upstreamPath, 'utf8');
     if (appendedContent.length > 0) {
-      upstreamContent = sourceMappingURL.insertBefore(upstreamContent, ";\n" + appendedContent);
+      upstreamContent = insertBefore(upstreamContent, ";\n" + appendedContent);
     }
     writeFileSync(outputPath, upstreamContent, 'utf8');
   }
