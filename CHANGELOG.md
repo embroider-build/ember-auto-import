@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.13
+ - BUGFIX: only attempt to insert before a sourceMapURL that's anchored to the end of the file.
+
 ## 1.2.12
  - BUGFIX: an analyzer rebuild bug. Hopefully the last one since I added a bunch of new test coverage around it.
  - BUGFIX: we weren't matching the exact sort order required by fs-tree-diff.
