@@ -136,6 +136,20 @@ Qmodule('broccoli-append', function(hooks) {
     assert.equal(content, "function(){ console.log('hi'); } ;\none//# sourceMappingURL=vendor.map \n");
   });
 
+  test('does not match non-trailing sourceMappingURL', async function(assert) {
+    let mappings = new Map();
+    mappings.set('app', 'assets/vendor.js');
+    builder = makeBuilder({
+      mappings
+    });
+    let out = join(builder.outputPath, 'assets/vendor.js');
+    outputFileSync(join(upstream, 'assets/vendor.js'), "function(){ console.log('hi'); } //# sourceMappingURL=vendor.map \nfunction(){ console.log('bye'); }");
+    outputFileSync(join(appended, 'app/1.js'), "one");
+    await builder.build();
+    let content = readFileSync(out, 'utf8');
+    assert.equal(content, "function(){ console.log('hi'); } //# sourceMappingURL=vendor.map \nfunction(){ console.log('bye'); };\none");
+  });
+
   test('upstream changed', async function(assert) {
     let mappings = new Map();
     mappings.set('app', 'assets/vendor.js');
