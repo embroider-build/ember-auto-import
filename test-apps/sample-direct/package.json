@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@ef4/scoped-lib": "*",
+    "micro-ember-lib": "*",
     "inner-lib": "*",
     "ember-auto-import": "*",
     "broccoli-asset-rev": "*",

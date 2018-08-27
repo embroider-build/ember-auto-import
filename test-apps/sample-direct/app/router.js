@@ -8,6 +8,7 @@ const Router = EmberRouter.extend({
 
 Router.map(function() {
   this.route('dynamic-import');
+  this.route('lazy-component');
 });
 
 export default Router;

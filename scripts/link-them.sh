@@ -63,6 +63,15 @@ for package in "sample-direct"; do
     popd > /dev/null
 done
 
+# These packages get to depend on micro-ember-lib
+for package in "sample-direct" ; do
+    pushd ./test-apps/$package/node_modules > /dev/null
+    rm -rf ./ember-micro-lib
+    ln -s ../../micro-ember-lib ./micro-ember-lib
+    popd > /dev/null
+done
+
+
 # sample-conflict is supposed to have an extra copy of inner-lib with a different version number
 rm -rf ./test-apps/sample-conflict/node_modules/inner-lib
 cp -r ./test-apps/inner-lib ./test-apps/sample-conflict/node_modules/inner-lib

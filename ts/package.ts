@@ -19,6 +19,7 @@ export default class Package {
   private isDeveloping: boolean;
   private pkgGeneration: number;
   private pkgCache;
+  private cachedTemplateCompiler;
 
   static lookup(appOrAddon) {
     if (!cache.has(appOrAddon)) {
@@ -113,6 +114,18 @@ export default class Package {
       this.isAddonCache.set(name, keywords && keywords.includes('ember-addon'));
     }
     return this.isAddonCache.get(name);
+  }
+
+  get templateCompiler() {
+    if (!this.cachedTemplateCompiler) {
+      if (this.isAddon) {
+        throw new Error('bug in ember-auto-import, only an app package has ember-template-compiler');
+      }
+      this.cachedTemplateCompiler = require(resolve.sync(`ember-source/dist/ember-template-compiler`, {
+        basedir: this.root
+      }));
+    }
+    return this.cachedTemplateCompiler;
   }
 
   assertAllowedDependency(name) {

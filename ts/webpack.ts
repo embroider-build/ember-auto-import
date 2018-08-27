@@ -56,7 +56,8 @@ export default class WebpackBundler implements BundlerHook {
     environment,
     extraWebpackConfig,
     private consoleWrite,
-    private publicAssetURL
+    private publicAssetURL,
+    private templateCompiler
   ) {
     quickTemp.makeOrRemake(this, 'stagingDir', 'ember-auto-import-webpack');
     quickTemp.makeOrRemake(this, 'outputDir', 'ember-auto-import-webpack');
@@ -79,6 +80,23 @@ export default class WebpackBundler implements BundlerHook {
         splitChunks: {
           chunks: 'all'
         }
+      },
+      module: {
+        rules: [
+          {
+            test: /\.hbs$/,
+            use: [
+              {
+                loader: join(__dirname, './webpack-hbs-loader'),
+                options: { templateCompiler: this.templateCompiler }
+              }
+            ]
+          }
+        ]
+      },
+      externals: {
+        // TODO: derive the whole set of these.
+        '@ember/component': 'window.Ember.Component'
       }
     };
     if (extraWebpackConfig) {
@@ -135,8 +153,13 @@ export default class WebpackBundler implements BundlerHook {
           return;
         }
         if (stats.hasErrors()) {
-          this.consoleWrite(stats.toString());
-          reject(new Error('webpack returned errors to ember-auto-import'));
+          let templateError = stats.compilation.errors.find(e => e.error && e.error.type === 'Template Compiler Error');
+          if (templateError) {
+            reject(templateError.error);
+          } else {
+            this.consoleWrite(stats.toString());
+            reject(new Error('webpack returned errors to ember-auto-import'));
+          }
           return;
         }
         if (stats.hasWarnings() || process.env.AUTO_IMPORT_VERBOSE) {

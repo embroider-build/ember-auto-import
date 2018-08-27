@@ -1,0 +1,9 @@
+{
+  "name": "micro-ember-lib",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Example of an Ember component designed for consumption directly via auto-import",
+  "engines": {
+    "node": ">= 8.*"
+  }
+}

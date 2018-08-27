@@ -37,26 +37,29 @@ export default class Bundler extends Plugin {
   private lastDeps = null;
   private cachedBundlerHook;
   private didEnsureDirs = false;
+  private rootPackage;
 
   constructor(allAppTree: Tree, private options: BundlerPluginOptions) {
     super([allAppTree], { persistentOutput: true });
+    this.rootPackage = [...options.packages.values()].find(
+      pkg => !pkg.isAddon
+    );
   }
 
   private get publicAssetURL(): string | undefined {
     // Only the app (not an addon) can customize the public asset URL, because
     // it's an app concern.
-    let rootPackage = [...this.options.packages.values()].find(
-      pkg => !pkg.isAddon
-    );
-    if (rootPackage) {
-      let url = rootPackage.publicAssetURL;
-      if (url) {
-        if (url[url.length - 1] !== '/') {
-          url = url + '/';
-        }
-        return url;
+    let url = this.rootPackage.publicAssetURL;
+    if (url) {
+      if (url[url.length - 1] !== '/') {
+        url = url + '/';
       }
+      return url;
     }
+  }
+
+  private get templateCompiler() {
+    return this.rootPackage.templateCompiler;
   }
 
   get bundlerHook(): BundlerHook {
@@ -71,7 +74,8 @@ export default class Bundler extends Plugin {
         this.options.environment,
         extraWebpackConfig,
         this.options.consoleWrite,
-        this.publicAssetURL
+        this.publicAssetURL,
+        this.templateCompiler
       );
     }
     return this.cachedBundlerHook;
