@@ -38,5 +38,12 @@ module.exports = function(environment) {
       assert.equal(document.querySelector('[data-test="dynamic-import-result"]').textContent.trim(), 'ember-auto-import-a-dependency');
     })
 
+    test('lazy loaded component', async function(assert) {
+      let page = await fastboot.visit('/lazy-component');
+      let html = await page.html();
+      let document = new JSDOM(html).window.document;
+      assert.equal(document.querySelector('.from-micro-ember-lib').textContent.trim(), 'micro lib says it works');
+    });
+
   });
 };
