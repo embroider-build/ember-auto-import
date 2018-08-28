@@ -35,7 +35,8 @@ module.exports = {
         'addon/**',
         'addon-test-support/**',
         'app/**',
-        'tests/dummy/app/**'
+        'tests/dummy/app/**',
+        'test-apps/micro-ember-lib/**/*.js'
       ],
       parserOptions: {
         sourceType: 'script',
