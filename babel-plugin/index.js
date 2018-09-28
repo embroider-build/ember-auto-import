@@ -1,5 +1,5 @@
-const template  = require('babel-template');
-const syntax = require('babel-plugin-syntax-dynamic-import');
+const template  = require('@babel/template');
+const syntax = require('@babel/plugin-syntax-dynamic-import');
 const buildImport = template(`emberAutoImportDynamic(SOURCE)`);
 
 module.exports = () => ({
