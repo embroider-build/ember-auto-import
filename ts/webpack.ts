@@ -32,8 +32,8 @@ if (typeof document !== 'undefined') {
 
 module.exports = (function(){
   var w = window;
-  var d = w.define;
-  var r = w.require;
+  var d = eval('define');
+  var r = eval('require');
   w.emberAutoImportDynamic = function(specifier) {
     return r('_eai_dyn_' + specifier);
   };
