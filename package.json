@@ -6,7 +6,7 @@
     "ember-addon",
     "import",
     "npm",
-    "rollup"
+    "webpack"
   ],
   "license": "MIT",
   "author": "Edward Faulkner <edward@eaf4.com>",
