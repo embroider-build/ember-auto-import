@@ -149,4 +149,10 @@ export default class Package {
   get publicAssetURL(): string | undefined {
     return this.autoImportOptions && this.autoImportOptions.publicAssetURL;
   }
+
+  get forbidsEval(): boolean {
+    // only apps (not addons) are allowed to set this, because it's motivated by
+    // the apps own Content Security Policy.
+    return !this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval;
+  }
 }

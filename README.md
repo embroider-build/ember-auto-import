@@ -106,6 +106,7 @@ Suported Options
 
  - `alias`: _object_, Map from package names to substitute packages that will be used instead.
  - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
+ - `forbidEval`: _boolean_, defaults to false. We use `eval` in development by default (because that is the fastest way to provide sourcemaps). If you need to comply with a strict Content Security Policy (CSP), you can set `forbidEval: true`. You will still get sourcemaps, they will just use a slower implementation.
  - `publicAssetURL`: where to load additional dynamic javascript files from. You usually don't need to set this -- the default works for any Ember app that isn't doing something unusual.
  - `webpack`: _object_, An object that will get merged into the configuration we pass to webpack. This lets you work around quirks in underlying libraries and otherwise customize the way Webpack will assemble your dependencies.
 
@@ -138,7 +139,7 @@ FAQ
 
 ###  I use Content Security Policy (CSP) and it breaks ember-auto-import.
 
-You need to either add "unsafe-eval" to your policy, or use [one of the suggestions for making webpack not require unsafe-eval](https://github.com/webpack/webpack/issues/5627).
+See `forbidEval` above.
 
 ### I'm trying to load a jQuery plugin, but it doesn't attach itself to the copy of jQuery that's already in my Ember app.
 
