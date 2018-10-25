@@ -1,13 +1,13 @@
 import webpack from 'webpack';
 import { join } from 'path';
 import { merge } from 'lodash';
-import quickTemp from 'quick-temp';
 import { writeFileSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies } from './splitter';
 import { BundlerHook, BuildResult } from './bundler';
 import BundleConfig from './bundle-config';
+import { ensureDirSync } from 'fs-extra';
 
 registerHelper('js-string-escape', jsStringEscape);
 
@@ -67,10 +67,13 @@ export default class WebpackBundler implements BundlerHook {
     environment,
     extraWebpackConfig,
     private consoleWrite,
-    private publicAssetURL
+    private publicAssetURL,
+    tempArea: string
   ) {
-    quickTemp.makeOrRemake(this, 'stagingDir', 'ember-auto-import-webpack');
-    quickTemp.makeOrRemake(this, 'outputDir', 'ember-auto-import-webpack');
+    this.stagingDir = join(tempArea, 'staging');
+    ensureDirSync(this.stagingDir);
+    this.outputDir = join(tempArea, 'output');
+    ensureDirSync(this.outputDir);
     let entry = {};
     bundles.names.forEach(bundle => {
       entry[bundle] = [join(this.stagingDir, 'l.js'), join(this.stagingDir, `${bundle}.js`)];

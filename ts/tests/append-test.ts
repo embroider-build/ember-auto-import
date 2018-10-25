@@ -1,10 +1,6 @@
-// this rule doesn't understand .npmignore :-(
-// tslint:disable:no-implicit-dependencies
 import QUnit from 'qunit';
 import broccoli from 'broccoli';
 import { UnwatchedDir } from 'broccoli-source';
-// tslint:enable:no-implicit-dependencies
-
 import quickTemp from 'quick-temp';
 import { ensureDirSync, readFileSync, outputFileSync, removeSync, existsSync } from 'fs-extra';
 import { join } from 'path';
