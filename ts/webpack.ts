@@ -1,7 +1,7 @@
 import webpack from 'webpack';
 import { join } from 'path';
 import { merge } from 'lodash';
-import { writeFileSync } from 'fs';
+import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies } from './splitter';
@@ -70,6 +70,10 @@ export default class WebpackBundler implements BundlerHook {
     private publicAssetURL,
     tempArea: string
   ) {
+    // resolve the real path, because we're going to do path comparisons later
+    // that could fail if this is not canonical.
+    tempArea = realpathSync(tempArea);
+
     this.stagingDir = join(tempArea, 'staging');
     ensureDirSync(this.stagingDir);
     this.outputDir = join(tempArea, 'output');
