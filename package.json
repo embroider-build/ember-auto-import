@@ -1,6 +1,6 @@
 {
   "name": "ember-auto-import",
-  "version": "1.2.14",
+  "version": "1.2.15",
   "description": "Zero-config import from NPM packages",
   "keywords": [
     "ember-addon",
