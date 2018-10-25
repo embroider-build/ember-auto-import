@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.14
+ - ENHANCEMENT: new "forbidEval" option supports sites with strict CSP.
+ - BUGFIX: don't leak temp dirs
+ - BUGFIX: support apps with closed-over require & define by @noslouch and @ef4
+ - DOCS: package.json metadata update by @chadian
+
 ## 1.2.13
  - BUGFIX: only attempt to insert before a sourceMapURL that's anchored to the end of the file.
 
