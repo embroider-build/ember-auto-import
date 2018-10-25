@@ -79,7 +79,7 @@ export default class WebpackBundler implements BundlerHook {
         splitChunks: {
           chunks: 'all'
         }
-      }
+      },
     };
     if (extraWebpackConfig) {
       merge(config, extraWebpackConfig);

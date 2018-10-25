@@ -23,6 +23,10 @@ module.exports = function(defaults) {
     };
   }
 
+  if (process.env.CUSTOMIZE_CSP) {
+    options.autoImport.forbidEval = true;
+  }
+
   let app = new EmberApp(defaults, options);
 
   // Use `app.import` to add additional libraries to the generated

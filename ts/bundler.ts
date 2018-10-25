@@ -65,6 +65,9 @@ export default class Bundler extends Plugin {
         {},
         ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig)
       );
+      if ([...this.options.packages.values()].find(pkg => pkg.forbidsEval)) {
+        extraWebpackConfig.devtool = 'source-map';
+      }
       debug('extraWebpackConfig %j', extraWebpackConfig);
       this.cachedBundlerHook = new WebpackBundler(
         this.options.bundles,

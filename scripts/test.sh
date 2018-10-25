@@ -6,6 +6,7 @@ cd test-apps/sample-direct   && yarn test:fastboot
 cd test-apps/sample-direct   && yarn test:prod
 cd test-apps/sample-direct   && yarn test:custom-bundles
 cd test-apps/sample-direct   && yarn test:custom-bundles-fastboot
+cd test-apps/sample-direct   && yarn test:custom-csp
 cd test-apps/sample-indirect && yarn test
 cd test-apps/sample-indirect && yarn test:fastboot
 cd test-apps/sample-addon    && yarn test
