@@ -31,10 +31,9 @@ if (typeof document !== 'undefined') {
 }
 
 module.exports = (function(){
-  var w = window;
-  var d = eval('define');
-  var r = eval('require');
-  w.emberAutoImportDynamic = function(specifier) {
+  var d = _eai_d;
+  var r = _eai_r;
+  window.emberAutoImportDynamic = function(specifier) {
     return r('_eai_dyn_' + specifier);
   };
   {{#each staticImports as |module|}}
@@ -45,6 +44,18 @@ module.exports = (function(){
   {{/each}}
 })();
 `);
+
+// this goes in a file by itself so we can tell webpack not to parse it. That
+// allows us to grab the "require" and "define" from our enclosing scope without
+// webpack messing with them.
+//
+// It's important that we're using our enclosing scope and not jumping directly
+// to window.require (which would be easier), because the enter Ember app may be
+// inside a closure with a "require" that isn't the same as "window.require".
+const loader = `
+window._eai_r = require;
+window._eai_d = define;
+`;
 
 export default class WebpackBundler implements BundlerHook {
   private stagingDir;
@@ -61,9 +72,9 @@ export default class WebpackBundler implements BundlerHook {
     quickTemp.makeOrRemake(this, 'stagingDir', 'ember-auto-import-webpack');
     quickTemp.makeOrRemake(this, 'outputDir', 'ember-auto-import-webpack');
     let entry = {};
-    bundles.names.forEach(
-      bundle => (entry[bundle] = join(this.stagingDir, `${bundle}.js`))
-    );
+    bundles.names.forEach(bundle => {
+      entry[bundle] = [join(this.stagingDir, 'l.js'), join(this.stagingDir, `${bundle}.js`)];
+    });
 
     let config = {
       mode: environment === 'production' ? 'production' : 'development',
@@ -79,7 +90,10 @@ export default class WebpackBundler implements BundlerHook {
         splitChunks: {
           chunks: 'all'
         }
-      }
+      },
+      module: {
+        noParse: join(this.stagingDir, 'l.js')
+      },
     };
     if (extraWebpackConfig) {
       merge(config, extraWebpackConfig);
@@ -91,6 +105,7 @@ export default class WebpackBundler implements BundlerHook {
     for (let [bundle, deps] of bundleDeps.entries()) {
       this.writeEntryFile(bundle, deps);
     }
+    this.writeLoaderFile();
     let stats = await this.runWebpack();
     return this.summarizeStats(stats);
   }
@@ -123,6 +138,13 @@ export default class WebpackBundler implements BundlerHook {
         dynamicImports: deps.dynamicImports,
         publicAssetURL: this.publicAssetURL
       })
+    );
+  }
+
+  private writeLoaderFile() {
+    writeFileSync(
+      join(this.stagingDir, `l.js`),
+      loader
     );
   }
 
