@@ -5,7 +5,8 @@ declare module 'broccoli-plugin' {
   export default class Plugin {
     constructor(inputTrees: Tree[], options: any)
     inputPaths: string[];
-    outputPath: string
+    outputPath: string;
+    cachePath: string | undefined;
   }
 
 }

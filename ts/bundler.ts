@@ -39,7 +39,10 @@ export default class Bundler extends Plugin {
   private didEnsureDirs = false;
 
   constructor(allAppTree: Tree, private options: BundlerPluginOptions) {
-    super([allAppTree], { persistentOutput: true });
+    super([allAppTree], {
+      persistentOutput: true,
+      needsCache: true
+    });
   }
 
   private get publicAssetURL(): string | undefined {
@@ -74,7 +77,8 @@ export default class Bundler extends Plugin {
         this.options.environment,
         extraWebpackConfig,
         this.options.consoleWrite,
-        this.publicAssetURL
+        this.publicAssetURL,
+        this.cachePath
       );
     }
     return this.cachedBundlerHook;
