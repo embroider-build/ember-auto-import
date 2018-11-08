@@ -133,7 +133,12 @@ Using ember-auto-import inside an addon is almost exactly the same as inside an 
       }
     };
     ```
-
+ - if your addon has an `included` hook, it's critical that you call `super` correctly so that ember-auto-import's `included` will also run:
+    ```js
+    included() {
+      this._super.included.apply(this, arguments);
+    }
+    ```
 FAQ
 ---
 
