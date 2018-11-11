@@ -8,8 +8,7 @@ import { join } from 'path';
 import {
   readFileSync,
   writeFileSync,
-  emptyDirSync,
-  copySync,
+  ensureDirSync,
 } from 'fs-extra';
 import BundleConfig from './bundle-config';
 
@@ -25,8 +24,7 @@ export interface BundlerPluginOptions {
 
 export interface BuildResult {
   entrypoints: Map<string, string[]>;
-  lazyAssets: string[];
-  dir: string;
+  assets: string[];
 }
 
 export interface BundlerHook {
@@ -36,7 +34,7 @@ export interface BundlerHook {
 export default class Bundler extends Plugin {
   private lastDeps = null;
   private cachedBundlerHook;
-  private didEnsureDirs = false;
+  buildResult: BuildResult | undefined;
 
   constructor(allAppTree: Tree, private options: BundlerPluginOptions) {
     super([allAppTree], {
@@ -72,70 +70,46 @@ export default class Bundler extends Plugin {
         extraWebpackConfig.devtool = 'source-map';
       }
       debug('extraWebpackConfig %j', extraWebpackConfig);
+
+      let assetPath = join(this.outputPath, 'assets');
+      ensureDirSync(assetPath);
+
       this.cachedBundlerHook = new WebpackBundler(
         this.options.bundles,
         this.options.environment,
         extraWebpackConfig,
         this.options.consoleWrite,
         this.publicAssetURL,
-        this.cachePath
+        this.cachePath,
+        assetPath
       );
     }
     return this.cachedBundlerHook;
   }
 
   async build() {
-    this.ensureDirs();
     reloadDevPackages();
     let { splitter } = this.options;
     let bundleDeps = await splitter.deps();
     if (bundleDeps !== this.lastDeps) {
       let buildResult = await this.bundlerHook.build(bundleDeps);
-      this.addEntrypoints(buildResult);
-      this.addLazyAssets(buildResult);
+      this.addFastbootBundle(buildResult);
       this.lastDeps = bundleDeps;
+      this.buildResult = buildResult;
     }
   }
 
-  private ensureDirs() {
-    if (this.didEnsureDirs) {
-      return;
-    }
-    emptyDirSync(join(this.outputPath, 'lazy'));
-    for (let bundle of this.options.bundles.names) {
-      emptyDirSync(join(this.outputPath, 'entrypoints', bundle));
-    }
-    this.didEnsureDirs = true;
-  }
-
-  private addEntrypoints({ entrypoints, dir }) {
-    for (let bundle of this.options.bundles.names) {
-      if (entrypoints.has(bundle)) {
-        entrypoints
-          .get(bundle)
-          .forEach(asset => {
-            copySync(join(dir, asset), join(this.outputPath, 'entrypoints', bundle, asset));
-          });
-      }
-    }
-  }
-
-  private addLazyAssets({ lazyAssets, dir }) {
-    let contents = lazyAssets.map(asset => {
-      // we copy every lazy asset into place here
-      let content = readFileSync(join(dir, asset));
-      writeFileSync(join(this.outputPath, 'lazy', asset), content);
-
-      // and then for JS assets, we also save a copy to put into the fastboot
-      // combined bundle. We don't want to include other things like WASM here
-      // that can't be concatenated.
+  private addFastbootBundle({ assets }) {
+    let contents = assets.map(asset => {
+      // for JS assets, we save a copy to put into the fastboot combined bundle.
+      // We don't want to include other things like WASM here that can't be
+      // concatenated.
       if (/\.js$/i.test(asset)) {
-        return content;
+        return readFileSync(join(this.outputPath, 'assets', asset));
       }
-
     }).filter(Boolean);
     writeFileSync(
-      join(this.outputPath, 'lazy', 'auto-import-fastboot.js'),
+      join(this.outputPath, 'assets', 'auto-import-fastboot.js'),
       contents.join('\n')
     );
   }

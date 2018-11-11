@@ -4,7 +4,8 @@ import Analyzer from './analyzer';
 import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
-import Append from './broccoli-append';
+import mergeTrees from 'broccoli-merge-trees';
+import UpdateHTML from './update-html';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 const protocol = '__ember_auto_import_protocol_v1__';
@@ -73,58 +74,38 @@ export default class AutoImport {
 
   addTo(allAppTree) {
     let bundler = debugTree(this.makeBundler(allAppTree), 'output');
-
-    let mappings = new Map();
-    for (let name of this.bundles.names) {
-      let target = this.bundles.bundleEntrypoint(name);
-      mappings.set(`entrypoints/${name}`, target);
-    }
-
-    let passthrough = new Map();
-    passthrough.set('lazy', this.bundles.lazyChunkPath);
-
-    return new Append(allAppTree, bundler, {
-      mappings, passthrough
+    return mergeTrees([
+      allAppTree,
+      bundler,
+      new UpdateHTML(allAppTree, bundler, this.bundles)
+    ], {
+      overwrite: true
     });
   }
 
   included(addonInstance) {
     let host = addonInstance._findHost();
-    this.configureFingerprints(host);
 
     // ember-cli as of 3.4-beta has introduced architectural changes that make
     // it impossible for us to nicely emit the built dependencies via our own
     // vendor and public trees, because it now considers those as *inputs* to
-    // the trees that we analyze, causing a circle, even though there is no
-    // real circular data dependency.
+    // the trees that we analyze, causing a circle, even though there is no real
+    // circular data dependency.
     //
     // We also cannot use postprocessTree('all'), because that only works in
     // first-level addons.
     //
     // So we are forced to monkey patch EmberApp. We insert ourselves right at
-    // the beginning of addonPostprocessTree.
+    // the end of addonPostprocessTree. We're deliberately going so late that
+    // even things like broccoli-asset-rev can't mess with us.
     let original = host.addonPostprocessTree.bind(host);
     host.addonPostprocessTree = (which, tree) => {
+      let result = original(which, tree);
       if (which === 'all') {
-        tree = this.addTo(tree);
+        result = this.addTo(result);
       }
-      return original(which, tree);
+      return result;
     };
-  }
-
-  // We need to disable fingerprinting of chunks, because (1) they already
-  // have their own webpack-generated hashes and (2) the runtime loader code
-  // can't easily be told about broccoli-asset-rev's hashes.
-  private configureFingerprints(host) {
-    let pattern = 'assets/chunk.*.js';
-    if (!host.options.fingerprint) {
-      host.options.fingerprint = {};
-    }
-    if (!host.options.fingerprint.hasOwnProperty('exclude')) {
-      host.options.fingerprint.exclude = [pattern];
-    } else {
-      host.options.fingerprint.exclude.push(pattern);
-    }
   }
 
   updateFastBootManifest(manifest) {

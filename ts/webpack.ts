@@ -1,5 +1,5 @@
 import webpack from 'webpack';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { merge } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
@@ -60,7 +60,6 @@ window._eai_d = define;
 export default class WebpackBundler implements BundlerHook {
   private stagingDir;
   private webpack;
-  private outputDir;
 
   constructor(
     bundles : BundleConfig,
@@ -68,7 +67,8 @@ export default class WebpackBundler implements BundlerHook {
     extraWebpackConfig,
     private consoleWrite,
     private publicAssetURL,
-    tempArea: string
+    tempArea: string,
+    private outputDir: string,
   ) {
     // resolve the real path, because we're going to do path comparisons later
     // that could fail if this is not canonical.
@@ -76,8 +76,6 @@ export default class WebpackBundler implements BundlerHook {
 
     this.stagingDir = join(tempArea, 'staging');
     ensureDirSync(this.stagingDir);
-    this.outputDir = join(tempArea, 'output');
-    ensureDirSync(this.outputDir);
     let entry = {};
     bundles.names.forEach(bundle => {
       entry[bundle] = [join(this.stagingDir, 'l.js'), join(this.stagingDir, `${bundle}.js`)];
@@ -120,8 +118,7 @@ export default class WebpackBundler implements BundlerHook {
   private summarizeStats(stats): BuildResult {
     let output = {
       entrypoints: new Map(),
-      lazyAssets: stats.assets.map(a => a.name),
-      dir: this.outputDir
+      assets: stats.assets.map(a => a.name),
     };
     for (let id of Object.keys(stats.entrypoints)) {
       let entrypoint = stats.entrypoints[id];
@@ -131,8 +128,10 @@ export default class WebpackBundler implements BundlerHook {
   }
 
   private writeEntryFile(name, deps) {
+    let fullName = join(this.stagingDir, `${name}.js`);
+    ensureDirSync(dirname(fullName));
     writeFileSync(
-      join(this.stagingDir, `${name}.js`),
+      fullName,
       entryTemplate({
         staticImports: deps.staticImports,
         dynamicImports: deps.dynamicImports,
