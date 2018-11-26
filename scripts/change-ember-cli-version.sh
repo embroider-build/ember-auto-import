@@ -1,20 +1,38 @@
 #!/bin/bash
 set -e
+
 case "$EAI_SCENARIO" in
     "2.18")
-        yarn add --dev ember-cli@~2.18.0
+        version="~2.18.0"
         ;;
     "stable")
-        yarn add --dev ember-cli@latest
+        version="latest"
         ;;
     "beta")
-        yarn add --dev ember-cli@beta
+        version="beta"
         ;;
     "canary")
-        yarn add --dev ember-cli@git+https://github.com/ember-cli/ember-cli#master
-        ;;
-    *)
-        yarn
+        version="git+https://github.com/ember-cli/ember-cli#master"
         ;;
 esac
 
+if [ -z "$version" ]; then
+  yarn;
+else
+
+  # add the new ember-cli version to ember-auto-import. This will not get
+  # hoisted because the other packages will still have whatever was in
+  # yarn.lock.
+  pushd packages/ember-auto-import
+  yarn add --dev ember-cli@$version
+  popd
+
+  # manually hoist
+  if [ -d packages/ember-auto-import/node_modules/ember-cli ]; then
+    rm -rf node_modules/ember-cli
+    mv packages/ember-auto-import/node_modules/ember-cli node_modules
+    rm packages/ember-auto-import/node_modules/.bin/ember
+    ln -s ../../../../node_modules/ember-cli/bin/ember packages/ember-auto-import/node_modules/.bin/ember
+  fi
+
+fi

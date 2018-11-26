@@ -30,5 +30,4 @@ install:
   - ./scripts/change-ember-cli-version.sh
 
 script:
-  - yarn lint
-  - yarn test
+  - yarn lint && yarn test
