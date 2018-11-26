@@ -14,6 +14,7 @@ export default class Package {
   public root: string;
   public isAddon: boolean;
   public babelOptions;
+  public babelMajorVersion: number;
   private autoImportOptions;
   private isAddonCache = new Map<string, boolean>();
   private isDeveloping: boolean;
@@ -41,7 +42,10 @@ export default class Package {
     // Stash our own config options
     this.autoImportOptions = options.autoImport;
 
-    this.babelOptions = this.buildBabelOptions(appOrAddon, options);
+    let { babelOptions, version } = this.buildBabelOptions(appOrAddon.parent, options);
+
+    this.babelOptions = babelOptions;
+    this.babelMajorVersion = version;
 
     this.pkgCache = appOrAddon.parent.pkg;
     this.pkgGeneration = pkgGeneration;
@@ -58,12 +62,14 @@ export default class Package {
     // https://github.com/babel/ember-cli-babel/issues/227
     delete babelOptions.annotation;
     delete babelOptions.throwUnlessParallelizable;
+    delete babelOptions.filterExtensions;
     if (babelOptions.plugins) {
       babelOptions.plugins = babelOptions.plugins.filter(
         p => !p._parallelBabel
       );
     }
-    return babelOptions;
+    let version = parseInt(babelAddon.pkg.version.split('.')[0], 10);
+    return { babelOptions, version };
   }
 
   private get pkg() {
