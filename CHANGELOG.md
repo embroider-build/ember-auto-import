@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.15
+ - BUGFIX: the previous release could result in a broken build if your broccoli temp location was access through a symlink.
+
 ## 1.2.14
  - ENHANCEMENT: new "forbidEval" option supports sites with strict CSP.
  - BUGFIX: don't leak temp dirs
