@@ -15,6 +15,7 @@ cd packages/sample-addon    && yarn test
 cd packages/sample-failure  && yarn test
 cd packages/sample-merged   && yarn test
 cd packages/sample-conflict && yarn test
+cd packages/sample-babel7   && yarn test
 cd packages/sample-noconflict && yarn test
 cd packages/ember-auto-import && yarn test
 cd packages/ember-auto-import && yarn test:node
