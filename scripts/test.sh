@@ -1,19 +1,21 @@
 #!/bin/bash
 
+./scripts/link-them.sh
+
 ./scripts/parallel --tag <<EOF
-cd test-apps/sample-direct   && yarn test
-cd test-apps/sample-direct   && yarn test:fastboot
-cd test-apps/sample-direct   && yarn test:prod
-cd test-apps/sample-direct   && yarn test:custom-bundles
-cd test-apps/sample-direct   && yarn test:custom-bundles-fastboot
-cd test-apps/sample-direct   && yarn test:custom-csp
-cd test-apps/sample-indirect && yarn test
-cd test-apps/sample-indirect && yarn test:fastboot
-cd test-apps/sample-addon    && yarn test
-cd test-apps/sample-failure  && yarn test
-cd test-apps/sample-merged   && yarn test
-cd test-apps/sample-conflict && yarn test
-cd test-apps/sample-noconflict && yarn test
-yarn test:root
-yarn test:node
+cd packages/sample-direct   && yarn test
+cd packages/sample-direct   && yarn test:fastboot
+cd packages/sample-direct   && yarn test:prod
+cd packages/sample-direct   && yarn test:custom-bundles
+cd packages/sample-direct   && yarn test:custom-bundles-fastboot
+cd packages/sample-direct   && yarn test:custom-csp
+cd packages/sample-indirect && yarn test
+cd packages/sample-indirect && yarn test:fastboot
+cd packages/sample-addon    && yarn test
+cd packages/sample-failure  && yarn test
+cd packages/sample-merged   && yarn test
+cd packages/sample-conflict && yarn test
+cd packages/sample-noconflict && yarn test
+cd packages/ember-auto-import && yarn test
+cd packages/ember-auto-import && yarn test:node
 EOF
