@@ -24,7 +24,7 @@
     "ember-ajax": "*",
     "ember-auto-import": "*",
     "ember-cli": "*",
-    "ember-cli-babel": "*",
+    "ember-cli-babel": "^6.6.0",
     "ember-cli-dependency-checker": "*",
     "ember-cli-eslint": "*",
     "ember-cli-htmlbars": "*",
