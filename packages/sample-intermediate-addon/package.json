@@ -20,7 +20,7 @@
     "test:all": "ember try:each"
   },
   "dependencies": {
-    "ember-cli-babel": "*",
+    "ember-cli-babel": "^6.6.0",
     "ember-cli-htmlbars": "*",
     "sample-addon": "*"
   },

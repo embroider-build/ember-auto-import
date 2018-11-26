@@ -1,47 +1,49 @@
 {
-  "name": "sample-noconflict",
+  "name": "sample-babel7",
   "version": "0.0.0",
   "private": true,
-  "description": "Small description for sample-conflict goes here",
+  "description": "Small description for sample-babel7 goes here",
+  "repository": "",
   "license": "MIT",
   "author": "",
   "directories": {
     "doc": "doc",
     "test": "tests"
   },
-  "repository": "",
   "scripts": {
     "build": "ember build",
-    "lint:js": "eslint ./*.js app blueprints config lib server tests",
+    "lint:hbs": "ember-template-lint .",
+    "lint:js": "eslint .",
     "start": "ember serve",
-    "test": "yarn build"
+    "test": "ember test"
   },
   "devDependencies": {
-    "ember-auto-import": "*",
-    "sample-addon": "*",
-    "inner-lib": "*",
+    "@ember-decorators/babel-transforms": "^3.1.0",
+    "a-dependency": "*",
+    "babel-eslint": "^8.0.0",
     "broccoli-asset-rev": "*",
     "ember-ajax": "*",
+    "ember-auto-import": "*",
     "ember-cli": "*",
-    "ember-cli-babel": "^6.6.0",
+    "ember-cli-babel": "^7.1.2",
     "ember-cli-dependency-checker": "*",
     "ember-cli-eslint": "*",
     "ember-cli-htmlbars": "*",
     "ember-cli-htmlbars-inline-precompile": "*",
     "ember-cli-inject-live-reload": "*",
-    "ember-cli-qunit": "*",
-    "ember-cli-shims": "*",
-    "ember-cli-sri": "*",
+    "ember-cli-template-lint": "*",
     "ember-cli-uglify": "*",
-    "ember-export-application-global": "*",
+    "ember-decorators": "^3.1.0",
     "ember-load-initializers": "*",
     "ember-maybe-import-regenerator": "*",
+    "ember-qunit": "*",
     "ember-resolver": "*",
     "ember-source": "*",
     "eslint-plugin-ember": "*",
-    "loader.js": "*"
+    "loader.js": "*",
+    "qunit-dom": "*"
   },
   "engines": {
-    "node": "^4.5 || 6.* || >= 7.*"
+    "node": "6.* || 8.* || >= 10.*"
   }
 }

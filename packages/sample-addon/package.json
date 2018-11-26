@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "ember-auto-import": "*",
-    "ember-cli-babel": "*",
+    "ember-cli-babel": "^6.6.0",
     "ember-cli-htmlbars": "*",
     "inner-lib": "*",
     "inner-lib2": "*",
