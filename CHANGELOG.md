@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.16
+ - ENHANCEMENT: Babel 7 support. Any combination of app & addons using Babel 6 and 7 should now work, and each one will be parsed with its own preferred parser and options.
+
 ## 1.2.15
  - BUGFIX: the previous release could result in a broken build if your broccoli temp location was access through a symlink.
 
