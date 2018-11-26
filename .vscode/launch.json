@@ -9,18 +9,27 @@
             "request": "launch",
             "name": "Build sample-direct",
             "program": "${workspaceFolder}/node_modules/.bin/ember",
-            "cwd": "${workspaceFolder}/test-apps/sample-direct",
-            "preLaunchTask": "tsc: build - tsconfig.json",
+            "cwd": "${workspaceFolder}/packages/sample-direct",
             "args": [
                 "build"
             ]
+        },
+        {
+          "type": "node",
+          "request": "launch",
+          "name": "Build sample-babel7",
+          "program": "${workspaceFolder}/node_modules/.bin/ember",
+          "cwd": "${workspaceFolder}/packages/sample-babel7",
+          "args": [
+              "build"
+          ]
         },
         {
             "type": "node",
             "request": "launch",
             "name": "Build sample-indirect",
             "program": "${workspaceFolder}/node_modules/.bin/ember",
-            "cwd": "${workspaceFolder}/test-apps/sample-indirect",
+            "cwd": "${workspaceFolder}/packages/sample-indirect",
             "preLaunchTask": "tsc: build - tsconfig.json",
             "args": [
                 "build"
@@ -31,7 +40,7 @@
             "request": "launch",
             "name": "Build sample-merged",
             "program": "${workspaceFolder}/node_modules/.bin/ember",
-            "cwd": "${workspaceFolder}/test-apps/sample-merged",
+            "cwd": "${workspaceFolder}/packages/sample-merged",
             "preLaunchTask": "tsc: build - tsconfig.json",
             "args": [
                 "build"
@@ -42,7 +51,7 @@
             "request": "launch",
             "name": "Build sample-addon",
             "program": "${workspaceFolder}/node_modules/.bin/ember",
-            "cwd": "${workspaceFolder}/test-apps/sample-addon",
+            "cwd": "${workspaceFolder}/packages/sample-addon",
             "preLaunchTask": "tsc: build - tsconfig.json",
             "args": [
                 "build"
@@ -53,7 +62,7 @@
             "request": "launch",
             "name": "Build sample-conflict",
             "program": "${workspaceFolder}/node_modules/.bin/ember",
-            "cwd": "${workspaceFolder}/test-apps/sample-conflict",
+            "cwd": "${workspaceFolder}/packages/sample-conflict",
             "preLaunchTask": "tsc: build - tsconfig.json",
             "args": [
                 "build"
