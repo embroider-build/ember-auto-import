@@ -50,7 +50,7 @@ module.exports = (function(){
 // webpack messing with them.
 //
 // It's important that we're using our enclosing scope and not jumping directly
-// to window.require (which would be easier), because the enter Ember app may be
+// to window.require (which would be easier), because the entire Ember app may be
 // inside a closure with a "require" that isn't the same as "window.require".
 const loader = `
 window._eai_r = require;
