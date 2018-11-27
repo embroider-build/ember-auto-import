@@ -16,7 +16,7 @@ Qmodule('analyzer', function(hooks) {
   hooks.beforeEach(function() {
     quickTemp.makeOrRemake(this, 'workDir', 'auto-import-analyzer-tests');
     ensureDirSync(upstream = join(this.workDir, 'upstream'));
-    pack = { babelOptions: {}, babelMajorVersion: 6 };
+    pack = { babelOptions: {}, babelMajorVersion: 6, fileExtensions: ['js'] };
     analyzer = new Analyzer(new UnwatchedDir(upstream), pack as Package);
     builder = new broccoli.Builder(analyzer);
   });
