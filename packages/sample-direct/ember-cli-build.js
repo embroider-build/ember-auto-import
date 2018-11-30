@@ -18,7 +18,7 @@ module.exports = function(defaults) {
   if (process.env.CUSTOMIZE_BUNDLES) {
     options.outputPaths = {
       vendor: {
-        js: '/js/vendor.js'
+        js: process.env.CUSTOMIZE_BUNDLES
       }
     };
   }

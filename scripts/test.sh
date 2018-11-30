@@ -7,6 +7,7 @@ cd packages/sample-direct      && yarn test
 cd packages/sample-direct      && yarn test:fastboot
 cd packages/sample-direct      && yarn test:prod
 cd packages/sample-direct      && yarn test:custom-bundles
+cd packages/sample-direct      && yarn test:custom-bundles-top
 cd packages/sample-direct      && yarn test:custom-bundles-fastboot
 cd packages/sample-direct      && yarn test:custom-csp
 cd packages/sample-indirect    && yarn test
