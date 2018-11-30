@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.17
+ - ENHANCEMENT: interoperability with ember-cli-typescript 2.0, so that imports work in Typescript code, by @buschtoens.
+
 ## 1.2.16
  - ENHANCEMENT: Babel 7 support. Any combination of app & addons using Babel 6 and 7 should now work, and each one will be parsed with its own preferred parser and options.
 
