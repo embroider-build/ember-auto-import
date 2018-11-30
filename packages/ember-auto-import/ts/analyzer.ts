@@ -79,7 +79,7 @@ export default class Analyzer extends Plugin {
 
       switch (operation) {
         case 'unlink':
-          if (extname(relativePath) === '.js') {
+          if (this.matchesExtension(relativePath)) {
             this.removeImports(relativePath);
           }
           unlinkSync(outputPath);
@@ -95,7 +95,7 @@ export default class Analyzer extends Plugin {
           // deliberate fallthrough
         case 'create': {
           let absoluteInputPath = join(this.inputPaths[0], relativePath);
-          if (extname(relativePath) === '.js') {
+          if (this.matchesExtension(relativePath)) {
             this.updateImports(
               relativePath,
               readFileSync(absoluteInputPath, 'utf8')
@@ -112,6 +112,10 @@ export default class Analyzer extends Plugin {
     let previous = this.previousTree;
     let next = (this.previousTree = FSTree.fromEntries(input));
     return previous.calculatePatch(next);
+  }
+
+  private matchesExtension(path: string) {
+    return this.pack.fileExtensions.includes(extname(path).slice(1));
   }
 
   removeImports(relativePath) {

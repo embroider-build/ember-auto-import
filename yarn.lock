@@ -368,6 +368,13 @@
   dependencies:
     "@babel/helper-plugin-utils" "^7.0.0"
 
+"@babel/plugin-syntax-typescript@^7.0.0":
+  version "7.1.5"
+  resolved "https://registry.yarnpkg.com/@babel/plugin-syntax-typescript/-/plugin-syntax-typescript-7.1.5.tgz#956a1f43dec8a9d6b36221f5c865335555fdcb98"
+  integrity sha512-VqK5DFcS6/T8mT5CcJv1BwZLYFxkHiGZmP7Hs87F53lSToE/qfL7TpPrqFSaKyZi9w7Z/b/tmOGZZDupcJjFvw==
+  dependencies:
+    "@babel/helper-plugin-utils" "^7.0.0"
+
 "@babel/plugin-transform-arrow-functions@^7.0.0":
   version "7.0.0"
   resolved "https://registry.yarnpkg.com/@babel/plugin-transform-arrow-functions/-/plugin-transform-arrow-functions-7.0.0.tgz#a6c14875848c68a3b4b3163a486535ef25c7e749"
@@ -573,6 +580,14 @@
   integrity sha512-1r1X5DO78WnaAIvs5uC48t41LLckxsYklJrZjNKcevyz83sF2l4RHbw29qrCPr/6ksFsdfRpT/ZgxNWHXRnffg==
   dependencies:
     "@babel/helper-plugin-utils" "^7.0.0"
+
+"@babel/plugin-transform-typescript@^7.1.0":
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/@babel/plugin-transform-typescript/-/plugin-transform-typescript-7.1.0.tgz#81e7b4be90e7317cbd04bf1163ebf06b2adee60b"
+  integrity sha512-TOTtVeT+fekAesiCHnPz+PSkYSdOSLyLn42DI45nxg6iCdlQY6LIj/tYqpMB0y+YicoTUiYiXqF8rG6SKfhw6Q==
+  dependencies:
+    "@babel/helper-plugin-utils" "^7.0.0"
+    "@babel/plugin-syntax-typescript" "^7.0.0"
 
 "@babel/plugin-transform-unicode-regex@^7.0.0":
   version "7.0.0"
@@ -1159,6 +1174,13 @@ ansi-styles@^3.0.0, ansi-styles@^3.2.1:
   resolved "https://registry.yarnpkg.com/ansi-styles/-/ansi-styles-3.2.1.tgz#41fbb20243e50b12be0f04b8dedbf07520ce841d"
   dependencies:
     color-convert "^1.9.0"
+
+ansi-to-html@^0.6.6:
+  version "0.6.9"
+  resolved "https://registry.yarnpkg.com/ansi-to-html/-/ansi-to-html-0.6.9.tgz#f4f2e2361792269cc62da85944f39759fc71b1e2"
+  integrity sha512-hwNdg2DNgCzsrvaNc+LDqSxJkpxf9oEt4R7KE0IeURXhEOlontEqNpXNiGeFBpSes8TZF+ZZ9sjB85QzjPsI6A==
+  dependencies:
+    entities "^1.1.1"
 
 ansicolors@~0.2.1:
   version "0.2.1"
@@ -4141,6 +4163,24 @@ ember-cli-test-loader@^2.2.0:
   dependencies:
     ember-cli-babel "^6.8.1"
 
+ember-cli-typescript@^2.0.0-beta.3:
+  version "2.0.0-beta.3"
+  resolved "https://registry.yarnpkg.com/ember-cli-typescript/-/ember-cli-typescript-2.0.0-beta.3.tgz#a27db5942664448c3cf81e1042c3ff6c0e24d5a2"
+  integrity sha512-+pFKwU2lSMlOK/8QyLGf1yL4x+wjLzi40OwqJGGaWysiaG3c2Vuhx7e5NRaHc2ArhhXUDWiQrZfFUjMLSx8U9g==
+  dependencies:
+    "@babel/plugin-proposal-class-properties" "^7.1.0"
+    "@babel/plugin-transform-typescript" "^7.1.0"
+    ansi-to-html "^0.6.6"
+    debug "^3.1.0"
+    ember-cli-babel-plugin-helpers "^1.0.0"
+    execa "^0.9.0"
+    fs-extra "^5.0.0"
+    resolve "^1.5.0"
+    rsvp "^4.8.1"
+    semver "^5.5.1"
+    stagehand "^1.0.0"
+    walk-sync "^0.3.2"
+
 ember-cli-uglify@*, ember-cli-uglify@^2.0.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/ember-cli-uglify/-/ember-cli-uglify-2.1.0.tgz#4a0641fe4768d7ab7d4807aca9924cc77c544184"
@@ -4662,6 +4702,11 @@ enhanced-resolve@^4.0.0:
 ensure-posix-path@^1.0.0, ensure-posix-path@^1.0.1, ensure-posix-path@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/ensure-posix-path/-/ensure-posix-path-1.0.2.tgz#a65b3e42d0b71cfc585eb774f9943c8d9b91b0c2"
+
+entities@^1.1.1:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/entities/-/entities-1.1.2.tgz#bdfa735299664dfafd34529ed4f8522a275fea56"
+  integrity sha512-f2LZMYl1Fzu7YSBKg+RoROelpOaNrcGmE9AZubeDfrCEia483oW4MI4VyFd5VNHIgQ/7qm1I0wUHK1eJnn2y2w==
 
 entities@~1.1.1:
   version "1.1.1"
@@ -9569,6 +9614,13 @@ ssri@^5.2.4:
   dependencies:
     safe-buffer "^5.1.1"
 
+stagehand@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/stagehand/-/stagehand-1.0.0.tgz#79515e2ad3a02c63f8720c7df9b6077ae14276d9"
+  integrity sha512-zrXl0QixAtSHFyN1iv04xOBgplbT4HgC8T7g+q8ESZbDNi5uZbMtxLukFVXPJ5Nl7zCYvYcrT3Mj24WYCH93hw==
+  dependencies:
+    debug "^4.1.0"
+
 static-extend@^0.1.1:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/static-extend/-/static-extend-0.1.2.tgz#60809c39cbff55337226fd5e0b520f341f1fb5c6"
@@ -10074,6 +10126,11 @@ typedarray@^0.0.6:
 typescript@^2.9.2:
   version "2.9.2"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.9.2.tgz#1cbf61d05d6b96269244eb6a3bce4bd914e0f00c"
+
+typescript@^3.1.6:
+  version "3.1.6"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.1.6.tgz#b6543a83cfc8c2befb3f4c8fba6896f5b0c9be68"
+  integrity sha512-tDMYfVtvpb96msS1lDX9MEdHrW4yOuZ4Kdc4Him9oU796XldPYF/t2+uKoX0BBa0hXXwDlqYQbXY5Rzjzc5hBA==
 
 uc.micro@^1.0.1, uc.micro@^1.0.5:
   version "1.0.5"

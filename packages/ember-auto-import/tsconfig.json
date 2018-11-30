@@ -1,6 +1,7 @@
 {
   "include": ["./ts/**/*.ts"],
   "compilerOptions": {
+    "lib": ["es7"],
     "target": "es6",
     "module": "commonjs",
     "declaration": true,

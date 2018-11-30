@@ -16,6 +16,7 @@ export default class Package {
   public babelOptions;
   public babelMajorVersion: number;
   private autoImportOptions;
+  private emberCLIBabelExtensions: string[];
   private isAddonCache = new Map<string, boolean>();
   private isDeveloping: boolean;
   private pkgGeneration: number;
@@ -41,6 +42,9 @@ export default class Package {
 
     // Stash our own config options
     this.autoImportOptions = options.autoImport;
+
+    this.emberCLIBabelExtensions = options['ember-cli-babel']
+      && options['ember-cli-babel'].extensions || ['js'];
 
     let { babelOptions, version } = this.buildBabelOptions(appOrAddon.parent, options);
 
@@ -150,6 +154,10 @@ export default class Package {
         this.autoImportOptions.alias[name]) ||
       name
     );
+  }
+
+  get fileExtensions(): string[] {
+    return this.autoImportOptions && this.autoImportOptions.extensions || this.emberCLIBabelExtensions;
   }
 
   get publicAssetURL(): string | undefined {
