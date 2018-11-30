@@ -157,7 +157,7 @@ export default class Package {
   }
 
   get fileExtensions(): string[] {
-    return this.autoImportOptions && this.autoImportOptions.extensions || this.emberCLIBabelExtensions;
+    return this.emberCLIBabelExtensions;
   }
 
   get publicAssetURL(): string | undefined {

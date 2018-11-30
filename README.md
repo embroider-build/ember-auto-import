@@ -109,7 +109,6 @@ Suported Options
  - `forbidEval`: _boolean_, defaults to false. We use `eval` in development by default (because that is the fastest way to provide sourcemaps). If you need to comply with a strict Content Security Policy (CSP), you can set `forbidEval: true`. You will still get sourcemaps, they will just use a slower implementation.
  - `publicAssetURL`: where to load additional dynamic javascript files from. You usually don't need to set this -- the default works for any Ember app that isn't doing something unusual.
  - `webpack`: _object_, An object that will get merged into the configuration we pass to webpack. This lets you work around quirks in underlying libraries and otherwise customize the way Webpack will assemble your dependencies.
- - `extensions`: _string[]_, defaults to the [`extensions` set for `ember-cli-babel`](https://github.com/babel/ember-cli-babel#options). All files matching this list of file extensions will be analyzed for imports.
 
 Usage from Addons
 ------------------------------------------------------------------------------
