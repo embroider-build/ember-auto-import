@@ -1,36 +1,38 @@
 import QUnit from 'qunit';
-import broccoli from 'broccoli';
+import { Builder } from 'broccoli';
 import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
 import { ensureDirSync, readFileSync, outputFileSync, removeSync, existsSync } from 'fs-extra';
 import { join } from 'path';
-import Append from '../broccoli-append';
+import Append, { AppendOptions } from '../broccoli-append';
 
 const { module: Qmodule, test } = QUnit;
 
 Qmodule('broccoli-append', function(hooks) {
 
-  let builder, upstream, appended;
+  let builder: Builder | undefined;
+  let upstream: string;
+  let appended: string;
 
-  hooks.beforeEach(function() {
+  hooks.beforeEach(function(this: any) {
     quickTemp.makeOrRemake(this, 'workDir', 'auto-import-build-tests');
     ensureDirSync(upstream = join(this.workDir, 'upstream'));
     ensureDirSync(appended = join(this.workDir, 'appended'));
   });
 
-  hooks.afterEach(function() {
+  hooks.afterEach(function(this: any) {
     removeSync(this.workDir);
     if (builder) {
       return builder.cleanup();
     }
   });
 
-  function makeBuilder(opts?) {
+  function makeBuilder(opts?: Partial<AppendOptions>) {
     let node = new Append(new UnwatchedDir(upstream), new UnwatchedDir(appended), Object.assign({
       mappings: new Map(),
       passthrough: new Map()
     }, opts));
-    return new broccoli.Builder(node);
+    return new Builder(node);
   }
 
   test('non-matching file created', async function(assert) {
