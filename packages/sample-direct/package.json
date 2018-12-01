@@ -23,10 +23,10 @@
   },
   "devDependencies": {
     "@ef4/scoped-lib": "*",
-    "inner-lib": "*",
-    "ember-auto-import": "*",
+    "a-dependency": "*",
     "broccoli-asset-rev": "*",
     "ember-ajax": "*",
+    "ember-auto-import": "*",
     "ember-cli": "*",
     "ember-cli-babel": "^6.6.0",
     "ember-cli-dependency-checker": "*",
@@ -47,13 +47,13 @@
     "eslint-plugin-ember": "*",
     "eslint-plugin-node": "*",
     "fastboot": "*",
+    "inner-lib": "*",
+    "inner-lib2": "*",
     "jsdom": "*",
     "loader.js": "*",
     "lodash-es": "*",
     "moment": "*",
-    "qunit": "*",
-    "inner-lib2": "*",
-    "a-dependency": "*"
+    "qunit": "*"
   },
   "engines": {
     "node": ">= 8.*"
