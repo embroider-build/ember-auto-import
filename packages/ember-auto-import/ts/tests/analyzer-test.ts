@@ -1,5 +1,5 @@
 import QUnit from 'qunit';
-import broccoli from 'broccoli';
+import broccoli, { Builder } from 'broccoli';
 import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
 import { ensureDirSync, readFileSync, outputFileSync, removeSync, existsSync } from 'fs-extra';
@@ -11,9 +11,12 @@ const { module: Qmodule, test } = QUnit;
 
 Qmodule('analyzer', function(hooks) {
 
-  let builder, upstream, analyzer, pack;
+  let builder: Builder;
+  let upstream: string;
+  let analyzer: Analyzer;
+  let pack: Partial<Package>;
 
-  hooks.beforeEach(function() {
+  hooks.beforeEach(function(this: any) {
     quickTemp.makeOrRemake(this, 'workDir', 'auto-import-analyzer-tests');
     ensureDirSync(upstream = join(this.workDir, 'upstream'));
     pack = { babelOptions: {}, babelMajorVersion: 6, fileExtensions: ['js'] };
@@ -21,7 +24,7 @@ Qmodule('analyzer', function(hooks) {
     builder = new broccoli.Builder(analyzer);
   });
 
-  hooks.afterEach(function() {
+  hooks.afterEach(function(this: any) {
     removeSync(this.workDir);
     if (builder) {
       return builder.cleanup();
