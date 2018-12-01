@@ -1,7 +1,7 @@
 {
   "include": ["./ts/**/*.ts"],
   "compilerOptions": {
-    "lib": ["es7"],
+    "lib": ["es7", "dom"],
     "target": "es6",
     "module": "commonjs",
     "declaration": true,
@@ -11,6 +11,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "sourceMap": true,
-    "strict": true
+    "strict": false
   }
 }

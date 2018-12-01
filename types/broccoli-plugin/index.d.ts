@@ -16,6 +16,7 @@ declare module 'broccoli-plugin' {
     constructor(inputTrees: Tree[], options: Options)
     inputPaths: string[];
     outputPath: string;
+    cachePath: string;
     __broccoliGetInfo__(): any;
     abstract build(): Promise<void> | void;
   }

@@ -17,7 +17,7 @@ const debug = makeDebug('ember-auto-import:bundler');
 
 export interface BundlerPluginOptions {
   consoleWrite: (string) => void;
-  environment: string;
+  environment: "development" | "test" | "production";
   splitter: Splitter;
   packages: Set<Package>;
   bundles: BundleConfig;

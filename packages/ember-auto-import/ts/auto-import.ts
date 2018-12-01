@@ -12,7 +12,7 @@ const protocol = '__ember_auto_import_protocol_v1__';
 export default class AutoImport {
   private primaryPackage;
   private packages: Set<Package> = new Set();
-  private env: string;
+  private env: "development" | "test" | "production";
   private consoleWrite: (string) => void;
   private analyzers: Map<Analyzer, Package> = new Map();
   private bundles: BundleConfig;
