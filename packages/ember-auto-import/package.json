@@ -46,13 +46,15 @@
     "resolve": "^1.7.1",
     "rimraf": "^2.6.2",
     "symlink-or-copy": "^1.2.0",
-    "walk-sync": "^0.3.2",
+    "walk-sync": "^0.3.3",
     "webpack": "^4.12.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^5.0.4",
+    "@types/js-string-escape": "^1.0.0",
     "@types/lodash": "^4.14.110",
     "@types/node": "^10.7.1",
+    "@types/webpack": "^4.4.20",
     "babel-eslint": "^8.2.5",
     "broccoli": "^1.1.4",
     "broccoli-asset-rev": "^2.4.5",

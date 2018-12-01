@@ -58,16 +58,16 @@ window._eai_d = define;
 `;
 
 export default class WebpackBundler implements BundlerHook {
-  private stagingDir;
-  private webpack;
-  private outputDir;
+  private stagingDir: string;
+  private webpack: webpack.Compiler;
+  private outputDir: string;
 
   constructor(
     bundles : BundleConfig,
-    environment,
-    extraWebpackConfig,
-    private consoleWrite,
-    private publicAssetURL,
+    environment: 'production' | 'development' | 'test',
+    extraWebpackConfig: webpack.Configuration | undefined,
+    private consoleWrite: (message: string) => void,
+    private publicAssetURL: string | undefined,
     tempArea: string
   ) {
     // resolve the real path, because we're going to do path comparisons later
@@ -78,12 +78,12 @@ export default class WebpackBundler implements BundlerHook {
     ensureDirSync(this.stagingDir);
     this.outputDir = join(tempArea, 'output');
     ensureDirSync(this.outputDir);
-    let entry = {};
+    let entry: { [name: string]: string[] } = {};
     bundles.names.forEach(bundle => {
       entry[bundle] = [join(this.stagingDir, 'l.js'), join(this.stagingDir, `${bundle}.js`)];
     });
 
-    let config = {
+    let config: webpack.Configuration = {
       mode: environment === 'production' ? 'production' : 'development',
       entry,
       output: {
@@ -99,7 +99,8 @@ export default class WebpackBundler implements BundlerHook {
         }
       },
       module: {
-        noParse: join(this.stagingDir, 'l.js')
+        noParse: (file) => file === join(this.stagingDir, 'l.js'),
+        rules: []
       },
     };
     if (extraWebpackConfig) {
@@ -117,17 +118,18 @@ export default class WebpackBundler implements BundlerHook {
     return this.summarizeStats(stats);
   }
 
-  private summarizeStats(stats): BuildResult {
+  private summarizeStats(_stats: webpack.Stats): BuildResult {
+    let stats = _stats.toJson();
     let output = {
       entrypoints: new Map(),
-      lazyAssets: [],
+      lazyAssets: [] as string[],
       dir: this.outputDir
     };
-    let nonLazyAssets = new Set();
+    let nonLazyAssets: Set<string> = new Set();
     for (let id of Object.keys(stats.entrypoints)) {
       let entrypoint = stats.entrypoints[id];
       output.entrypoints.set(id, entrypoint.assets);
-      entrypoint.assets.forEach(asset => nonLazyAssets.add(asset));
+      entrypoint.assets.forEach((asset: string) => nonLazyAssets.add(asset));
     }
     for (let asset of stats.assets) {
       if (!nonLazyAssets.has(asset.name)) {
@@ -137,7 +139,7 @@ export default class WebpackBundler implements BundlerHook {
     return output;
   }
 
-  private writeEntryFile(name, deps) {
+  private writeEntryFile(name: string, deps: BundleDependencies) {
     writeFileSync(
       join(this.stagingDir, `${name}.js`),
       entryTemplate({
@@ -155,7 +157,7 @@ export default class WebpackBundler implements BundlerHook {
     );
   }
 
-  private async runWebpack(): Promise<any> {
+  private async runWebpack(): Promise<webpack.Stats> {
     return new Promise((resolve, reject) => {
       this.webpack.run((err, stats) => {
         if (err) {
@@ -171,8 +173,8 @@ export default class WebpackBundler implements BundlerHook {
         if (stats.hasWarnings() || process.env.AUTO_IMPORT_VERBOSE) {
           this.consoleWrite(stats.toString());
         }
-        resolve(stats.toJson());
+        resolve(stats);
       });
-    });
+    }) as Promise<webpack.Stats>;
   }
 }
