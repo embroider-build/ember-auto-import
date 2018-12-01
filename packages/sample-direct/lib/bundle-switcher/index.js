@@ -17,7 +17,7 @@ module.exports = {
 
 function vendorPath() {
   if (process.env.CUSTOMIZE_BUNDLES) {
-    return `/js/vendor.js`;
+    return process.env.CUSTOMIZE_BUNDLES;
   } else {
     return `/assets/vendor.js`;
   }

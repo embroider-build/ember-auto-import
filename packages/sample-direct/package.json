@@ -15,10 +15,11 @@
     "lint:js": "eslint ./*.js app config lib server tests",
     "start": "ember serve",
     "test": "ember test --test-port=0",
-    "test:custom-bundles": "if [ ${EAI_SCENARIO:-none} != 2.18 ]; then CUSTOMIZE_BUNDLES=true ember test --test-port=0; fi",
+    "test:custom-bundles": "if [ ${EAI_SCENARIO:-none} != 2.18 ]; then CUSTOMIZE_BUNDLES=/js/vendor.js ember test --test-port=0; fi",
+    "test:custom-bundles-top": "if [ ${EAI_SCENARIO:-none} != 2.18 ]; then CUSTOMIZE_BUNDLES=/top-level-vendor.js ember test --test-port=0; fi",
     "test:custom-csp": "CUSTOMIZE_CSP=true ember test --test-port=0",
     "test:fastboot": "qunit fastboot-tests/dev-fastboot-test.js",
-    "test:custom-bundles-fastboot": "if [ ${EAI_SCENARIO:-none} != 2.18 ]; then CUSTOMIZE_BUNDLES=true qunit fastboot-tests/dev-fastboot-test.js; fi",
+    "test:custom-bundles-fastboot": "if [ ${EAI_SCENARIO:-none} != 2.18 ]; then CUSTOMIZE_BUNDLES=/js/custom-vendor.js qunit fastboot-tests/dev-fastboot-test.js; fi",
     "test:prod": "qunit fastboot-tests/prod-fastboot-test.js"
   },
   "devDependencies": {
