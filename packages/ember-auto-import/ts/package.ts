@@ -22,11 +22,11 @@ export default class Package {
   private pkgGeneration: number;
   private pkgCache;
 
-  static lookup(appOrAddon) {
+  static lookup(appOrAddon: any): Package {
     if (!cache.has(appOrAddon)) {
       cache.set(appOrAddon, new this(appOrAddon));
     }
-    return cache.get(appOrAddon);
+    return cache.get(appOrAddon)!;
   }
 
   constructor(appOrAddon) {

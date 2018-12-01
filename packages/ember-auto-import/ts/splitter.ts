@@ -37,18 +37,18 @@ export interface SplitterOptions {
 }
 
 export default class Splitter {
-  private lastImports = null;
+  private lastImports: Import[][] | undefined;
   private lastDeps: Map<string, BundleDependencies> | null = null;
   private packageVersions: Map<string, string> = new Map();
 
   constructor(private options: SplitterOptions) {}
 
-  async deps() {
+  async deps(): Promise<Map<string, BundleDependencies>> {
     if (this.importsChanged()) {
       this.lastDeps = await this.computeDeps(this.options.analyzers);
       debug('output %s', new LazyPrintDeps(this.lastDeps));
     }
-    return this.lastDeps;
+    return this.lastDeps!;
   }
 
   private importsChanged(): boolean {
@@ -59,6 +59,7 @@ export default class Splitter {
       this.lastImports = imports;
       return true;
     }
+    return false;
   }
 
   private async computeTargets(analyzers: Map<Analyzer, Package>) {
@@ -155,7 +156,7 @@ export default class Splitter {
     }
   }
 
-  private async computeDeps(analyzers) {
+  private async computeDeps(analyzers): Promise<Map<string, BundleDependencies>> {
     let targets = await this.computeTargets(analyzers);
     let deps: Map<string, BundleDependencies> = new Map();
 
