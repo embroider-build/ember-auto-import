@@ -27,6 +27,8 @@
   },
   "dependencies": {
     "@babel/core": "^7.1.6",
+    "@babel/traverse": "^7.1.6",
+    "@babel/types": "^7.1.6",
     "babel-core": "^6.26.3",
     "babel-plugin-syntax-dynamic-import": "^6.18.0",
     "babel-template": "^6.26.0",
@@ -50,6 +52,12 @@
     "webpack": "^4.12.0"
   },
   "devDependencies": {
+    "@types/babel-core": "^6.25.5",
+    "@types/babel__core": "^7.0.4",
+    "@types/babel__generator": "^7.0.1",
+    "@types/babel__template": "^7.0.1",
+    "@types/babel__traverse": "^7.0.3",
+    "@types/babylon": "^6.16.4",
     "@types/debug": "^0.0.31",
     "@types/enhanced-resolve": "^3.0.6",
     "@types/fs-extra": "^5.0.4",
@@ -93,7 +101,7 @@
     "quick-temp": "^0.1.8",
     "qunit": "^2.6.1",
     "tslint": "^5.10.0",
-    "typescript": "^2.9.2"
+    "typescript": "^3.1.6"
   },
   "engines": {
     "node": "6.* || >= 7.*"

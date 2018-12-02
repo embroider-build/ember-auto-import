@@ -1,9 +1,10 @@
 import AutoImport from './auto-import';
+import { Tree } from 'broccoli-plugin';
 
 module.exports = {
   name: 'ember-auto-import',
 
-  setupPreprocessorRegistry(type, registry) {
+  setupPreprocessorRegistry(type: string, registry: any) {
     // we register on our parent registry (so we will process code
     // from the app or addon that chose to include us) rather than our
     // own registry (which would cause us to process our own code)
@@ -15,7 +16,7 @@ module.exports = {
     // it will see all the consumer app or addon's javascript
     registry.add('js', {
       name: 'ember-auto-import-analyzer',
-      toTree: tree => {
+      toTree: (tree: Tree) => {
         return AutoImport.lookup(this).analyze(tree, this);
       }
     });
@@ -29,7 +30,7 @@ module.exports = {
     }
   },
 
-  updateFastBootManifest(manifest) {
+  updateFastBootManifest(manifest: { vendorFiles: string[] }) {
     let autoImport = AutoImport.lookup(this);
     if (autoImport.isPrimary(this)) {
       autoImport.updateFastBootManifest(manifest);

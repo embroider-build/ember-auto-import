@@ -7,7 +7,7 @@ import { dirname } from 'path';
 const testsPattern = new RegExp(`^/?[^/]+/(tests|test-support)/`);
 
 export default class BundleConfig {
-  constructor(private emberApp) {}
+  constructor(private emberApp: any) {}
 
   // This list of valid bundles, in priority order. The first one in the list that
   // needs a given import will end up with that import.
@@ -16,7 +16,7 @@ export default class BundleConfig {
   }
 
   // Which final JS file the given bundle's dependencies should go into.
-  bundleEntrypoint(name: string): string {
+  bundleEntrypoint(name: string): string | undefined {
     switch (name) {
       case 'tests':
         return 'assets/test-support.js';
@@ -36,6 +36,6 @@ export default class BundleConfig {
   }
 
   get lazyChunkPath() {
-    return dirname(this.bundleEntrypoint(this.names[0]));
+    return dirname(this.bundleEntrypoint(this.names[0])!);
   }
 }

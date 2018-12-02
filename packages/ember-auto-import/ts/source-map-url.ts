@@ -21,7 +21,7 @@ const regex = RegExp(
     "\\s*$"
   );
 
-export function insertBefore(code, string) {
+export function insertBefore(code: string, string: string) {
   let match = code.match(regex);
   if (match) {
     return code.slice(0, match.index) + string + code.slice(match.index);

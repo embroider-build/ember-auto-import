@@ -7,8 +7,11 @@ import { join, extname } from 'path';
 import { isEqual, flatten } from 'lodash';
 import Package from './package';
 import symlinkOrCopy from 'symlink-or-copy';
+import { TransformOptions } from '@babel/core';
+import { File } from '@babel/types';
+import traverse from "@babel/traverse";
 
-makeDebug.formatters.m = modules => {
+makeDebug.formatters.m = (modules: Import[]) => {
   return JSON.stringify(
     modules.map(m => ({
       specifier: m.specifier,
@@ -39,7 +42,7 @@ export default class Analyzer extends Plugin {
   private modules: Import[] | null = [];
   private paths: Map<string, Import[]> = new Map();
 
-  private parse: undefined | ((source: string) => object);
+  private parse: undefined | ((source: string) => File);
 
   constructor(inputTree: Tree, private pack: Package) {
     super([inputTree], {
@@ -118,7 +121,7 @@ export default class Analyzer extends Plugin {
     return this.pack.fileExtensions.includes(extname(path).slice(1));
   }
 
-  removeImports(relativePath) {
+  removeImports(relativePath: string) {
     debug(`removing imports for ${relativePath}`);
     let imports = this.paths.get(relativePath);
     if (imports) {
@@ -129,7 +132,7 @@ export default class Analyzer extends Plugin {
     }
   }
 
-  updateImports(relativePath, source) {
+  updateImports(relativePath: string, source: string) {
     debug(`updating imports for ${relativePath}, ${source.length}`);
     let newImports = this.parseImports(relativePath, source);
     if (!isEqual(this.paths.get(relativePath), newImports)) {
@@ -138,10 +141,10 @@ export default class Analyzer extends Plugin {
     }
   }
 
-  private parseImports(relativePath, source): Import[] {
-    let ast;
+  private parseImports(relativePath :string, source: string): Import[] {
+    let ast: File | undefined;
     try {
-      ast = this.parse(source);
+      ast = this.parse!(source);
     } catch (err) {
       if (err.name !== 'SyntaxError') {
         throw err;
@@ -153,80 +156,56 @@ export default class Analyzer extends Plugin {
       return imports;
     }
 
-    forEachNode(ast.program.body, node => {
-      if (
-        node.type === 'CallExpression' &&
-        node.callee &&
-        node.callee.type === 'Import'
-      ) {
-        // it's a syntax error to have anything other than exactly one
-        // argument, so we can just assume this exists
-        let argument = node.arguments[0];
-        if (argument.type !== 'StringLiteral') {
-          throw new Error(
-            'ember-auto-import only supports dynamic import() with a string literal argument.'
-          );
+    traverse(ast, {
+      CallExpression: (path) => {
+        if (path.node.callee.type === 'Import') {
+          // it's a syntax error to have anything other than exactly one
+          // argument, so we can just assume this exists
+          let argument = path.node.arguments[0];
+          if (argument.type !== 'StringLiteral') {
+            throw new Error(
+              'ember-auto-import only supports dynamic import() with a string literal argument.'
+            );
+          }
+          imports.push({
+            isDynamic: true,
+            specifier: argument.value,
+            path: relativePath,
+            package: this.pack
+          });
         }
-        imports.push({
-          isDynamic: true,
-          specifier: argument.value,
-          path: relativePath,
-          package: this.pack
-        });
-      }
-    });
-
-    // No need to recurse here, because we only deal with top-level static import declarations
-    for (let node of ast.program.body) {
-      let specifier: string | null;
-      if (node.type === 'ImportDeclaration') {
-        specifier = node.source.value;
-      }
-      if (node.type === 'ExportNamedDeclaration' && node.source) {
-        specifier = node.source.value;
-      }
-      if (specifier) {
+      },
+      ImportDeclaration: (path) => {
         imports.push({
           isDynamic: false,
-          specifier,
+          specifier: path.node.source.value,
           path: relativePath,
           package: this.pack
         });
+      },
+      ExportNamedDeclaration: (path) => {
+        if (path.node.source) {
+          imports.push({
+            isDynamic: false,
+            specifier: path.node.source.value,
+            path: relativePath,
+            package: this.pack
+          });
+        }
       }
-    }
+    });
     return imports;
   }
 }
 
-const skipKeys = {
-  loc: true,
-  type: true,
-  start: true,
-  end: true
-};
-
-function forEachNode(node, visit) {
-  visit(node);
-  for (let key in node) {
-    if (skipKeys[key]) {
-      continue;
-    }
-    let child = node[key];
-    if (
-      child &&
-      typeof child === 'object' &&
-      (child.type || Array.isArray(child))
-    ) {
-      forEachNode(child, visit);
-    }
-  }
-}
-
-async function babel6Parser(babelOptions): Promise<(source: string) => object> {
+async function babel6Parser(babelOptions: unknown): Promise<(source: string) => File> {
   let core = import('babel-core');
   let babylon = import('babylon');
 
-  const { Pipeline, File }  = await core;
+  // missing upstream types (or we are using private API, because babel 6 didn't
+  // have a good way to construct a parser directly from the general babel
+  // options)
+  const { Pipeline, File }  = (await core) as any;
   const { parse } = await babylon;
 
   let p = new Pipeline();
@@ -234,15 +213,15 @@ async function babel6Parser(babelOptions): Promise<(source: string) => object> {
   let options = f.parserOpts;
 
   return function(source) {
-    return parse(source, options);
+    return parse(source, options) as unknown as File;
   };
 }
 
-async function babel7Parser(babelOptions): Promise<(source: string) => object> {
+async function babel7Parser(babelOptions: TransformOptions): Promise<(source: string) => File> {
   let core = import('@babel/core');
 
   const { parseSync } = await core;
-  return function(source) {
-    return parseSync(source, babelOptions);
+  return function(source: string) {
+    return parseSync(source, babelOptions) as File;
   };
 }
