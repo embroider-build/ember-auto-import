@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.18
+ - BUGFIX: fixed a crash for people using certain customized vendor.js output paths.
+ - INTERNALS: we now compile in the strictest Typescript mode.
+
 ## 1.2.17
  - ENHANCEMENT: interoperability with ember-cli-typescript 2.0, so that imports work in Typescript code, by @buschtoens.
 
