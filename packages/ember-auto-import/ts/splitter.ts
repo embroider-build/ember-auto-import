@@ -11,10 +11,12 @@ import {
 import pkgUp from 'pkg-up';
 import { dirname } from 'path';
 import BundleConfig from './bundle-config';
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
 
 const debug = makeDebug('ember-auto-import:splitter');
 const resolver = ResolverFactory.createResolver({
-  fileSystem: new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000),
+  // upstream types seem to be broken here
+  fileSystem: new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000) as unknown as AbstractInputFileSystem,
   extensions: ['.js', '.json'],
   mainFields: ['browser', 'module', 'main']
 });
@@ -224,7 +226,8 @@ export default class Splitter {
 
 async function resolveEntrypoint(specifier: string, pkg: Package): Promise<string> {
   return new Promise((resolvePromise, reject) => {
-    resolver.resolve({}, pkg.root, specifier, {}, (err: Error, path: string) => {
+    // upstream types seem to be out of date here
+    (resolver.resolve as any)({}, pkg.root, specifier, {}, (err: Error, path: string) => {
       if (err) {
         reject(err);
       } else {
