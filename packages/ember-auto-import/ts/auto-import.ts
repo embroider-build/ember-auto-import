@@ -5,26 +5,28 @@ import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
 import Append from './broccoli-append';
+import { Tree } from 'broccoli-plugin';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 const protocol = '__ember_auto_import_protocol_v1__';
 
 export default class AutoImport {
-  private primaryPackage;
+  private primaryPackage: any;
   private packages: Set<Package> = new Set();
-  private env: string;
-  private consoleWrite: (string) => void;
+  private env: "development" | "test" | "production";
+  private consoleWrite: (msg: string) => void;
   private analyzers: Map<Analyzer, Package> = new Map();
   private bundles: BundleConfig;
 
-  static lookup(appOrAddon): AutoImport {
-    if (!global[protocol]) {
-      global[protocol] = new this(appOrAddon);
+  static lookup(appOrAddon: any): AutoImport {
+    let g = global as any;
+    if (!g[protocol]) {
+      g[protocol] = new this(appOrAddon);
     }
-    return global[protocol];
+    return g[protocol];
   }
 
-  constructor(appOrAddon) {
+  constructor(appOrAddon: any) {
     this.primaryPackage = appOrAddon;
     // _findHost is private API but it's been stable in ember-cli for two years.
     let host = appOrAddon._findHost();
@@ -37,11 +39,11 @@ export default class AutoImport {
     this.consoleWrite = (...args) => appOrAddon.project.ui.write(...args);
   }
 
-  isPrimary(appOrAddon) {
+  isPrimary(appOrAddon: any) {
     return this.primaryPackage === appOrAddon;
   }
 
-  analyze(tree, appOrAddon) {
+  analyze(tree: Tree, appOrAddon: any) {
     let pack = Package.lookup(appOrAddon);
     this.packages.add(pack);
     let analyzer = new Analyzer(
@@ -52,7 +54,7 @@ export default class AutoImport {
     return analyzer;
   }
 
-  makeBundler(allAppTree) {
+  makeBundler(allAppTree: Tree) {
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
     let splitter = new Splitter({
@@ -71,7 +73,7 @@ export default class AutoImport {
     });
   }
 
-  addTo(allAppTree) {
+  addTo(allAppTree: Tree) {
     let bundler = debugTree(this.makeBundler(allAppTree), 'output');
 
     let mappings = new Map();
@@ -88,7 +90,7 @@ export default class AutoImport {
     });
   }
 
-  included(addonInstance) {
+  included(addonInstance: any) {
     let host = addonInstance._findHost();
     this.configureFingerprints(host);
 
@@ -104,7 +106,7 @@ export default class AutoImport {
     // So we are forced to monkey patch EmberApp. We insert ourselves right at
     // the beginning of addonPostprocessTree.
     let original = host.addonPostprocessTree.bind(host);
-    host.addonPostprocessTree = (which, tree) => {
+    host.addonPostprocessTree = (which: string, tree: Tree) => {
       if (which === 'all') {
         tree = this.addTo(tree);
       }
@@ -115,7 +117,7 @@ export default class AutoImport {
   // We need to disable fingerprinting of chunks, because (1) they already
   // have their own webpack-generated hashes and (2) the runtime loader code
   // can't easily be told about broccoli-asset-rev's hashes.
-  private configureFingerprints(host) {
+  private configureFingerprints(host: any) {
     let pattern = 'assets/chunk.*.js';
     if (!host.options.fingerprint) {
       host.options.fingerprint = {};
@@ -127,7 +129,7 @@ export default class AutoImport {
     }
   }
 
-  updateFastBootManifest(manifest) {
+  updateFastBootManifest(manifest: { vendorFiles: string[] }) {
     manifest.vendorFiles.push(`${this.bundles.lazyChunkPath}/auto-import-fastboot.js`);
   }
 

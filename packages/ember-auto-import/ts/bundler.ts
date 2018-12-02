@@ -16,8 +16,8 @@ import BundleConfig from './bundle-config';
 const debug = makeDebug('ember-auto-import:bundler');
 
 export interface BundlerPluginOptions {
-  consoleWrite: (string) => void;
-  environment: string;
+  consoleWrite: (msg: string) => void;
+  environment: "development" | "test" | "production";
   splitter: Splitter;
   packages: Set<Package>;
   bundles: BundleConfig;
@@ -34,8 +34,8 @@ export interface BundlerHook {
 }
 
 export default class Bundler extends Plugin {
-  private lastDeps = null;
-  private cachedBundlerHook;
+  private lastDeps: Map<string, BundleDependencies> | undefined;
+  private cachedBundlerHook: BundlerHook | undefined;
   private didEnsureDirs = false;
 
   constructor(allAppTree: Tree, private options: BundlerPluginOptions) {
@@ -108,11 +108,11 @@ export default class Bundler extends Plugin {
     this.didEnsureDirs = true;
   }
 
-  private addEntrypoints({ entrypoints, dir }) {
+  private addEntrypoints({ entrypoints, dir }: BuildResult) {
     for (let bundle of this.options.bundles.names) {
       if (entrypoints.has(bundle)) {
         entrypoints
-          .get(bundle)
+          .get(bundle)!
           .forEach(asset => {
             copySync(join(dir, asset), join(this.outputPath, 'entrypoints', bundle, asset));
           });
@@ -120,7 +120,7 @@ export default class Bundler extends Plugin {
     }
   }
 
-  private addLazyAssets({ lazyAssets, dir }) {
+  private addLazyAssets({ lazyAssets, dir }: BuildResult) {
     let contents = lazyAssets.map(asset => {
       // we copy every lazy asset into place here
       let content = readFileSync(join(dir, asset));

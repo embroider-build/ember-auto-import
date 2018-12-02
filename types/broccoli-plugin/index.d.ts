@@ -1,12 +1,24 @@
 declare module 'broccoli-plugin' {
 
-  export interface Tree {}
+  export interface Tree {
+    __broccoliGetInfo__(): any;
+  }
 
-  export default class Plugin {
-    constructor(inputTrees: Tree[], options: any)
+  export interface Options {
+    name?: string;
+    annotation?: string;
+    persistentOutput?: boolean;
+    needsCache?: boolean;
+  }
+
+
+  export default abstract class Plugin implements Tree {
+    constructor(inputTrees: Tree[], options: Options)
     inputPaths: string[];
     outputPath: string;
-    cachePath: string | undefined;
+    cachePath: string;
+    __broccoliGetInfo__(): any;
+    abstract build(): Promise<void> | void;
   }
 
 }

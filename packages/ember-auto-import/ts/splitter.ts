@@ -11,10 +11,12 @@ import {
 import pkgUp from 'pkg-up';
 import { dirname } from 'path';
 import BundleConfig from './bundle-config';
+import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
 
 const debug = makeDebug('ember-auto-import:splitter');
 const resolver = ResolverFactory.createResolver({
-  fileSystem: new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000),
+  // upstream types seem to be broken here
+  fileSystem: new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000) as unknown as AbstractInputFileSystem,
   extensions: ['.js', '.json'],
   mainFields: ['browser', 'module', 'main']
 });
@@ -37,18 +39,18 @@ export interface SplitterOptions {
 }
 
 export default class Splitter {
-  private lastImports = null;
+  private lastImports: Import[][] | undefined;
   private lastDeps: Map<string, BundleDependencies> | null = null;
   private packageVersions: Map<string, string> = new Map();
 
   constructor(private options: SplitterOptions) {}
 
-  async deps() {
+  async deps(): Promise<Map<string, BundleDependencies>> {
     if (this.importsChanged()) {
       this.lastDeps = await this.computeDeps(this.options.analyzers);
       debug('output %s', new LazyPrintDeps(this.lastDeps));
     }
-    return this.lastDeps;
+    return this.lastDeps!;
   }
 
   private importsChanged(): boolean {
@@ -59,6 +61,7 @@ export default class Splitter {
       this.lastImports = imports;
       return true;
     }
+    return false;
   }
 
   private async computeTargets(analyzers: Map<Analyzer, Package>) {
@@ -155,7 +158,7 @@ export default class Splitter {
     }
   }
 
-  private async computeDeps(analyzers) {
+  private async computeDeps(analyzers: SplitterOptions["analyzers"]): Promise<Map<string, BundleDependencies>> {
     let targets = await this.computeTargets(analyzers);
     let deps: Map<string, BundleDependencies> = new Map();
 
@@ -170,11 +173,11 @@ export default class Splitter {
       );
       if (staticUses.length > 0) {
         let bundleName = this.chooseBundle(staticUses);
-        deps.get(bundleName).staticImports.push(target);
+        deps.get(bundleName)!.staticImports.push(target);
       }
       if (dynamicUses.length > 0) {
         let bundleName = this.chooseBundle(dynamicUses);
-        deps.get(bundleName).dynamicImports.push(target);
+        deps.get(bundleName)!.dynamicImports.push(target);
       }
     }
 
@@ -198,11 +201,11 @@ export default class Splitter {
   // given that a module is imported by the given list of paths, which
   // bundle should it go in?
   private chooseBundle(importedBy: Import[]) {
-    let usedInBundles = {};
+    let usedInBundles = {} as { [bundleName: string]: boolean };
     importedBy.forEach(usage => {
       usedInBundles[this.bundleForPath(usage)] = true;
     });
-    return this.options.bundles.names.find(bundle => usedInBundles[bundle]);
+    return this.options.bundles.names.find(bundle => usedInBundles[bundle])!;
   }
 
   private bundleForPath(usage: Import) {
@@ -221,9 +224,10 @@ export default class Splitter {
   }
 }
 
-async function resolveEntrypoint(specifier, pkg): Promise<string> {
+async function resolveEntrypoint(specifier: string, pkg: Package): Promise<string> {
   return new Promise((resolvePromise, reject) => {
-    resolver.resolve({}, pkg.root, specifier, {}, (err, path) => {
+    // upstream types seem to be out of date here
+    (resolver.resolve as any)({}, pkg.root, specifier, {}, (err: Error, path: string) => {
       if (err) {
         reject(err);
       } else {
@@ -253,7 +257,7 @@ class LazyPrintDeps {
   }
 
   toString() {
-    let output = {};
+    let output = {} as { [bundle: string]: any };
     for (let [
       bundle,
       { staticImports, dynamicImports }

@@ -24,6 +24,7 @@
     "ember-cli-babel": "^6.6.0",
     "ember-cli-dependency-checker": "*",
     "ember-cli-eslint": "*",
+    "ember-cli-fastboot": "*",
     "ember-cli-htmlbars": "*",
     "ember-cli-htmlbars-inline-precompile": "*",
     "ember-cli-inject-live-reload": "*",
@@ -37,12 +38,11 @@
     "ember-resolver": "*",
     "ember-source": "*",
     "eslint-plugin-ember": "*",
-    "loader.js": "*",
-    "sample-addon": "*",
+    "fastboot": "*",
     "jsdom": "*",
+    "loader.js": "*",
     "qunit": "*",
-    "ember-cli-fastboot": "*",
-    "fastboot": "*"
+    "sample-addon": "*"
   },
   "engines": {
     "node": ">= 8.*"

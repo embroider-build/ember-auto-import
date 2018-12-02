@@ -1,6 +1,6 @@
 import Plugin, { Tree } from 'broccoli-plugin';
 import { join } from 'path';
-import walkSync from 'walk-sync';
+import walkSync, { WalkSyncEntry } from 'walk-sync';
 import { unlinkSync, rmdirSync, mkdirSync, readFileSync, existsSync, writeFileSync, removeSync, readdirSync } from 'fs-extra';
 import FSTree from 'fs-tree-diff';
 import symlinkOrCopy from 'symlink-or-copy';
@@ -101,7 +101,7 @@ export default class Append extends Plugin {
             // it no longer needs update once we've handled it here
             needsUpdate.delete(relativePath);
           } else {
-            if (entry.isPassthrough) {
+            if (isPassthrough(entry)) {
               symlinkOrCopy.sync(join(this.appendedDir, entry.originalRelativePath), outputPath);
             } else {
               symlinkOrCopy.sync(join(this.upstreamDir, relativePath), outputPath);
@@ -118,8 +118,8 @@ export default class Append extends Plugin {
     }
   }
 
-  private upstreamPatchset(passthroughEntries) {
-    let input = walkSync.entries(this.upstreamDir).concat(passthroughEntries);
+  private upstreamPatchset(passthroughEntries: AugmentedWalkSyncEntry[]) {
+    let input: AugmentedWalkSyncEntry[] = walkSync.entries(this.upstreamDir).concat(passthroughEntries);
 
     // FSTree requires the entries to be sorted and uniq
     input.sort(compareByRelativePath);
@@ -127,7 +127,7 @@ export default class Append extends Plugin {
 
     let previous = this.previousUpstreamTree;
     let next = (this.previousUpstreamTree = FSTree.fromEntries(input));
-    return previous.calculatePatch(next);
+    return previous.calculatePatch(next) as [ string, string, AugmentedWalkSyncEntry ][];
   }
 
   private appendedPatchset() {
@@ -143,14 +143,14 @@ export default class Append extends Plugin {
           o.originalRelativePath = e.relativePath;
           return o;
         }
-      }).filter(e => e && e.relativePath !== './');
+      }).filter(e => e && e.relativePath !== './') as AugmentedWalkSyncEntry[];
 
     let previous = this.previousAppendedTree;
     let next = (this.previousAppendedTree = FSTree.fromEntries(input));
     return { patchset: previous.calculatePatch(next), passthroughEntries };
   }
 
-  private handleAppend(relativePath) {
+  private handleAppend(relativePath: string) {
     let upstreamPath = join(this.upstreamDir, relativePath);
     let outputPath = join(this.outputPath, relativePath);
 
@@ -159,7 +159,7 @@ export default class Append extends Plugin {
       return;
     }
 
-    let sourceDir = join(this.appendedDir, this.reverseMappings.get(relativePath));
+    let sourceDir = join(this.appendedDir, this.reverseMappings.get(relativePath)!);
     if (!existsSync(sourceDir)) {
       symlinkOrCopy.sync(upstreamPath, outputPath);
       return;
@@ -178,7 +178,7 @@ export default class Append extends Plugin {
   }
 }
 
-function compareByRelativePath(entryA, entryB) {
+function compareByRelativePath(entryA: WalkSyncEntry, entryB: WalkSyncEntry) {
   let pathA = entryA.relativePath;
   let pathB = entryB.relativePath;
 
@@ -189,3 +189,14 @@ function compareByRelativePath(entryA, entryB) {
   }
   return 0;
 }
+
+function isPassthrough(entry: AugmentedWalkSyncEntry): entry is PassthroughEntry {
+  return (entry as any).isPassthrough;
+}
+
+interface PassthroughEntry extends WalkSyncEntry {
+  isPassthrough: true;
+  originalRelativePath: string;
+}
+
+type AugmentedWalkSyncEntry = WalkSyncEntry | PassthroughEntry;

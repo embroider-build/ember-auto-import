@@ -17,9 +17,6 @@
     "test": "ember test --test-port=0"
   },
   "devDependencies": {
-    "inner-lib": "*",
-    "inner-lib2": "*",
-    "sample-addon": "*",
     "broccoli-asset-rev": "*",
     "ember-ajax": "*",
     "ember-auto-import": "*",
@@ -40,7 +37,10 @@
     "ember-resolver": "*",
     "ember-source": "*",
     "eslint-plugin-ember": "*",
-    "loader.js": "*"
+    "inner-lib": "*",
+    "inner-lib2": "*",
+    "loader.js": "*",
+    "sample-addon": "*"
   },
   "engines": {
     "node": "^4.5 || 6.* || >= 7.*"
