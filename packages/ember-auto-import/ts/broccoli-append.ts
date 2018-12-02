@@ -143,7 +143,7 @@ export default class Append extends Plugin {
           o.originalRelativePath = e.relativePath;
           return o;
         }
-      }).filter(Boolean) as AugmentedWalkSyncEntry[];
+      }).filter(e => e && e.relativePath !== './') as AugmentedWalkSyncEntry[];
 
     let previous = this.previousAppendedTree;
     let next = (this.previousAppendedTree = FSTree.fromEntries(input));
