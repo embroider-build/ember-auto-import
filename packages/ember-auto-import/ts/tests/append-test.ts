@@ -1,4 +1,4 @@
-import QUnit from 'qunit';
+import 'qunit';
 import { Builder } from 'broccoli';
 import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
