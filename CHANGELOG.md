@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.19
+ - BUGFIX: some changes to imports were not taking effect until after an ember-cli restart.
+
 ## 1.2.18
  - BUGFIX: fixed a crash for people using certain customized vendor.js output paths.
  - INTERNALS: we now compile in the strictest Typescript mode.
