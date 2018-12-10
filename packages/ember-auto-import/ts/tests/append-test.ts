@@ -169,6 +169,27 @@ Qmodule('broccoli-append', function(hooks) {
     assert.ok(/\btwo\b/.test(content), 'found two');
   });
 
+  test('inner appended changed', async function(assert) {
+    let mappings = new Map();
+    mappings.set('app/inner', 'assets/vendor.js');
+    builder = makeBuilder({
+      mappings
+    });
+    let out = join(builder.outputPath, 'assets/vendor.js');
+    outputFileSync(join(upstream, 'assets/vendor.js'), "hello");
+    outputFileSync(join(appended, 'app/inner/1.js'), "one");
+    outputFileSync(join(appended, 'app/inner/2.js'), "two");
+    await builder.build();
+
+    outputFileSync(join(appended, 'app/inner/1.js'), "updated");
+    await builder.build();
+
+    let content = readFileSync(out, 'utf8');
+    assert.ok(/^hello;\n/.test(content), 'original vendor.js and separator');
+    assert.ok(/\bupdated\b/.test(content), 'found updated');
+    assert.ok(/\btwo\b/.test(content), 'found two');
+  });
+
   test('appended changed', async function(assert) {
     let mappings = new Map();
     mappings.set('app', 'assets/vendor.js');
@@ -301,6 +322,22 @@ Qmodule('broccoli-append', function(hooks) {
     await builder.build();
 
     outputFileSync(join(appended, 'lazy/1.js'), "updated");
+    await builder.build();
+
+    assert.equal(readFileSync(out, 'utf8'), 'updated');
+  });
+
+  test('inner passthrough file updated', async function(assert) {
+    let passthrough = new Map();
+    passthrough.set('lazy/inner', 'assets');
+    builder = makeBuilder({
+      passthrough
+    });
+    let out = join(builder.outputPath, 'assets/1.js');
+    outputFileSync(join(appended, 'lazy/inner/1.js'), "one");
+    await builder.build();
+
+    outputFileSync(join(appended, 'lazy/inner/1.js'), "updated");
     await builder.build();
 
     assert.equal(readFileSync(out, 'utf8'), 'updated');

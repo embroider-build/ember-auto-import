@@ -64,9 +64,9 @@ export default class Append extends Plugin {
     let changed = new Set();
     let { patchset, passthroughEntries } = this.appendedPatchset();
     for (let [, relativePath] of patchset) {
-      let [first] = relativePath.split('/');
-      if (this.mappings.has(first)) {
-        changed.add(this.mappings.get(first));
+      let match = findByPrefix(relativePath, this.mappings);
+      if (match) {
+        changed.add(match.mapsTo);
       }
     }
     return { needsUpdate: changed, passthroughEntries };
@@ -134,11 +134,10 @@ export default class Append extends Plugin {
     let input = walkSync.entries(this.appendedDir);
     let passthroughEntries = input
       .map(e => {
-        let first = e.relativePath.split('/')[0];
-        let remapped = this.passthrough.get(first);
-        if (remapped) {
+        let match = findByPrefix(e.relativePath, this.passthrough);
+        if (match) {
           let o = Object.create(e);
-          o.relativePath = e.relativePath.replace(new RegExp('^' + first), remapped);
+          o.relativePath = e.relativePath.replace(new RegExp('^' + match.prefix), match.mapsTo);
           o.isPassthrough = true;
           o.originalRelativePath = e.relativePath;
           return o;
@@ -200,3 +199,16 @@ interface PassthroughEntry extends WalkSyncEntry {
 }
 
 type AugmentedWalkSyncEntry = WalkSyncEntry | PassthroughEntry;
+
+function findByPrefix(path: string, map: Map<string, string>) {
+  let parts = path.split('/');
+  for (let i = 1; i < parts.length; i++) {
+    let candidate = parts.slice(0, i).join('/');
+    if (map.has(candidate)) {
+      return {
+        prefix: candidate,
+        mapsTo: map.get(candidate)!
+      };
+    }
+  }
+}
