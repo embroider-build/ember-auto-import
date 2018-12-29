@@ -30,9 +30,7 @@ else
   # manually hoist
   if [ -d packages/ember-auto-import/node_modules/ember-cli ]; then
     rm -rf node_modules/ember-cli
-    mv packages/ember-auto-import/node_modules/ember-cli node_modules
-    rm packages/ember-auto-import/node_modules/.bin/ember
-    ln -s ../../../../node_modules/ember-cli/bin/ember packages/ember-auto-import/node_modules/.bin/ember
+    ln -s ../packages/ember-auto-import/node_modules/ember-cli node_modules/ember-cli
   fi
 
 fi
