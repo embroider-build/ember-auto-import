@@ -114,6 +114,14 @@ export default class Bundler extends Plugin {
         entrypoints
           .get(bundle)!
           .forEach(asset => {
+            for (let depBundle of this.options.bundles.dependencies(bundle)) {
+              let entrypoint = entrypoints.get(depBundle);
+              if (entrypoint && entrypoint.includes(asset)) {
+                // this asset was already included in one of the bundles that
+                // our bundle depends on, so we don't want to also include it.
+                return;
+              }
+            }
             copySync(join(dir, asset), join(this.outputPath, 'entrypoints', bundle, asset));
           });
       }

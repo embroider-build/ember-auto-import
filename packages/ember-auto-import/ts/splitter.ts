@@ -172,12 +172,16 @@ export default class Splitter {
         imp => imp.isDynamic
       );
       if (staticUses.length > 0) {
-        let bundleName = this.chooseBundle(staticUses);
-        deps.get(bundleName)!.staticImports.push(target);
+        let bundleNames = this.options.bundles.chooseBundles(staticUses.map(usage => usage.path));
+        for (let bundleName of bundleNames) {
+          deps.get(bundleName)!.staticImports.push(target);
+        }
       }
       if (dynamicUses.length > 0) {
-        let bundleName = this.chooseBundle(dynamicUses);
-        deps.get(bundleName)!.dynamicImports.push(target);
+        let bundleNames = this.options.bundles.chooseBundles(dynamicUses.map(usage => usage.path));
+        for (let bundleName of bundleNames) {
+          deps.get(bundleName)!.dynamicImports.push(target);
+        }
       }
     }
 
@@ -196,31 +200,6 @@ export default class Splitter {
     for (const imports of values(bundle)) {
       imports.sort((a, b) => a.specifier.localeCompare(b.specifier));
     }
-  }
-
-  // given that a module is imported by the given list of paths, which
-  // bundle should it go in?
-  private chooseBundle(importedBy: Import[]) {
-    let usedInBundles = {} as { [bundleName: string]: boolean };
-    importedBy.forEach(usage => {
-      usedInBundles[this.bundleForPath(usage)] = true;
-    });
-    return this.options.bundles.names.find(bundle => usedInBundles[bundle])!;
-  }
-
-  private bundleForPath(usage: Import) {
-    let bundleName = this.options.bundles.bundleForPath(usage.path);
-    if (this.options.bundles.names.indexOf(bundleName) === -1) {
-      throw new Error(
-        `bundleForPath("${
-          usage.path
-        }") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.names.join(
-          ','
-        )}`
-      );
-    }
-    debug('bundleForPath("%s")=%s', usage.path, bundleName);
-    return bundleName;
   }
 }
 

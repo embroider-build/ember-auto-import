@@ -76,7 +76,7 @@ export default class AutoImport {
   addTo(allAppTree: Tree) {
     let bundler = debugTree(this.makeBundler(allAppTree), 'output');
 
-    let mappings = new Map();
+    let mappings: Map<string, string> = new Map();
     for (let name of this.bundles.names) {
       let target = this.bundles.bundleEntrypoint(name);
       mappings.set(`entrypoints/${name}`, target);
