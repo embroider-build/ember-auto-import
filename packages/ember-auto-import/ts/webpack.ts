@@ -1,6 +1,6 @@
 import webpack from 'webpack';
 import { join } from 'path';
-import { merge } from 'lodash';
+import { mergeWith, flatten } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
@@ -104,7 +104,7 @@ export default class WebpackBundler implements BundlerHook {
       },
     };
     if (extraWebpackConfig) {
-      merge(config, extraWebpackConfig);
+      mergeConfig(config, extraWebpackConfig);
     }
     this.webpack = webpack(config);
   }
@@ -177,4 +177,48 @@ export default class WebpackBundler implements BundlerHook {
       });
     }) as Promise<webpack.Stats>;
   }
+}
+
+export function mergeConfig(dest: object, ...srcs: object[]) {
+  return mergeWith(dest, ...srcs, combine);
+}
+
+function combine(objValue: any, srcValue: any, key: string) {
+  if (key === 'noParse') {
+    return eitherPattern(objValue, srcValue);
+  }
+
+  // arrays concat
+  if (Array.isArray(objValue)) {
+    return objValue.concat(srcValue);
+  }
+}
+
+// webpack configs have several places where they accept:
+//   - RegExp
+//   - [RegExp]
+//   - (resource: string) => boolean
+//   - string
+//   - [string]
+// This function combines any of these with a logical OR.
+function eitherPattern(...patterns: any[]): (resource: string) => boolean {
+  let flatPatterns = flatten(patterns);
+  return function(resource) {
+    for (let pattern of flatPatterns) {
+      if (pattern instanceof RegExp) {
+        if (pattern.test(resource)) {
+          return true;
+        }
+      } else if (typeof pattern === 'string') {
+        if (pattern === resource) {
+          return true;
+        }
+      } else if (typeof pattern === 'function') {
+        if (pattern(resource)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 }

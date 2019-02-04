@@ -19,6 +19,7 @@ cd packages/sample-conflict    && yarn test
 cd packages/sample-babel7      && yarn test
 cd packages/sample-typescript2 && yarn test
 cd packages/sample-noconflict  && yarn test
+cd packages/sample-noparse     && yarn test
 cd packages/ember-auto-import  && yarn test
 cd packages/ember-auto-import  && yarn test:node
 EOF
