@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.20
+ - SECURITY: disallow handlebars < 4.0.13 due to https://www.npmjs.com/advisories/755. We don't pass any untrusted input into handlebars, so there is no known actual vulnerability in ember-auto-import, but this will help people avoid getting audit warnings about their apps. Thanks @knownasilya.
+ - DOCS: updated docs on publicAssetURL by @jrjohnson
+ - HOUSEKEEPING: gitignore fixes by @buschtoens.
+ - BUGFIX: make sure a user-provided `noParse` in custom webpack config can't break our own internal usage of that feature.
+
 ## 1.2.19
  - BUGFIX: some changes to imports were not taking effect until after an ember-cli restart.
 
