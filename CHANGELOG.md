@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.2.21
+ - BUGFIX: restrict our webpack dependency to exclude 4.29.0.  See https://github.com/ef4/ember-auto-import/issues/192. Thanks @efx.
+
 ## 1.2.20
  - SECURITY: disallow handlebars < 4.0.13 due to https://www.npmjs.com/advisories/755. We don't pass any untrusted input into handlebars, so there is no known actual vulnerability in ember-auto-import, but this will help people avoid getting audit warnings about their apps. Thanks @knownasilya.
  - DOCS: updated docs on publicAssetURL by @jrjohnson
