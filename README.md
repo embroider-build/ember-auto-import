@@ -49,7 +49,7 @@ Dynamic import is currently a Stage 3 ECMA feature, so to use it there are a few
 
         let app = new EmberApp(defaults, {
           babel: {
-            plugins: [ require('ember-auto-import/babel-plugin') ]
+            plugins: [ require.resolve('ember-auto-import/babel-plugin') ]
           }
         });
 
