@@ -1,5 +1,5 @@
 import Plugin, { Tree } from 'broccoli-plugin';
-import { join } from 'path';
+import { join, extname } from 'path';
 import walkSync, { WalkSyncEntry } from 'walk-sync';
 import { unlinkSync, rmdirSync, mkdirSync, readFileSync, existsSync, writeFileSync, removeSync, readdirSync } from 'fs-extra';
 import FSTree from 'fs-tree-diff';
@@ -17,10 +17,11 @@ import { insertBefore} from './source-map-url';
 */
 
 export interface AppendOptions {
-  // map from a directory in the appendedTree (like `entrypoints/app`) to a file
-  // that may exists in the upstreamTree (like `assets/vendor.js`). Appends the
-  // JS files in the directory to that file, when it exists.
-  mappings: Map<string, string>;
+  // map from a directory in the appendedTree (like `entrypoints/app`) to a map
+  // keyed by file type (extension) containing file paths that may exists in the
+  // upstreamTree (like `assets/vendor.js`). Appends the JS/CSS files in the
+  // directory to that file, when it exists.
+  mappings: Map<string, Map<string, string>>;
 
   // map from a directory in the appendedTree (like `lazy`) to a directory where
   // we will output those files in the output (like `assets`).
@@ -30,7 +31,7 @@ export interface AppendOptions {
 export default class Append extends Plugin {
   private previousUpstreamTree = new FSTree();
   private previousAppendedTree = new FSTree();
-  private mappings: Map<string, string>;
+  private mappings: Map<string, Map<string, string>>;
   private reverseMappings: Map<string, string>;
   private passthrough: Map<string, string>;
 
@@ -40,9 +41,13 @@ export default class Append extends Plugin {
       persistentOutput: true
     });
 
+    // mappings maps entry points to maps that map file types to output files.
+    // reverseMappings maps output files back to entry points.
     let reverseMappings = new Map();
-    for (let [key, value] of options.mappings.entries( )) {
-      reverseMappings.set(value, key);
+    for (let [key, map] of options.mappings.entries( )) {
+      for (let value of map.values( )) {
+        reverseMappings.set(value, key);
+      }
     }
 
     this.mappings = options.mappings;
@@ -66,7 +71,10 @@ export default class Append extends Plugin {
     for (let [, relativePath] of patchset) {
       let match = findByPrefix(relativePath, this.mappings);
       if (match) {
-        changed.add(match.mapsTo);
+        let ext = extname(relativePath).slice(1);
+        if (match.mapsTo.has(ext)) {
+          changed.add(match.mapsTo.get(ext));
+        }
       }
     }
     return { needsUpdate: changed, passthroughEntries };
@@ -152,6 +160,7 @@ export default class Append extends Plugin {
   private handleAppend(relativePath: string) {
     let upstreamPath = join(this.upstreamDir, relativePath);
     let outputPath = join(this.outputPath, relativePath);
+    let ext = extname(relativePath);
 
     if (!existsSync(upstreamPath)) {
       removeSync(outputPath);
@@ -165,7 +174,7 @@ export default class Append extends Plugin {
     }
 
     let appendedContent = readdirSync(sourceDir).map(name => {
-      if (/\.js$/.test(name)) {
+      if (name.endsWith(ext)) {
         return readFileSync(join(sourceDir, name), 'utf8');
       }
     }).filter(Boolean).join(";\n");
@@ -200,7 +209,7 @@ interface PassthroughEntry extends WalkSyncEntry {
 
 type AugmentedWalkSyncEntry = WalkSyncEntry | PassthroughEntry;
 
-function findByPrefix(path: string, map: Map<string, string>) {
+function findByPrefix(path: string, map: Map<string, any>) {
   let parts = path.split('/');
   for (let i = 1; i < parts.length; i++) {
     let candidate = parts.slice(0, i).join('/');

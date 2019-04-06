@@ -66,7 +66,9 @@ Qmodule('broccoli-append', function(hooks) {
 
   test('nothing to be appended', async function(assert) {
     let mappings = new Map();
-    mappings.set('app', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets/vendor.js');
     builder = makeBuilder({
       mappings
     });
@@ -79,7 +81,9 @@ Qmodule('broccoli-append', function(hooks) {
 
   test('appended dir does not exist', async function(assert) {
     let mappings = new Map();
-    mappings.set('other', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('other', byType);
+    byType.set('js', 'assets/vendor.js');
     builder = makeBuilder({
       mappings
     });
@@ -91,7 +95,9 @@ Qmodule('broccoli-append', function(hooks) {
 
   test('nothing to append to', async function(assert) {
     let mappings = new Map();
-    mappings.set('app', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets/vendor.js');
     builder = makeBuilder({
       mappings
     });
@@ -103,26 +109,48 @@ Qmodule('broccoli-append', function(hooks) {
 
   test('all files appended', async function(assert) {
     let mappings = new Map();
-    mappings.set('app', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets/vendor.js');
+    byType.set('css', 'assets/vendor.css');
     builder = makeBuilder({
       mappings
     });
-    let out = join(builder.outputPath, 'assets/vendor.js');
+
+    let outJs = join(builder.outputPath, 'assets/vendor.js');
     outputFileSync(join(upstream, 'assets/vendor.js'), "hello");
     outputFileSync(join(appended, 'app/1.js'), "one");
     outputFileSync(join(appended, 'app/2.js'), "two");
     outputFileSync(join(appended, 'tests/3.js'), "three");
+
+    let outCss = join(builder.outputPath, 'assets/vendor.css');
+    outputFileSync(join(upstream, 'assets/vendor.css'), "hola");
+    outputFileSync(join(appended, 'app/1.css'), "uno");
+    outputFileSync(join(appended, 'app/2.css'), "dos");
+    outputFileSync(join(appended, 'tests/3.css'), "tres");
+
     await builder.build();
-    let content = readFileSync(out, 'utf8');
+
+    let content = readFileSync(outJs, 'utf8');
     assert.ok(/^hello;\n/.test(content), 'original vendor.js and separator');
     assert.ok(/\bone\b/.test(content), 'found one');
     assert.ok(/\btwo\b/.test(content), 'found two');
     assert.ok(!/\bthree\b/.test(content), 'did not find three');
+    assert.ok(!/\buno\b/.test(content), 'did not find CSS');
+
+    content = readFileSync(outCss, 'utf8');
+    assert.ok(/^hola;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(/\buno\b/.test(content), 'found uno');
+    assert.ok(/\bdos\b/.test(content), 'found dos');
+    assert.ok(!/\btres\b/.test(content), 'did not find tres');
+    assert.ok(!/\bone\b/.test(content), 'did not find JS');
   });
 
   test('moves trailing sourceMappingURL', async function(assert) {
     let mappings = new Map();
-    mappings.set('app', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets/vendor.js');
     builder = makeBuilder({
       mappings
     });
@@ -136,7 +164,9 @@ Qmodule('broccoli-append', function(hooks) {
 
   test('does not match non-trailing sourceMappingURL', async function(assert) {
     let mappings = new Map();
-    mappings.set('app', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets/vendor.js');
     builder = makeBuilder({
       mappings
     });
@@ -150,28 +180,49 @@ Qmodule('broccoli-append', function(hooks) {
 
   test('upstream changed', async function(assert) {
     let mappings = new Map();
-    mappings.set('app', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets/vendor.js');
+    byType.set('css', 'assets/vendor.css');
     builder = makeBuilder({
       mappings
     });
-    let out = join(builder.outputPath, 'assets/vendor.js');
+
+    let outJs = join(builder.outputPath, 'assets/vendor.js');
     outputFileSync(join(upstream, 'assets/vendor.js'), "hello");
     outputFileSync(join(appended, 'app/1.js'), "one");
     outputFileSync(join(appended, 'app/2.js'), "two");
+
+    let outCss = join(builder.outputPath, 'assets/vendor.css');
+    outputFileSync(join(upstream, 'assets/vendor.css'), "hola");
+    outputFileSync(join(appended, 'app/1.css'), "uno");
+    outputFileSync(join(appended, 'app/2.css'), "dos");
+
     await builder.build();
 
     outputFileSync(join(upstream, 'assets/vendor.js'), "bonjour");
+    outputFileSync(join(upstream, 'assets/vendor.css'), "gutentag");
+
     await builder.build();
 
-    let content = readFileSync(out, 'utf8');
+    let content = readFileSync(outJs, 'utf8');
     assert.ok(/^bonjour;\n/.test(content), 'original vendor.js and separator');
     assert.ok(/\bone\b/.test(content), 'found one');
     assert.ok(/\btwo\b/.test(content), 'found two');
+    assert.ok(!/\buno\b/.test(content), 'did not find CSS');
+
+    content = readFileSync(outCss, 'utf8');
+    assert.ok(/^gutentag;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(/\buno\b/.test(content), 'found uno');
+    assert.ok(/\bdos\b/.test(content), 'found dos');
+    assert.ok(!/\bone\b/.test(content), 'did not find JS');
   });
 
   test('inner appended changed', async function(assert) {
     let mappings = new Map();
-    mappings.set('app/inner', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app/inner', byType);
+    byType.set('js', 'assets/vendor.js');
     builder = makeBuilder({
       mappings
     });
@@ -192,108 +243,189 @@ Qmodule('broccoli-append', function(hooks) {
 
   test('appended changed', async function(assert) {
     let mappings = new Map();
-    mappings.set('app', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets/vendor.js');
+    byType.set('css', 'assets/vendor.css');
     builder = makeBuilder({
       mappings
     });
-    let out = join(builder.outputPath, 'assets/vendor.js');
+
+    let outJs = join(builder.outputPath, 'assets/vendor.js');
     outputFileSync(join(upstream, 'assets/vendor.js'), "hello");
     outputFileSync(join(appended, 'app/1.js'), "one");
     outputFileSync(join(appended, 'app/2.js'), "two");
+
+    let outCss = join(builder.outputPath, 'assets/vendor.css');
+    outputFileSync(join(upstream, 'assets/vendor.css'), "hola");
+    outputFileSync(join(appended, 'app/1.css'), "uno");
+    outputFileSync(join(appended, 'app/2.css'), "dos");
+
     await builder.build();
 
     outputFileSync(join(appended, 'app/1.js'), "updated");
+    outputFileSync(join(appended, 'app/1.css'), "modified");
+
     await builder.build();
 
-    let content = readFileSync(out, 'utf8');
+    let content = readFileSync(outJs, 'utf8');
     assert.ok(/^hello;\n/.test(content), 'original vendor.js and separator');
     assert.ok(/\bupdated\b/.test(content), 'found updated');
     assert.ok(/\btwo\b/.test(content), 'found two');
+
+    content = readFileSync(outCss, 'utf8');
+    assert.ok(/^hola;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(/\bmodified\b/.test(content), 'found modified');
+    assert.ok(/\bdos\b/.test(content), 'found dos');
   });
 
   test('upstream and appended changed', async function(assert) {
     let mappings = new Map();
-    mappings.set('app', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets/vendor.js');
+    byType.set('css', 'assets/vendor.css');
     builder = makeBuilder({
       mappings
     });
-    let out = join(builder.outputPath, 'assets/vendor.js');
+
+    let outJs = join(builder.outputPath, 'assets/vendor.js');
     outputFileSync(join(upstream, 'assets/vendor.js'), "hello");
     outputFileSync(join(appended, 'app/1.js'), "one");
     outputFileSync(join(appended, 'app/2.js'), "two");
+
+    let outCss = join(builder.outputPath, 'assets/vendor.css');
+    outputFileSync(join(upstream, 'assets/vendor.css'), "hola");
+    outputFileSync(join(appended, 'app/1.css'), "uno");
+    outputFileSync(join(appended, 'app/2.css'), "dos");
+
     await builder.build();
 
-    outputFileSync(join(upstream, 'assets/vendor.js'), "hola");
+    outputFileSync(join(upstream, 'assets/vendor.js'), "bonjour");
     outputFileSync(join(appended, 'app/1.js'), "updated");
+    outputFileSync(join(upstream, 'assets/vendor.css'), "guten tag");
+    outputFileSync(join(appended, 'app/1.css'), "modified");
 
     await builder.build();
 
-    let content = readFileSync(out, 'utf8');
-    assert.ok(/^hola;\n/.test(content), 'original vendor.js and separator');
+    let content = readFileSync(outJs, 'utf8');
+    assert.ok(/^bonjour;\n/.test(content), 'original vendor.js and separator');
     assert.ok(/\bupdated\b/.test(content), 'found updated');
     assert.ok(/\btwo\b/.test(content), 'found two');
+
+    content = readFileSync(outCss, 'utf8');
+    assert.ok(/^guten tag;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(/\bmodified\b/.test(content), 'found modified');
+    assert.ok(/\bdos\b/.test(content), 'found dos');
   });
 
   test('additional appended file', async function(assert) {
     let mappings = new Map();
-    mappings.set('app', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets/vendor.js');
+    byType.set('css', 'assets/vendor.css');
     builder = makeBuilder({
       mappings
     });
-    let out = join(builder.outputPath, 'assets/vendor.js');
+
+    let outJs = join(builder.outputPath, 'assets/vendor.js');
     outputFileSync(join(upstream, 'assets/vendor.js'), "hello");
     outputFileSync(join(appended, 'app/1.js'), "one");
     outputFileSync(join(appended, 'app/2.js'), "two");
+
+    let outCss = join(builder.outputPath, 'assets/vendor.css');
+    outputFileSync(join(upstream, 'assets/vendor.css'), "hola");
+    outputFileSync(join(appended, 'app/1.css'), "uno");
+    outputFileSync(join(appended, 'app/2.css'), "dos");
+
     await builder.build();
 
     outputFileSync(join(appended, 'app/3.js'), "three");
+    outputFileSync(join(appended, 'app/3.css'), "tres");
 
     await builder.build();
 
-    let content = readFileSync(out, 'utf8');
+    let content = readFileSync(outJs, 'utf8');
     assert.ok(/^hello;\n/.test(content), 'original vendor.js and separator');
     assert.ok(/\bone\b/.test(content), 'found uno');
     assert.ok(/\btwo\b/.test(content), 'found two');
     assert.ok(/\bthree\b/.test(content), 'found three');
+
+    content = readFileSync(outCss, 'utf8');
+    assert.ok(/^hola;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(/\buno\b/.test(content), 'found uno');
+    assert.ok(/\bdos\b/.test(content), 'found dos');
+    assert.ok(/\btres\b/.test(content), 'found tres');
   });
 
   test('removed appended file', async function(assert) {
     let mappings = new Map();
-    mappings.set('app', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets/vendor.js');
+    byType.set('css', 'assets/vendor.css');
     builder = makeBuilder({
       mappings
     });
-    let out = join(builder.outputPath, 'assets/vendor.js');
+
+    let outJs = join(builder.outputPath, 'assets/vendor.js');
     outputFileSync(join(upstream, 'assets/vendor.js'), "hello");
     outputFileSync(join(appended, 'app/1.js'), "one");
     outputFileSync(join(appended, 'app/2.js'), "two");
+
+    let outCss = join(builder.outputPath, 'assets/vendor.css');
+    outputFileSync(join(upstream, 'assets/vendor.css'), "hola");
+    outputFileSync(join(appended, 'app/1.css'), "uno");
+    outputFileSync(join(appended, 'app/2.css'), "dos");
+
     await builder.build();
 
     removeSync(join(appended, 'app/1.js'));
+    removeSync(join(appended, 'app/1.css'));
+
     await builder.build();
 
-    let content = readFileSync(out, 'utf8');
+    let content = readFileSync(outJs, 'utf8');
     assert.ok(/^hello;\n/.test(content), 'original vendor.js and separator');
     assert.ok(!/\bone\b/.test(content), 'did not find one');
     assert.ok(/\btwo\b/.test(content), 'found two');
+
+    content = readFileSync(outCss, 'utf8');
+    assert.ok(/^hola;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(!/\buno\b/.test(content), 'did not find uno');
+    assert.ok(/\bdos\b/.test(content), 'found dos');
   });
 
   test('removed upstream file', async function(assert) {
     let mappings = new Map();
-    mappings.set('app', 'assets/vendor.js');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets/vendor.js');
+    byType.set('css', 'assets/vendor.css');
     builder = makeBuilder({
       mappings
     });
-    let out = join(builder.outputPath, 'assets/vendor.js');
+
+    let outJs = join(builder.outputPath, 'assets/vendor.js');
     outputFileSync(join(upstream, 'assets/vendor.js'), "hello");
     outputFileSync(join(appended, 'app/1.js'), "one");
     outputFileSync(join(appended, 'app/2.js'), "two");
+
+    let outCss = join(builder.outputPath, 'assets/vendor.css');
+    outputFileSync(join(upstream, 'assets/vendor.css'), "hola");
+    outputFileSync(join(appended, 'app/1.css'), "uno");
+    outputFileSync(join(appended, 'app/2.css'), "dos");
+
     await builder.build();
 
     removeSync(join(upstream, 'assets/vendor.js'));
+    removeSync(join(upstream, 'assets/vendor.css'));
+
     await builder.build();
 
-    assert.ok(!existsSync(out), 'removed');
+    assert.ok(!existsSync(outJs), 'removed js');
+    assert.ok(!existsSync(outCss), 'removed css');
   });
 
   test('passthrough file created', async function(assert) {
@@ -364,7 +496,9 @@ Qmodule('broccoli-append', function(hooks) {
     passthrough.set('lazy', 'assets');
 
     let mappings = new Map();
-    mappings.set('app', 'assets');
+    let byType = new Map();
+    mappings.set('app', byType);
+    byType.set('js', 'assets');
 
     builder = makeBuilder({
       mappings,
