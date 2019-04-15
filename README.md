@@ -86,7 +86,7 @@ let app = new EmberApp(defaults, {
       // the real package "plotly.js-basic-dist" instead.
       'plotly.js': 'plotly.js-basic-dist',
 
-      // you can also use alises to pick a different entrypoint
+      // you can also use aliases to pick a different entrypoint
       // within the same package. This can come up when the default
       // entrypoint only works in Node, but there is also a browser
       // build available (and the author didn't provide a "browser"
