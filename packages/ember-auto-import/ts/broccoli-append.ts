@@ -209,7 +209,7 @@ interface PassthroughEntry extends WalkSyncEntry {
 
 type AugmentedWalkSyncEntry = WalkSyncEntry | PassthroughEntry;
 
-function findByPrefix(path: string, map: Map<string, any>) {
+function findByPrefix<T>(path: string, map: Map<string, T>) {
   let parts = path.split('/');
   for (let i = 1; i < parts.length; i++) {
     let candidate = parts.slice(0, i).join('/');
