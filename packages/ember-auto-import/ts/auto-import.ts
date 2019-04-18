@@ -78,8 +78,12 @@ export default class AutoImport {
 
     let mappings = new Map();
     for (let name of this.bundles.names) {
-      let target = this.bundles.bundleEntrypoint(name);
-      mappings.set(`entrypoints/${name}`, target);
+      let byType = new Map();
+      mappings.set(`entrypoints/${name}`, byType);
+      for (let type of this.bundles.types) {
+        let target = this.bundles.bundleEntrypoint(name, type);
+        byType.set(type, target);
+      }
     }
 
     let passthrough = new Map();

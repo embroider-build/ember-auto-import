@@ -15,13 +15,27 @@ export default class BundleConfig {
     return Object.freeze(['app', 'tests']);
   }
 
+  get types(): ReadonlyArray<string> {
+    return Object.freeze(['js', 'css']);
+  }
+
   // Which final JS file the given bundle's dependencies should go into.
-  bundleEntrypoint(name: string): string | undefined {
+  bundleEntrypoint(name: string, type: string): string | undefined {
     switch (name) {
       case 'tests':
-        return 'assets/test-support.js';
+        switch (type) {
+          case 'js':
+            return 'assets/test-support.js';
+          case 'css':
+            return 'assets/test-support.css';
+        }
       case 'app':
-        return this.emberApp.options.outputPaths.vendor.js.replace(/^\//, '');
+        switch (type) {
+          case 'js':
+            return this.emberApp.options.outputPaths.vendor.js.replace(/^\//, '');
+          case 'css':
+            return this.emberApp.options.outputPaths.vendor.css.replace(/^\//, '');
+        }
     }
   }
 
@@ -36,6 +50,6 @@ export default class BundleConfig {
   }
 
   get lazyChunkPath() {
-    return dirname(this.bundleEntrypoint(this.names[0])!);
+    return dirname(this.bundleEntrypoint(this.names[0], 'js')!);
   }
 }
