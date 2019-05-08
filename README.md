@@ -117,7 +117,7 @@ Using ember-auto-import inside an addon is almost exactly the same as inside an 
 
  - ember-auto-import must be in the  `dependencies` of your addon, not in `devDependencies`. Otherwise it won't come along when people install your addon.
  - ember-auto-import will refuse to import `devDependencies` of your addon, for the same reason. Whatever you're importing must be in `dependencies`.
- - ember-auto-import will not import dependencies imported inside the `app` folder.
+ - ember-auto-import will not detect import statements inside your `app` folder. This is because the files inside `app` are conceptually not part of your addon's own package namespace at all, so they don't get access to your addon's dependencies. Do all your auto-importing from the `addon` folder, and reexport in `app` as needed.
  - you configure ember-auto-import in your `index.js` file (not your `ember-cli-build.js` file), like this:
 
     ```js
