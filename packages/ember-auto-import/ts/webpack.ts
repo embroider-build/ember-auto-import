@@ -1,4 +1,4 @@
-import webpack from 'webpack';
+import webpack, { Configuration } from 'webpack';
 import { join } from 'path';
 import { mergeWith, flatten } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
@@ -83,9 +83,12 @@ export default class WebpackBundler implements BundlerHook {
       entry[bundle] = [join(this.stagingDir, 'l.js'), join(this.stagingDir, `${bundle}.js`)];
     });
 
-    let config: webpack.Configuration = {
+    let config: Configuration = {
       mode: environment === 'production' ? 'production' : 'development',
       entry,
+      performance: {
+        hints: false
+      },
       output: {
         path: this.outputDir,
         filename: `chunk.[chunkhash].js`,
