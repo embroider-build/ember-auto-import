@@ -27,9 +27,18 @@ export default class AutoImport {
   }
 
   constructor(appOrAddon: any) {
+    function findHostContext(appOrAddon: any): any {
+      if (appOrAddon.parent.parent) {
+        return findHostContext(appOrAddon.parent)
+      }
+
+      return appOrAddon;
+    }
+
     this.primaryPackage = appOrAddon;
-    // _findHost is private API but it's been stable in ember-cli for two years.
-    let host = appOrAddon._findHost();
+    let hostContext = findHostContext(appOrAddon);
+    this.packages.add(Package.lookup(hostContext));
+    let host = hostContext.app;
     this.env = host.env;
     this.bundles = new BundleConfig(host);
     if (!this.env) {
