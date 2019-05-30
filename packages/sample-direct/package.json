@@ -62,7 +62,7 @@
   "ember-addon": {
     "paths": [
       "lib/bundle-switcher",
-      "lib/csp-switcher"
+      "../csp-switcher"
     ]
   }
 }

@@ -3,12 +3,17 @@
 const EmberApp = require('ember-cli/lib/broccoli/ember-app');
 
 module.exports = function(defaults) {
-  let app = new EmberApp(defaults, {
+  let options = {
     autoImport: {
       exclude: ['qunit']
     }
+  }
 
-  });
+  if (process.env.CUSTOMIZE_CSP) {
+    options.autoImport.forbidEval = true;
+  }
+
+  let app = new EmberApp(defaults, options);
 
   // Use `app.import` to add additional libraries to the generated
   // output files.

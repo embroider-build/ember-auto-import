@@ -12,6 +12,7 @@ cd packages/sample-direct      && yarn test:custom-bundles-fastboot
 cd packages/sample-direct      && yarn test:custom-csp
 cd packages/sample-indirect    && yarn test
 cd packages/sample-indirect    && yarn test:fastboot
+cd packages/sample-indirect    && yarn test:custom-csp
 cd packages/sample-addon       && yarn test
 cd packages/sample-failure     && yarn test
 cd packages/sample-merged      && yarn test
