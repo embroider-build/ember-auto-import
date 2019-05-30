@@ -29,7 +29,7 @@ export default class AutoImport {
   constructor(appOrAddon: any) {
     function findHostContext(appOrAddon: any): any {
       if (appOrAddon.parent.parent) {
-        return findHostContext(appOrAddon.parent)
+        return findHostContext(appOrAddon.parent);
       }
 
       return appOrAddon;
