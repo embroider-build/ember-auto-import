@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0
+ - BUGFIX: don't polyfill Node behaviors by default, by @tmquinn.
+ - ENHANCEMENT: respect ember-auto-import options on the app even when the app itself doesn't depend directly on ember-auto-import, by @tmquinn.
+ - BUGFIX: disable size shaming by default.
+ - DOCS: Add info on importing a dependency from app folder, by @Alonski.
+
 ## 1.3.0
 
 - ENHANCEMENT: if you customize the webpack config to emit CSS, we will include the CSS in your ember app. Thanks @bendemboski.
