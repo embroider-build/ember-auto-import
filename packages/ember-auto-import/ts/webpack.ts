@@ -105,6 +105,7 @@ export default class WebpackBundler implements BundlerHook {
         noParse: (file) => file === join(this.stagingDir, 'l.js'),
         rules: []
       },
+      node: false,
     };
     if (extraWebpackConfig) {
       mergeConfig(config, extraWebpackConfig);
