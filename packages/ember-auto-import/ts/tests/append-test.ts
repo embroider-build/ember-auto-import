@@ -139,7 +139,7 @@ Qmodule('broccoli-append', function(hooks) {
     assert.ok(!/\buno\b/.test(content), 'did not find CSS');
 
     content = readFileSync(outCss, 'utf8');
-    assert.ok(/^hola;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(/^hola\n/.test(content), 'original vendor.css and separator');
     assert.ok(/\buno\b/.test(content), 'found uno');
     assert.ok(/\bdos\b/.test(content), 'found dos');
     assert.ok(!/\btres\b/.test(content), 'did not find tres');
@@ -212,7 +212,7 @@ Qmodule('broccoli-append', function(hooks) {
     assert.ok(!/\buno\b/.test(content), 'did not find CSS');
 
     content = readFileSync(outCss, 'utf8');
-    assert.ok(/^gutentag;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(/^gutentag\n/.test(content), 'original vendor.css and separator');
     assert.ok(/\buno\b/.test(content), 'found uno');
     assert.ok(/\bdos\b/.test(content), 'found dos');
     assert.ok(!/\bone\b/.test(content), 'did not find JS');
@@ -274,7 +274,7 @@ Qmodule('broccoli-append', function(hooks) {
     assert.ok(/\btwo\b/.test(content), 'found two');
 
     content = readFileSync(outCss, 'utf8');
-    assert.ok(/^hola;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(/^hola\n/.test(content), 'original vendor.css and separator');
     assert.ok(/\bmodified\b/.test(content), 'found modified');
     assert.ok(/\bdos\b/.test(content), 'found dos');
   });
@@ -314,7 +314,7 @@ Qmodule('broccoli-append', function(hooks) {
     assert.ok(/\btwo\b/.test(content), 'found two');
 
     content = readFileSync(outCss, 'utf8');
-    assert.ok(/^guten tag;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(/^guten tag\n/.test(content), 'original vendor.css and separator');
     assert.ok(/\bmodified\b/.test(content), 'found modified');
     assert.ok(/\bdos\b/.test(content), 'found dos');
   });
@@ -353,7 +353,7 @@ Qmodule('broccoli-append', function(hooks) {
     assert.ok(/\bthree\b/.test(content), 'found three');
 
     content = readFileSync(outCss, 'utf8');
-    assert.ok(/^hola;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(/^hola\n/.test(content), 'original vendor.css and separator');
     assert.ok(/\buno\b/.test(content), 'found uno');
     assert.ok(/\bdos\b/.test(content), 'found dos');
     assert.ok(/\btres\b/.test(content), 'found tres');
@@ -392,7 +392,7 @@ Qmodule('broccoli-append', function(hooks) {
     assert.ok(/\btwo\b/.test(content), 'found two');
 
     content = readFileSync(outCss, 'utf8');
-    assert.ok(/^hola;\n/.test(content), 'original vendor.css and separator');
+    assert.ok(/^hola\n/.test(content), 'original vendor.css and separator');
     assert.ok(!/\buno\b/.test(content), 'did not find uno');
     assert.ok(/\bdos\b/.test(content), 'found dos');
   });

@@ -173,14 +173,16 @@ export default class Append extends Plugin {
       return;
     }
 
+    const separator = (ext === '.js') ? ';\n' : '\n';
+
     let appendedContent = readdirSync(sourceDir).map(name => {
       if (name.endsWith(ext)) {
         return readFileSync(join(sourceDir, name), 'utf8');
       }
-    }).filter(Boolean).join(";\n");
+    }).filter(Boolean).join(separator);
     let upstreamContent = readFileSync(upstreamPath, 'utf8');
     if (appendedContent.length > 0) {
-      upstreamContent = insertBefore(upstreamContent, ";\n" + appendedContent);
+      upstreamContent = insertBefore(upstreamContent, separator + appendedContent);
     }
     writeFileSync(outputPath, upstreamContent, 'utf8');
   }
