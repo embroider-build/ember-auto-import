@@ -1,5 +1,8 @@
 # Changelog
 
+### 1.4.1
+ - BUGFIX: remove ";" from concatenated CSS by @bendemboski
+
 ## 1.4.0
  - BUGFIX: don't polyfill Node behaviors by default, by @tmquinn.
  - ENHANCEMENT: respect ember-auto-import options on the app even when the app itself doesn't depend directly on ember-auto-import, by @tmquinn.
