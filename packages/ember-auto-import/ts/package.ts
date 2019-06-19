@@ -16,6 +16,7 @@ export interface Options {
   webpack?: Configuration;
   publicAssetURL?: string;
   forbidEval?: boolean;
+  skipBabel?: { package: string, semverRange?: string }[];
 }
 
 export default class Package {
@@ -156,6 +157,10 @@ export default class Package {
     return this.autoImportOptions && this.autoImportOptions.webpack;
   }
 
+  get skipBabel(): Options["skipBabel"] {
+    return this.autoImportOptions && this.autoImportOptions.skipBabel;
+  }
+
   aliasFor(name: string): string {
     return (
       (this.autoImportOptions &&
@@ -170,7 +175,13 @@ export default class Package {
   }
 
   get publicAssetURL(): string | undefined {
-    return this.autoImportOptions && this.autoImportOptions.publicAssetURL;
+    let url = this.autoImportOptions && this.autoImportOptions.publicAssetURL;
+    if (url) {
+      if (url[url.length - 1] !== '/') {
+        url = url + '/';
+      }
+    }
+    return url;
   }
 
   get forbidsEval(): boolean {

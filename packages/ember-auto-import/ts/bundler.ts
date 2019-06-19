@@ -2,7 +2,7 @@ import Plugin, { Tree } from 'broccoli-plugin';
 import makeDebug from 'debug';
 import WebpackBundler from './webpack';
 import Splitter, { BundleDependencies } from './splitter';
-import Package, { reloadDevPackages } from './package';
+import Package, { reloadDevPackages, Options } from './package';
 import { merge } from 'lodash';
 import { join } from 'path';
 import {
@@ -12,6 +12,7 @@ import {
   copySync,
 } from 'fs-extra';
 import BundleConfig from './bundle-config';
+import { Memoize } from 'typescript-memoize';
 
 const debug = makeDebug('ember-auto-import:bundler');
 
@@ -45,21 +46,32 @@ export default class Bundler extends Plugin {
     });
   }
 
-  private get publicAssetURL(): string | undefined {
-    // Only the app (not an addon) can customize the public asset URL, because
-    // it's an app concern.
+  @Memoize()
+  private get rootPackage(): Package {
     let rootPackage = [...this.options.packages.values()].find(
       pkg => !pkg.isAddon
     );
-    if (rootPackage) {
-      let url = rootPackage.publicAssetURL;
-      if (url) {
-        if (url[url.length - 1] !== '/') {
-          url = url + '/';
-        }
-        return url;
+    if (!rootPackage) {
+      throw new Error(`bug in ember-auto-import, there should always be a Package representing the app`);
+    }
+    return rootPackage;
+  }
+
+  private get publicAssetURL(): string | undefined {
+    // Only the app (not an addon) can customize the public asset URL, because
+    // it's an app concern.
+    return this.rootPackage.publicAssetURL;
+  }
+
+  private get skipBabel(): Required<Options>["skipBabel"] {
+    let output: Required<Options>["skipBabel"] = [];
+    for (let pkg of this.options.packages) {
+      let skip = pkg.skipBabel;
+      if (skip) {
+        output = output.concat(skip);
       }
     }
+    return output;
   }
 
   get bundlerHook(): BundlerHook {
@@ -78,6 +90,9 @@ export default class Bundler extends Plugin {
         extraWebpackConfig,
         this.options.consoleWrite,
         this.publicAssetURL,
+        this.skipBabel,
+        this.rootPackage.babelMajorVersion,
+        this.rootPackage.babelOptions,
         this.cachePath
       );
     }
