@@ -20,4 +20,9 @@ module('Integration | Component | hello-world', function(hooks) {
     await render(hbs`{{hello-world}}`);
     assert.equal(document.querySelector('.scoped').textContent.trim(), 'this-is-from-ef4-scoped');
   });
+
+  test('using a compiled module import', async function (assert) {
+    await render(hbs`{{hello-world}}`);
+    assert.equal(document.querySelector('.module-dependency').textContent.trim(), 'module transpiled');
+  });
 });

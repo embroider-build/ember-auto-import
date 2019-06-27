@@ -71,8 +71,7 @@ export default class WebpackBundler implements BundlerHook {
     private consoleWrite: (message: string) => void,
     private publicAssetURL: string | undefined,
     private skipBabel: Required<Options>["skipBabel"],
-    private babelMajorVersion: number,
-    private babelOptions: any,
+    private babelTargets: unknown,
     tempArea: string
   ) {
     // resolve the real path, because we're going to do path comparisons later
@@ -112,7 +111,6 @@ export default class WebpackBundler implements BundlerHook {
           // not overriding the default loader resolution rules in case the app also
           // wants to control those.
           'babel-loader-8': require.resolve('babel-loader'),
-          'babel-loader-7': require.resolve('@embroider/babel-loader-7'),
         }
       },
       module: {
@@ -141,8 +139,18 @@ export default class WebpackBundler implements BundlerHook {
         return dirname(filename) !== stagingDir && shouldTranspile(filename);
       },
       use: {
-        loader: this.babelMajorVersion === 6 ? 'babel-loader-7' : 'babel-loader-8',
-        options: this.babelOptions
+        loader: 'babel-loader-8',
+        options: {
+          presets: [
+            [
+              require.resolve('@babel/preset-env'),
+              {
+                modules: false,
+                targets: this.babelTargets
+              }
+            ]
+          ]
+        }
       }
     };
   }

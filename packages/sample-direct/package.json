@@ -25,6 +25,7 @@
   "devDependencies": {
     "@ef4/scoped-lib": "*",
     "a-dependency": "*",
+    "a-module-dependency": "*",
     "broccoli-asset-rev": "*",
     "ember-ajax": "*",
     "ember-auto-import": "*",

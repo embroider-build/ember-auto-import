@@ -13,10 +13,11 @@ const protocol = '__ember_auto_import_protocol_v1__';
 export default class AutoImport {
   private primaryPackage: any;
   private packages: Set<Package> = new Set();
-  private env: "development" | "test" | "production";
+  private env: 'development' | 'test' | 'production';
   private consoleWrite: (msg: string) => void;
   private analyzers: Map<Analyzer, Package> = new Map();
   private bundles: BundleConfig;
+  private targets: unknown;
 
   static lookup(appOrAddon: any): AutoImport {
     let g = global as any;
@@ -38,6 +39,7 @@ export default class AutoImport {
     this.packages.add(Package.lookup(hostContext));
     let host = hostContext.app;
     this.env = host.env;
+    this.targets = host.project.targets;
     this.bundles = new BundleConfig(host);
     if (!this.env) {
       throw new Error('Bug in ember-auto-import: did not discover environment');
@@ -66,7 +68,7 @@ export default class AutoImport {
     // decides which ones to include in which bundles
     let splitter = new Splitter({
       analyzers: this.analyzers,
-      bundles: this.bundles
+      bundles: this.bundles,
     });
 
     // The Bundler asks the splitter for deps it should include and
@@ -76,7 +78,8 @@ export default class AutoImport {
       environment: this.env,
       packages: this.packages,
       consoleWrite: this.consoleWrite,
-      bundles: this.bundles
+      bundles: this.bundles,
+      targets: this.targets,
     });
   }
 
@@ -97,7 +100,8 @@ export default class AutoImport {
     passthrough.set('lazy', this.bundles.lazyChunkPath);
 
     return new Append(allAppTree, bundler, {
-      mappings, passthrough
+      mappings,
+      passthrough,
     });
   }
 
@@ -141,7 +145,8 @@ export default class AutoImport {
   }
 
   updateFastBootManifest(manifest: { vendorFiles: string[] }) {
-    manifest.vendorFiles.push(`${this.bundles.lazyChunkPath}/auto-import-fastboot.js`);
+    manifest.vendorFiles.push(
+      `${this.bundles.lazyChunkPath}/auto-import-fastboot.js`
+    );
   }
-
 }
