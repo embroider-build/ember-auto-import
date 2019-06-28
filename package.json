@@ -5,7 +5,10 @@
     "test": "./scripts/test.sh",
     "lint": "cd packages/ember-auto-import && yarn lint"
   },
-  "workspaces": ["packages/*", "types/*"],
+  "workspaces": [
+    "packages/*",
+    "types/*"
+  ],
   "resolutions": {
     "@ember-decorators/babel-transforms/ember-cli-version-checker": "git+https://github.com/ef4/ember-cli-version-checker#0e33cbcd7faf17ec804b0c3fb64147b131a015de"
   }

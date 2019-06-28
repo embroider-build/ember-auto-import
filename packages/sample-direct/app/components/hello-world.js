@@ -4,6 +4,7 @@ import moment from 'moment';
 import { computed } from '@ember/object';
 import innerLib2 from 'my-aliased-module';
 import fromScoped from '@ef4/scoped-lib';
+import aModuleDependency from 'a-module-dependency';
 
 export default Component.extend({
   layout,
@@ -12,12 +13,16 @@ export default Component.extend({
     return moment('2018-05-31T18:03:01.791Z').format('YYYY-MM-DD');
   }),
 
-  aliasedResult: computed(function () {
+  aliasedResult: computed(function() {
     return innerLib2();
   }),
 
   fromScoped: computed(function() {
     return fromScoped();
+  }),
+
+  moduleDependency: computed(function() {
+    return aModuleDependency();
   }),
 
   // Our test suite imports lodash-es, but our app does not, so it
@@ -29,5 +34,5 @@ export default Component.extend({
     } catch (err) {
       return false;
     }
-  })
+  }),
 });

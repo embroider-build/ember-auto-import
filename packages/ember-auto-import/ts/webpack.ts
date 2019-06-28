@@ -1,5 +1,5 @@
 import webpack, { Configuration } from 'webpack';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { mergeWith, flatten } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
@@ -8,6 +8,8 @@ import { BundleDependencies } from './splitter';
 import { BundlerHook, BuildResult } from './bundler';
 import BundleConfig from './bundle-config';
 import { ensureDirSync } from 'fs-extra';
+import { babelFilter } from '@embroider/core';
+import { Options } from './package';
 
 registerHelper('js-string-escape', jsStringEscape);
 
@@ -68,6 +70,8 @@ export default class WebpackBundler implements BundlerHook {
     extraWebpackConfig: webpack.Configuration | undefined,
     private consoleWrite: (message: string) => void,
     private publicAssetURL: string | undefined,
+    private skipBabel: Required<Options>["skipBabel"],
+    private babelTargets: unknown,
     tempArea: string
   ) {
     // resolve the real path, because we're going to do path comparisons later
@@ -101,9 +105,17 @@ export default class WebpackBundler implements BundlerHook {
           chunks: 'all'
         }
       },
+      resolveLoader: {
+        alias: {
+          // these loaders are our dependencies, not the app's dependencies. I'm
+          // not overriding the default loader resolution rules in case the app also
+          // wants to control those.
+          'babel-loader-8': require.resolve('babel-loader'),
+        }
+      },
       module: {
         noParse: (file) => file === join(this.stagingDir, 'l.js'),
-        rules: []
+        rules: [this.babelRule()]
       },
       node: false,
     };
@@ -111,6 +123,36 @@ export default class WebpackBundler implements BundlerHook {
       mergeConfig(config, extraWebpackConfig);
     }
     this.webpack = webpack(config);
+  }
+
+  private babelRule(): webpack.Rule {
+    let shouldTranspile = babelFilter(this.skipBabel);
+    let stagingDir = this.stagingDir;
+    return {
+      test(filename: string) {
+        // We don't apply babel to our own stagingDir (it contains only our own
+        // entrypoints that we wrote, and it can use `import()`, which we want
+        // to leave directly for webpack).
+        //
+        // And we otherwise defer to the `skipBabel` setting as implemented by
+        // `@embroider/core`.
+        return dirname(filename) !== stagingDir && shouldTranspile(filename);
+      },
+      use: {
+        loader: 'babel-loader-8',
+        options: {
+          presets: [
+            [
+              require.resolve('@babel/preset-env'),
+              {
+                modules: false,
+                targets: this.babelTargets
+              }
+            ]
+          ]
+        }
+      }
+    };
   }
 
   async build(bundleDeps: Map<string, BundleDependencies>) {
