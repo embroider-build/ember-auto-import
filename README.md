@@ -28,7 +28,7 @@ yarn add --dev lodash-es
 
 Then just import it from your Ember app code:
 
-```
+```js
 import { capitalize } from 'lodash-es';
 ```
 
@@ -47,11 +47,13 @@ Dynamic import is currently a Stage 3 ECMA feature, so to use it there are a few
         parser: 'babel-eslint'
 3. In your `ember-cli-build.js` file, enable the babel plugin provided by ember-auto-import:
 
-        let app = new EmberApp(defaults, {
-          babel: {
-            plugins: [ require.resolve('ember-auto-import/babel-plugin') ]
-          }
-        });
+```js
+let app = new EmberApp(defaults, {
+  babel: {
+    plugins: [ require.resolve('ember-auto-import/babel-plugin') ]
+  }
+});
+```
 
 Once you're setup, you can use dynamic `import()` and it will result in loading that particular dependency (and all its recursive dependencies) via a separate Javascript file at runtime. Here's an example of using dynamic import from within a `Route`, so that the extra library needed for the route is loaded at the same time the data is loaded:
 
