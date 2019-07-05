@@ -164,6 +164,13 @@ let app = new EmberApp(defaults, {
 
 Also, some jQuery plugins like masonry and flickity have [required manual steps to connect them to jQuery](https://github.com/ef4/ember-auto-import/issues/59#issuecomment-405391414).
 
+### I upgraded my `ember-auto-import` version and now things don't import. What changed?
+
+As of version `1.4.0`, by default, `ember-auto-import` does not include webpack's automatic polyfills for certain Node packages.
+Some signs that your app was depending on these polyfills by accident are things like "global is not defined," "can't resolve path," or "default is not a function."
+You can opt-in to [Webpack's polyfills](https://webpack.js.org/configuration/node/), or install your own.
+See [this issue](https://github.com/ef4/ember-auto-import/issues/224#issuecomment-503400386) for an example.
+
 Debugging Tips
 --------------
 
