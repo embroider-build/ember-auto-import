@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.5.0
+ - ENHANCEMENT: all dependencies now go through @babel/preset-env by default. This ensures that you never ship code that violates your app's declared `config/targets.js`. There is an explicit `skipBabel` option for when you know for sure a package shouldn't be transpiled.
+ - DOCS: node polyfills FAQ by @jenweber
+ - DOCS: fixed syntax highlighting by @ctjhoa
+
 ### 1.4.1
  - BUGFIX: remove ";" from concatenated CSS by @bendemboski
 
