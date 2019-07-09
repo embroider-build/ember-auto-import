@@ -1,5 +1,8 @@
 # Changelog
 
+### 1.5.1
+ - BUGFIX: upgrade handlebars to eliminate a GitHub security advisory. We don't run untrusted templates, so there was no actual security risk introduced by ember-auto-import.
+
 ### 1.5.0
  - ENHANCEMENT: all dependencies now go through @babel/preset-env by default. This ensures that you never ship code that violates your app's declared `config/targets.js`. There is an explicit `skipBabel` option for when you know for sure a package shouldn't be transpiled.
  - DOCS: node polyfills FAQ by @jenweber
