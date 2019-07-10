@@ -1,5 +1,8 @@
 # Changelog
 
+### 1.5.2
+ - BUGFIX: since 1.5.0 we were using `@babel/present-env` but not directly depending on it, which would break apps that didn't happen to already have a copy.
+
 ### 1.5.1
  - BUGFIX: upgrade handlebars to eliminate a GitHub security advisory. We don't run untrusted templates, so there was no actual security risk introduced by ember-auto-import.
 
