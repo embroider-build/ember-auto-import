@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@babel/core": "^7.1.6",
+    "@babel/preset-env": "^7.0.0",
     "@babel/traverse": "^7.1.6",
     "@babel/types": "^7.1.6",
     "@embroider/core": "^0.4.3",
