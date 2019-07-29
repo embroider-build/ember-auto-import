@@ -12,6 +12,7 @@ import pkgUp from 'pkg-up';
 import { dirname } from 'path';
 import BundleConfig from './bundle-config';
 import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
+import semver from 'semver';
 
 const debug = makeDebug('ember-auto-import:splitter');
 const resolver = ResolverFactory.createResolver({
@@ -145,7 +146,8 @@ export default class Splitter {
       this.versionOfPackage(have.entrypoint),
       this.versionOfPackage(entrypoint)
     ]);
-    if (haveVersion !== nextVersion) {
+    const versionWithinBounds = haveVersion === nextVersion || semver.diff(haveVersion, nextVersion) === 'patch'
+    if (!versionWithinBounds) {
       throw new Error(
         `${nextImport.package.name} and ${
           have.importedBy[0].package.name
