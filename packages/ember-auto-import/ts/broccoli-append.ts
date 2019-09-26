@@ -66,14 +66,14 @@ export default class Append extends Plugin {
   // returns the set of output files that should change based on changes to the
   // appendedTree.
   private diffAppendedTree() {
-    let changed = new Set();
+    let changed: Set<string> = new Set();
     let { patchset, passthroughEntries } = this.appendedPatchset();
     for (let [, relativePath] of patchset) {
       let match = findByPrefix(relativePath, this.mappings);
       if (match) {
         let ext = extname(relativePath).slice(1);
         if (match.mapsTo.has(ext)) {
-          changed.add(match.mapsTo.get(ext));
+          changed.add(match.mapsTo.get(ext) as string);
         }
       }
     }

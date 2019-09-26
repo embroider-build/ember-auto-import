@@ -172,14 +172,16 @@ export default class WebpackBundler implements BundlerHook {
       dir: this.outputDir
     };
     let nonLazyAssets: Set<string> = new Set();
-    for (let id of Object.keys(stats.entrypoints)) {
+    for (let id in stats.entrypoints) {
       let entrypoint = stats.entrypoints[id];
       output.entrypoints.set(id, entrypoint.assets);
       entrypoint.assets.forEach((asset: string) => nonLazyAssets.add(asset));
     }
-    for (let asset of stats.assets) {
-      if (!nonLazyAssets.has(asset.name)) {
-        output.lazyAssets.push(asset.name);
+    if(stats.assets) {
+      for (let asset of stats.assets) {
+        if (!nonLazyAssets.has(asset.name)) {
+          output.lazyAssets.push(asset.name);
+        }
       }
     }
     return output;
