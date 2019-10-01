@@ -30,7 +30,7 @@
     "ember-cli-dependency-checker": "*",
     "ember-cli-eslint": "*",
     "ember-cli-htmlbars": "*",
-    "ember-cli-htmlbars-inline-precompile": "~2.1.0",
+    "ember-cli-htmlbars-inline-precompile": "*",
     "ember-cli-inject-live-reload": "*",
     "ember-cli-template-lint": "*",
     "ember-cli-typescript": "^2.0.0-beta.3",

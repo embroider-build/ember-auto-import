@@ -82,7 +82,7 @@
     "ember-cli-eslint": "^4.2.1",
     "ember-cli-fastboot": "^1.1.4-beta.1",
     "ember-cli-htmlbars": "^2.0.1",
-    "ember-cli-htmlbars-inline-precompile": "^1.0.0",
+    "ember-cli-htmlbars-inline-precompile": "^2.1.0",
     "ember-cli-inject-live-reload": "^1.4.1",
     "ember-cli-qunit": "^4.1.1",
     "ember-cli-shims": "^1.2.0",
