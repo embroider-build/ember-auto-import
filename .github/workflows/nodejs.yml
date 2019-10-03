@@ -25,4 +25,8 @@ jobs:
       run: |
         yarn lint
         yarn test
+      env:
+        EAI_SCENARIO: ${{ matrix.eai_scenario }}
+
+
 
