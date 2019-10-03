@@ -17,9 +17,6 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 8.x
-    - name: yarn install
-      run: |
-        yarn install
     - name: pick version and install
       run: ./scripts/change-ember-cli-version.sh
       env:
@@ -28,4 +25,4 @@ jobs:
       run: |
         yarn lint
         yarn test
-      
+
