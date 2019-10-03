@@ -2,7 +2,7 @@
 
 ./scripts/link-them.sh
 
-./scripts/parallel --tag  --jobs 1 <<EOF
+./scripts/parallel --tag <<EOF
 cd packages/sample-direct      && yarn test
 cd packages/sample-direct      && yarn test:fastboot
 cd packages/sample-direct      && yarn test:prod
