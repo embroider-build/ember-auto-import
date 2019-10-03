@@ -23,8 +23,11 @@ export default class Package {
   public name: string;
   public root: string;
   public isAddon: boolean;
-  public babelOptions: any;
-  public babelMajorVersion: number;
+  private _options: any;
+  private _parent: any;
+  private _hasBabelDetails = false;
+  private _babelMajorVersion?: number;
+  private _babelOptions: any;
   private autoImportOptions: Options | undefined;
   private emberCLIBabelExtensions: string[];
   private isAddonCache = new Map<string, boolean>();
@@ -46,23 +49,38 @@ export default class Package {
     this.isDeveloping = !this.isAddon || this.root === appOrAddon.project.root;
 
     // This is the per-package options from ember-cli
-    let options = this.isAddon
+    this._options = this.isAddon
       ? appOrAddon.parent.options
       : appOrAddon.app.options;
+    this._parent = appOrAddon.parent;
 
     // Stash our own config options
-    this.autoImportOptions = options.autoImport;
+    this.autoImportOptions = this._options.autoImport;
 
-    this.emberCLIBabelExtensions = options['ember-cli-babel']
-      && options['ember-cli-babel'].extensions || ['js'];
-
-    let { babelOptions, version } = this.buildBabelOptions(appOrAddon.parent, options);
-
-    this.babelOptions = babelOptions;
-    this.babelMajorVersion = version;
+    this.emberCLIBabelExtensions = this._options['ember-cli-babel']
+      && this._options['ember-cli-babel'].extensions || ['js'];
 
     this.pkgCache = appOrAddon.parent.pkg;
     this.pkgGeneration = pkgGeneration;
+  }
+
+  _ensureBabelDetails() {
+    if (this._hasBabelDetails) { return; }
+    let { babelOptions, version } = this.buildBabelOptions(this._parent, this._options);
+
+    this._babelOptions = babelOptions;
+    this._babelMajorVersion = version;
+    this._hasBabelDetails = true;
+  }
+
+  get babelOptions() {
+    this._ensureBabelDetails();
+    return this._babelOptions;
+  }
+
+  get babelMajorVersion() {
+    this._ensureBabelDetails();
+    return this._babelMajorVersion;
   }
 
   private buildBabelOptions(instance: any, options: any) {

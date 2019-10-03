@@ -15,20 +15,35 @@ Qmodule('analyzer', function(hooks) {
   let upstream: string;
   let analyzer: Analyzer;
   let pack: Partial<Package>;
+  let babelOptionsWasAccessed = false;
 
   hooks.beforeEach(function(this: any) {
     quickTemp.makeOrRemake(this, 'workDir', 'auto-import-analyzer-tests');
     ensureDirSync(upstream = join(this.workDir, 'upstream'));
-    pack = { babelOptions: {}, babelMajorVersion: 6, fileExtensions: ['js'] };
+    pack = {
+      get babelOptions() {
+        babelOptionsWasAccessed = true;
+        return {};
+      },
+      babelMajorVersion: 6,
+      fileExtensions: ['js']
+    };
     analyzer = new Analyzer(new UnwatchedDir(upstream), pack as Package);
     builder = new broccoli.Builder(analyzer);
   });
 
   hooks.afterEach(function(this: any) {
+    babelOptionsWasAccessed = false;
     removeSync(this.workDir);
     if (builder) {
       return builder.cleanup();
     }
+  });
+
+  test('babelOptions are accessed only during build', async function(assert) {
+    assert.notOk(babelOptionsWasAccessed);
+    await builder.build();
+    assert.ok(babelOptionsWasAccessed);
   });
 
   test('initial file passes through', async function(assert) {
