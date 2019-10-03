@@ -1,0 +1,32 @@
+name: Node CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        eai_scenario: [2.18, stable, beta, canary]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js 8.x
+      uses: actions/setup-node@v1
+      with:
+        node-version: 8.x
+    - name: pick version and install
+      run: ./scripts/change-ember-cli-version.sh
+      env:
+        EAI_SCENARIO: ${{ matrix.eai_scenario }}
+    - name: test
+      run: |
+        yarn lint
+        yarn test
+      env:
+        EAI_SCENARIO: ${{ matrix.eai_scenario }}
+
+
+
