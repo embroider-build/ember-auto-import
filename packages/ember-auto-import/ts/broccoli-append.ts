@@ -73,7 +73,7 @@ export default class Append extends Plugin {
       if (match) {
         let ext = extname(relativePath).slice(1);
         if (match.mapsTo.has(ext)) {
-          changed.add(match.mapsTo.get(ext) as string);
+          changed.add(match.mapsTo.get(ext)!);
         }
       }
     }
