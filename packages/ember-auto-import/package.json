@@ -18,6 +18,7 @@
   "repository": "https://github.com/ef4/ember-auto-import",
   "scripts": {
     "compile": "tsc",
+    "clean": "git clean -x -f",
     "build": "ember build",
     "lint": "eslint . && tslint --project .",
     "start": "ember serve",
