@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.5.3
+ - HOUSEKEEPING: upgrading deps that are failing security audits (but there was no actual vulnerability for ember-auto-import users)
+ - HOUSEKEEPING: switch CI to GitHub actions
+ - BUGFIX: lazily read babel config (helps interoperability with Embroider) by @stefanpenner
+
 ### 1.5.2
  - BUGFIX: since 1.5.0 we were using `@babel/present-env` but not directly depending on it, which would break apps that didn't happen to already have a copy.
 
