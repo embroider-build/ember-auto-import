@@ -164,8 +164,8 @@ export default class WebpackBundler implements BundlerHook {
     return this.summarizeStats(stats);
   }
 
-  private summarizeStats(_stats: webpack.Stats): BuildResult {
-    let stats = _stats.toJson();
+  private summarizeStats(_stats: Required<webpack.Stats>): BuildResult {
+    let stats = _stats.toJson() as Required<webpack.Stats.ToJsonOutput>;
     let output = {
       entrypoints: new Map(),
       lazyAssets: [] as string[],
@@ -203,7 +203,7 @@ export default class WebpackBundler implements BundlerHook {
     );
   }
 
-  private async runWebpack(): Promise<webpack.Stats> {
+  private async runWebpack(): Promise<Required<webpack.Stats>> {
     return new Promise((resolve, reject) => {
       this.webpack.run((err, stats) => {
         if (err) {
@@ -219,9 +219,10 @@ export default class WebpackBundler implements BundlerHook {
         if (stats.hasWarnings() || process.env.AUTO_IMPORT_VERBOSE) {
           this.consoleWrite(stats.toString());
         }
-        resolve(stats);
+        // this cast is justified because we already checked hasErrors above
+        resolve(stats as Required<webpack.Stats>);
       });
-    }) as Promise<webpack.Stats>;
+    }) as Promise<Required<webpack.Stats>>;
   }
 }
 
