@@ -18,8 +18,10 @@
     "test": "ember test --test-port=0"
   },
   "devDependencies": {
+    "@babel/preset-typescript": "^7.6.0",
     "@types/ember": "^3.0.25",
     "a-dependency": "*",
+    "a-pure-ts-dependency": "*",
     "babel-eslint": "^8.0.0",
     "broccoli-asset-rev": "*",
     "ember-ajax": "*",
