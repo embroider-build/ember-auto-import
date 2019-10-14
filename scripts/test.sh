@@ -18,6 +18,7 @@ cd packages/sample-failure     && yarn test
 cd packages/sample-merged      && yarn test
 cd packages/sample-conflict    && yarn test
 cd packages/sample-babel7      && yarn test
+cd packages/sample-typescript  && yarn test
 cd packages/sample-typescript2 && yarn test
 cd packages/sample-noconflict  && yarn test
 cd packages/sample-noparse     && yarn test
