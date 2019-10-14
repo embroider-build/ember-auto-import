@@ -9,5 +9,6 @@ module('Acceptance | basic', function(hooks) {
     await visit('/');
     assert.equal(document.querySelector('[data-test-import-js]').textContent.trim(), 'ember-auto-import-a-dependency');
     assert.equal(document.querySelector('[data-test-import-ts]').textContent.trim(), 'ember-auto-import-a-pure-ts-dependency');
+    assert.equal(document.querySelector('[data-test-import-precedence]').textContent.trim(), 'ember-auto-import-js-takes-precedence');
   });
 });
