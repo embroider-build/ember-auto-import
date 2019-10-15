@@ -17,7 +17,7 @@ const debug = makeDebug('ember-auto-import:splitter');
 const resolver = ResolverFactory.createResolver({
   // upstream types seem to be broken here
   fileSystem: new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000) as unknown as AbstractInputFileSystem,
-  extensions: ['.js', '.json'],
+  extensions: ['.js', '.ts', '.json'],
   mainFields: ['browser', 'module', 'main']
 });
 
