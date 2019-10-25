@@ -97,6 +97,15 @@ let app = new EmberApp(defaults, {
       'handlebars': 'handlebars/dist/handlebars'
     },
     exclude: ['some-package'],
+    skipBabel: [{
+      // when an already babel transpiled addons like "mapbox-gl" is 
+      // not skipped, it can produce errors in the production mode 
+      // due to double transpilation
+      package: 'mapbox-gl',
+      semverRange: '*'
+    }, {
+      // list can continue
+    }],
     webpack: {
       // extra webpack configuration goes here
     }
@@ -110,6 +119,7 @@ Suported Options
  - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
  - `forbidEval`: _boolean_, defaults to false. We use `eval` in development by default (because that is the fastest way to provide sourcemaps). If you need to comply with a strict Content Security Policy (CSP), you can set `forbidEval: true`. You will still get sourcemaps, they will just use a slower implementation.
  - `publicAssetURL`: where to load additional dynamic javascript files from. You usually don't need to set this -- the default works for most apps. However, if you're using `<script defer>` or another method of asynchronously loading your vendor.js script you will need to set this to the URL where your asset directory is served (typically `/assets`).
+ - `skipBabel`: _list of objects, defaults to []_. The specified packages will be skipped from babel transpilation.
  - `webpack`: _object_, An object that will get merged into the configuration we pass to webpack. This lets you work around quirks in underlying libraries and otherwise customize the way Webpack will assemble your dependencies.
 
 Usage from Addons
@@ -172,6 +182,22 @@ As of version `1.4.0`, by default, `ember-auto-import` does not include webpack'
 Some signs that your app was depending on these polyfills by accident are things like "global is not defined," "can't resolve path," or "default is not a function."
 You can opt-in to [Webpack's polyfills](https://webpack.js.org/configuration/node/), or install your own.
 See [this issue](https://github.com/ef4/ember-auto-import/issues/224#issuecomment-503400386) for an example.
+
+### I get `Uncaught ReferenceError: a is not defined` [251](https://github.com/ef4/ember-auto-import/issues/251) with an already babel transpiled addon, e.g: `mapbox-gl`
+
+We should skip that specific addon from the ember-auto-import's babel transpilation as:  
+
+```js
+// In your app's ember-cli-build.js file or check the `Usage from Addons` section for relevant usage of the following in addons
+let app = new EmberApp(defaults, {
+  autoImport: {
+    skipBabel: [{
+      package: 'mapbox-gl',
+      semverRange: '*'
+    }]
+  }
+});
+```
 
 Debugging Tips
 --------------
