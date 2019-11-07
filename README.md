@@ -113,7 +113,7 @@ let app = new EmberApp(defaults, {
 });
 ```
 
-Suported Options
+Supported Options
 
  - `alias`: _object_, Map from package names to substitute packages that will be used instead.
  - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
