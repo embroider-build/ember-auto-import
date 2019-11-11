@@ -128,7 +128,9 @@ export default class Splitter {
       let pkg = require(pkgPath);
       version = pkg.version;
     }
-    this.packageVersions.set(entrypoint, version);
+    if (version) {
+      this.packageVersions.set(entrypoint, version);
+    }
     return version;
   }
 
@@ -142,7 +144,9 @@ export default class Splitter {
       let pkg = require(pkgPath);
       name = pkg.name;
     }
-    this.packageNames.set(entrypoint, name);
+    if (name) {
+      this.packageNames.set(entrypoint, name);
+    }
     return name;
   }
 
@@ -163,11 +167,16 @@ export default class Splitter {
       this.nameOfPackage(have.entrypoint)
     ]);
 
-    let semverSpecification = nextImport.package.getDependencyVersion(haveName);
+    if (haveName && haveVersion) {
+      // Check semver specified by package requirements if it is available
+      let semverSpecification = nextImport.package.getDependencyVersion(haveName);
+      if (semverSpecification && semver.satisfies(haveVersion, semverSpecification)) {
+        return;
+      }
+    }
+
     let haveExactVersion = haveVersion === nextVersion;
-    let versionWithinBounds = !!semverSpecification ? semver.satisfies(haveVersion, semverSpecification) : false;
-    let versionMismatch = !(haveExactVersion || versionWithinBounds);
-    if (versionMismatch) {
+    if (!haveExactVersion) {
       throw new Error(
         `${nextImport.package.name} and ${
           have.importedBy[0].package.name
