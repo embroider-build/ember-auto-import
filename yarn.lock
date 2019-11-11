@@ -1634,6 +1634,11 @@
   resolved "https://registry.yarnpkg.com/@types/rsvp/-/rsvp-4.0.3.tgz#4a1223158453257bce09d42b9eef7cfa6d257482"
   integrity sha512-OpRwxbgx16nL/0/7ol0WoLLyLaMXBvtPOHjqLljnzAB/E7Qk1wtjytxgBhOTBMZvuLXnJUqfnjb4W/QclNFvSA==
 
+"@types/semver@^6.2.0":
+  version "6.2.0"
+  resolved "https://registry.yarnpkg.com/@types/semver/-/semver-6.2.0.tgz#d688d574400d96c5b0114968705366f431831e1a"
+  integrity sha512-1OzrNb4RuAzIT7wHSsgZRlMBlNsJl+do6UblR7JMW4oB7bbR+uBEYtUh7gEc/jM84GGilh68lSOokyM/zNUlBA==
+
 "@types/sizzle@*":
   version "2.3.2"
   resolved "https://registry.yarnpkg.com/@types/sizzle/-/sizzle-2.3.2.tgz#a811b8c18e2babab7d542b3365887ae2e4d9de47"

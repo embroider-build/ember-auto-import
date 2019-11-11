@@ -12,6 +12,7 @@ import pkgUp from 'pkg-up';
 import { dirname } from 'path';
 import BundleConfig from './bundle-config';
 import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
+import semver from 'semver';
 
 const debug = makeDebug('ember-auto-import:splitter');
 const resolver = ResolverFactory.createResolver({
@@ -42,6 +43,7 @@ export default class Splitter {
   private lastImports: Import[][] | undefined;
   private lastDeps: Map<string, BundleDependencies> | null = null;
   private packageVersions: Map<string, string> = new Map();
+  private packageNames: Map<string, string> = new Map();
 
   constructor(private options: SplitterOptions) {}
 
@@ -108,7 +110,7 @@ export default class Splitter {
           specifiers.set(imp.specifier, {
             specifier: imp.specifier,
             entrypoint,
-            importedBy: [imp]
+            importedBy: [imp],
           });
         }
       })
@@ -130,6 +132,20 @@ export default class Splitter {
     return version;
   }
 
+  private async nameOfPackage(entrypoint: string) {
+    if (this.packageNames.has(entrypoint)) {
+      return this.packageNames.get(entrypoint);
+    }
+    let pkgPath = await pkgUp(dirname(entrypoint));
+    let name = null;
+    if (pkgPath) {
+      let pkg = require(pkgPath);
+      name = pkg.name;
+    }
+    this.packageNames.set(entrypoint, name);
+    return name;
+  }
+
   private async assertSafeVersion(
     have: ResolvedImport,
     nextImport: Import,
@@ -141,11 +157,17 @@ export default class Splitter {
       return;
     }
 
-    let [haveVersion, nextVersion] = await Promise.all([
+    let [haveVersion, nextVersion, haveName] = await Promise.all([
       this.versionOfPackage(have.entrypoint),
-      this.versionOfPackage(entrypoint)
+      this.versionOfPackage(entrypoint),
+      this.nameOfPackage(have.entrypoint)
     ]);
-    if (haveVersion !== nextVersion) {
+
+    let semverSpecification = nextImport.package.getDependencyVersion(haveName);
+    let haveExactVersion = haveVersion === nextVersion;
+    let versionWithinBounds = !!semverSpecification ? semver.satisfies(haveVersion, semverSpecification) : false;
+    let versionMismatch = !(haveExactVersion || versionWithinBounds);
+    if (versionMismatch) {
       throw new Error(
         `${nextImport.package.name} and ${
           have.importedBy[0].package.name

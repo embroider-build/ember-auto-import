@@ -113,7 +113,8 @@ export default class Package {
     return { babelOptions, extensions, version };
   }
 
-  private get pkg() {
+  // private get pkg() {
+  get pkg() {
     if (
       !this.pkgCache ||
       (this.isDeveloping && pkgGeneration !== this.pkgGeneration)
@@ -141,6 +142,16 @@ export default class Package {
       (pkg.devDependencies && Boolean(pkg.devDependencies[name])) ||
       (pkg.peerDependencies && Boolean(pkg.peerDependencies[name]))
     );
+  }
+
+  getDependencyVersion(name: string): string | undefined {
+    if (this.hasDependency(name)) {
+      let pkg = this.pkg;
+      return pkg.dependencies && pkg.dependencies[name] ||
+        pkg.devDependencies && pkg.devDependencies[name] ||
+        pkg.peerDependencies && pkg.peerDependencies[name];
+    }
+    return undefined;
   }
 
   private hasNonDevDependency(name: string): boolean {
