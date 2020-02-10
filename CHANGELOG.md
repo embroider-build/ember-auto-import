@@ -20,7 +20,7 @@
  - BUGFIX: remove ";" from concatenated CSS by @bendemboski
 
 ## 1.4.0
- - BUGFIX: don't polyfill Node behaviors by default, by @tmquinn.
+ - BUGFIX: don't polyfill Node behaviors by default, by @tmquinn. This is known to cause BREAKAGE in apps that accidentally relied on the bug behavior. See https://github.com/ef4/ember-auto-import/blob/a1bc3057c89fa2d4a81dc77f55b9674123072f2a/README.md#i-upgraded-my-ember-auto-import-version-and-now-things-dont-import-what-changed
  - ENHANCEMENT: respect ember-auto-import options on the app even when the app itself doesn't depend directly on ember-auto-import, by @tmquinn.
  - BUGFIX: disable size shaming by default.
  - DOCS: Add info on importing a dependency from app folder, by @Alonski.
