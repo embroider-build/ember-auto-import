@@ -1,6 +1,7 @@
 import resolve from 'resolve';
 import { join } from 'path';
 import { readFileSync } from 'fs';
+import { Memoize } from 'typescript-memoize';
 import { Configuration } from 'webpack';
 
 const cache: WeakMap<any, Package> = new WeakMap();
@@ -81,6 +82,14 @@ export default class Package {
   get babelMajorVersion() {
     this._ensureBabelDetails();
     return this._babelMajorVersion;
+  }
+
+  @Memoize()
+  get isFastBootEnabled() {
+    return process.env.FASTBOOT_DISABLED !== 'true'
+    && !!this._parent.addons.find(
+      (addon: any) => addon.name === 'ember-cli-fastboot'
+    );
   }
 
   private buildBabelOptions(instance: any, options: any) {

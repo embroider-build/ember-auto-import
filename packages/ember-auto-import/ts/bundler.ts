@@ -148,9 +148,11 @@ export default class Bundler extends Plugin {
         }
       })
       .filter(Boolean);
-    writeFileSync(
-      join(this.outputPath, 'lazy', 'auto-import-fastboot.js'),
-      contents.join('\n')
-    );
+    if (this.rootPackage.isFastBootEnabled) {
+      writeFileSync(
+        join(this.outputPath, 'lazy', 'auto-import-fastboot.js'),
+        contents.join('\n')
+      );
+    }
   }
 }
