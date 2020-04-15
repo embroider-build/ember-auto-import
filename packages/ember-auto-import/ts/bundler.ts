@@ -11,6 +11,14 @@ import { Memoize } from 'typescript-memoize';
 
 const debug = makeDebug('ember-auto-import:bundler');
 
+// For some apps using Content Security Policy we cannot use a webpack sourcemap 
+// generation strategy that uses eval. More specifically, we cannot use this strategy
+// unless the CSP directive 'unsafe-eval' is used. To allow apps to signal that they need
+// a CSP-compatible sourcemap-generation method we have a configuration option `forbidEval`.
+// If that option is present, or if this addon is running within an app (in that case we don't
+// know if the consuming app is using CSP), we'll use an eval-compatible sourcemap mechanism.
+const WEBPACK_SOURCEMAP_STRATEGY_EVAL_SAFE = 'source-map';
+
 export interface BundlerPluginOptions {
   consoleWrite: (msg: string) => void;
   environment: 'development' | 'test' | 'production';
@@ -78,9 +86,11 @@ export default class Bundler extends Plugin {
         {},
         ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig)
       );
-      if ([...this.options.packages.values()].find(pkg => pkg.forbidsEval)) {
-        extraWebpackConfig.devtool = 'source-map';
+      
+      if ([...this.options.packages.values()].find(pkg => pkg.forbidsEval) || this.rootPackage.length === 0) {
+        extraWebpackConfig.devtool = WEBPACK_SOURCEMAP_STRATEGY_EVAL_SAFE;
       }
+      
       debug('extraWebpackConfig %j', extraWebpackConfig);
       this.cachedBundlerHook = new WebpackBundler(
         this.options.bundles,
