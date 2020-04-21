@@ -8,7 +8,8 @@ import Append from './broccoli-append';
 import { Tree } from 'broccoli-plugin';
 
 const debugTree = buildDebugCallback('ember-auto-import');
-const protocol = '__ember_auto_import_protocol_v1__';
+const protocolV1 = '__ember_auto_import_protocol_v1__';
+const protocolV2 = '__ember_auto_import_protocol_v2__';
 
 export default class AutoImport {
   private primaryPackage: any;
@@ -20,22 +21,35 @@ export default class AutoImport {
   private targets: unknown;
 
   static lookup(appOrAddon: any): AutoImport {
-    let g = global as any;
-    if (!g[protocol]) {
-      g[protocol] = new this(appOrAddon);
-    }
-    return g[protocol];
-  }
-
-  constructor(appOrAddon: any) {
     function findHostContext(appOrAddon: any): any {
       return appOrAddon.parent.parent
         ? findHostContext(appOrAddon.parent)
         : appOrAddon;
     }
 
-    this.primaryPackage = appOrAddon;
     let hostContext = findHostContext(appOrAddon);
+    let root = hostContext.app.project.root;
+
+    let g = global as any;
+
+    if (!g[protocolV2]) {
+      g[protocolV2] = Object.create(null);
+    }
+    if (!g[protocolV2][root]) {
+      if (!g[protocolV1]) {
+        g[protocolV2][root] = g[protocolV1] = new this(appOrAddon, hostContext);
+      } else if (findHostContext(g[protocolV1].primaryPackage).project.root === root) {
+        g[protocolV2][root] = g[protocolV1];
+      } else {
+        g[protocolV2][root] = new this(appOrAddon, hostContext);
+      }
+    }
+
+    return g[protocolV2][root];
+  }
+
+  constructor(appOrAddon: any, hostContext: any) {
+    this.primaryPackage = appOrAddon;
     this.packages.add(Package.lookup(hostContext));
     let host = hostContext.app;
     this.env = host.env;
