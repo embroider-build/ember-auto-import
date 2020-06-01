@@ -29,8 +29,8 @@ export default class Package {
   private _hasBabelDetails = false;
   private _babelMajorVersion?: number;
   private _babelOptions: any;
+  private _emberCLIBabelExtensions?: string[];
   private autoImportOptions: Options | undefined;
-  private emberCLIBabelExtensions: string[];
   private isAddonCache = new Map<string, boolean>();
   private isDeveloping: boolean;
   private pkgGeneration: number;
@@ -58,17 +58,15 @@ export default class Package {
     // Stash our own config options
     this.autoImportOptions = this._options.autoImport;
 
-    this.emberCLIBabelExtensions = this._options['ember-cli-babel']
-      && this._options['ember-cli-babel'].extensions || ['js'];
-
     this.pkgCache = appOrAddon.parent.pkg;
     this.pkgGeneration = pkgGeneration;
   }
 
   _ensureBabelDetails() {
     if (this._hasBabelDetails) { return; }
-    let { babelOptions, version } = this.buildBabelOptions(this._parent, this._options);
+    let { babelOptions, extensions, version } = this.buildBabelOptions(this._parent, this._options);
 
+    this._emberCLIBabelExtensions = extensions;
     this._babelOptions = babelOptions;
     this._babelMajorVersion = version;
     this._hasBabelDetails = true;
@@ -100,6 +98,8 @@ export default class Package {
       (addon: any) => addon.name === 'ember-cli-babel'
     );
     let babelOptions = babelAddon.buildBabelOptions(options);
+    let extensions = babelOptions.filterExtensions || ['js'];
+
     // https://github.com/babel/ember-cli-babel/issues/227
     delete babelOptions.annotation;
     delete babelOptions.throwUnlessParallelizable;
@@ -110,7 +110,7 @@ export default class Package {
       );
     }
     let version = parseInt(babelAddon.pkg.version.split('.')[0], 10);
-    return { babelOptions, version };
+    return { babelOptions, extensions, version };
   }
 
   private get pkg() {
@@ -198,7 +198,10 @@ export default class Package {
   }
 
   get fileExtensions(): string[] {
-    return this.emberCLIBabelExtensions;
+    this._ensureBabelDetails();
+
+    // type safety: this will have been populated by the call above
+    return this._emberCLIBabelExtensions!;
   }
 
   get publicAssetURL(): string | undefined {
