@@ -1,0 +1,59 @@
+{
+  "name": "sample-dynamic-import-from-template-url",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Small description for sample-dynamic-import-from-template-url goes here",
+  "repository": "",
+  "license": "MIT",
+  "author": "",
+  "directories": {
+    "doc": "doc",
+    "test": "tests"
+  },
+  "scripts": {
+    "build": "ember build --environment=production",
+    "lint": "npm-run-all --aggregate-output --continue-on-error --parallel lint:*",
+    "lint:hbs": "ember-template-lint .",
+    "lint:js": "eslint .",
+    "start": "ember serve",
+    "test": "npm-run-all lint:* test:*",
+    "test:ember": "ember test"
+  },
+  "devDependencies": {
+    "@ember/optional-features": "*",
+    "@glimmer/component": "*",
+    "@glimmer/tracking": "*",
+    "babel-eslint": "*",
+    "broccoli-asset-rev": "*",
+    "ember-auto-import": "*",
+    "ember-cli": "*",
+    "ember-cli-app-version": "*",
+    "ember-cli-babel": "*",
+    "ember-cli-dependency-checker": "*",
+    "ember-cli-htmlbars": "*",
+    "ember-cli-inject-live-reload": "*",
+    "ember-cli-sri": "*",
+    "ember-cli-uglify": "*",
+    "ember-export-application-global": "*",
+    "ember-fetch": "*",
+    "ember-load-initializers": "*",
+    "ember-maybe-import-regenerator": "*",
+    "ember-qunit": "*",
+    "ember-resolver": "*",
+    "ember-source": "*",
+    "ember-template-lint": "*",
+    "ember-welcome-page": "*",
+    "eslint": "*",
+    "eslint-plugin-ember": "*",
+    "eslint-plugin-node": "*",
+    "loader.js": "*",
+    "npm-run-all": "*",
+    "qunit-dom": "*"
+  },
+  "engines": {
+    "node": "10.* || >= 12"
+  },
+  "ember": {
+    "edition": "octane"
+  }
+}
