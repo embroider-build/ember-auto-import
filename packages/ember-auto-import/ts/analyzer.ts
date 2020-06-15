@@ -162,11 +162,68 @@ export default class Analyzer extends Plugin {
           // it's a syntax error to have anything other than exactly one
           // argument, so we can just assume this exists
           let argument = path.node.arguments[0];
-          if (argument.type !== 'StringLiteral') {
+
+          // Only a limited subset dynamic import syntax is allowed by v2
+          // addon package format. It must be either a string literal or a
+          // template string.
+          if (argument.type !== 'StringLiteral' && argument.type !== 'TemplateLiteral') {
             throw new Error(
-              'ember-auto-import only supports dynamic import() with a string literal argument.'
+              'ember-auto-import only supports dynamic import() that are ' +
+              'included in the supported subset of dynamic import syntax ' +
+              'of v2 addon format. Only string or template literal arguments ' +
+              `are allowed by that specification but ${argument.type} is used.`
             );
           }
+
+          // Only template strings that begins with a static prefix which
+          // matches a given list of cases are allowed.
+          if (
+            argument.type === 'TemplateLiteral'
+          ) {
+            // A template literal always starts with a static TemplateElement.
+            // For a template literal like `${foo}` that TemplateElement is
+            // an empty string.
+            let prefix =  argument.quasis[0].value.raw;
+
+            if (
+              // The static prefix may be an absolute URL either with a given
+              // protocol (`http://` or `https://`) or protocol-relative (`//`).
+              /(\w+:)?\/\//.test(prefix)
+            ) {
+              // In this case, Embroider will leave the import() alone. The
+              // browser's implementation of import() is used. The contents of
+              // the URL is beyond the scope of the Embroider build.
+              return;
+            } else if (
+              // The static prefix is a NPM package name or a relative path.
+              (
+                // This matches a namespaced NPM package name.
+                prefix.startsWith('@') && (prefix.match(/\//) || []).length >= 2
+              ) ||
+              (
+                // This matches a NPM package name without namespace and a
+                // relative path.
+                !prefix.startsWith('@') && prefix.includes('/')
+              )
+            ) {
+              throw new Error(
+                'ember-auto-import does not support dynamic import() with a ' +
+                'template literal that references a NPM package or a relative' +
+                "path yet even so it's allowed by v2 addon format."
+              );
+            } else {
+              // Only template literals that match one of the cases tested
+              // before are supported.
+              throw new Error(
+                'ember-auto-import only supports dynamic import() that are ' +
+                'included in the supported subset of dynamic import syntax ' +
+                'of v2 addon format. A template literal argument must begin ' +
+                'with a static prefix which either identifies it as (1) an ' +
+                'absoulte URL, (2) a npm package or (3) a relative path.'
+              );
+            }
+          }
+
           imports.push({
             isDynamic: true,
             specifier: argument.value,
