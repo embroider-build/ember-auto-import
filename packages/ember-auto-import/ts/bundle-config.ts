@@ -4,7 +4,7 @@
 */
 
 import { dirname } from 'path';
-const testsPattern = new RegExp(`^/?[^/]+/(tests|test-support)/`);
+const testsPattern = new RegExp(`^(@[^/]+)?/?[^/]+/(tests|test-support)/`);
 
 export default class BundleConfig {
   constructor(private emberApp: any) {}
