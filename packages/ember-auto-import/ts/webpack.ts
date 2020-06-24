@@ -95,8 +95,8 @@ export default class WebpackBundler implements BundlerHook {
       },
       output: {
         path: this.outputDir,
-        filename: `chunk.[chunkhash].js`,
-        chunkFilename: `chunk.[chunkhash].js`,
+        filename: `chunk.[id].[chunkhash].js`,
+        chunkFilename: `chunk.[id].[chunkhash].js`,
         libraryTarget: 'var',
         library: '__ember_auto_import__'
       },
