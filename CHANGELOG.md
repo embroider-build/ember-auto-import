@@ -1,5 +1,16 @@
 # Changelog
 
+### 1.6.0
+ - ENHANCEMENT: add .ts extension to the resolver allowing import of TypeScript modules without having to add the .ts extension by @buschtoens
+ - DOCS: document `skipBabel` option by @kasunvp
+ - DOCS: fix typo in README.md by @jacobq
+ - DOCS: add instructions for using dynamic imports in addons by @jrjohnson
+ - ENHANCEMENT: only output files for fastboot when ember-cli-fastboot is detected (can also be manually disabled with FASTBOOT_DISABLED=true environment variable) by @houfeng0923
+ - HOUSEKEEPING: update CI node version to 12.x by @f1sherman
+ - ENHANCEMENT: add [id] to the chunkname by @stukalin
+ - BUGFIX: ensure auto-import processes the same extensions as ember-cli-babel by @dfreeman
+ - BUGFIX: update minimum version of @babel/preset-env to 7.10.2 by @rwjblue
+
 ### 1.5.3
  - HOUSEKEEPING: upgrading deps that are failing security audits (but there was no actual vulnerability for ember-auto-import users)
  - HOUSEKEEPING: switch CI to GitHub actions
