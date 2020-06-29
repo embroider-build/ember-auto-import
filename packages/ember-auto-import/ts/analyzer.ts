@@ -175,7 +175,7 @@ export default class Analyzer extends Plugin {
             );
           }
 
-          // Only template strings that begins with a static prefix which
+          // Only template strings that begin with a static prefix which
           // matches a given list of cases are allowed.
           if (
             argument.type === 'TemplateLiteral'
