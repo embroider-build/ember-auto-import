@@ -209,7 +209,7 @@ export default class Analyzer extends Plugin {
               throw new Error(
                 'ember-auto-import does not support dynamic import() with a ' +
                 'template literal that references a NPM package or a relative' +
-                "path yet even so it's allowed by v2 addon format."
+                "path yet even though it's allowed by v2 addon format."
               );
             } else {
               // Only template literals that match one of the cases tested
