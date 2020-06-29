@@ -201,7 +201,7 @@ export default class Analyzer extends Plugin {
                 prefix.startsWith('@') && (prefix.match(/\//) || []).length >= 2
               ) ||
               (
-                // This matches a NPM package name without namespace and a
+                // This matches an NPM package name without namespace and a
                 // relative path.
                 !prefix.startsWith('@') && prefix.includes('/')
               )
