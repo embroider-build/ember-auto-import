@@ -211,9 +211,19 @@ export default class Analyzer extends Plugin {
                 'template literal that references an NPM package or a relative' +
                 "path yet even though it's allowed by v2 addon format."
               );
+            } else if (argument.expressions.length < 1) {
+              // A consumer might use a template literal for a static string.
+              // While we could theoretically support that case right now, it's
+              // easier to give the user a quick hint how to refactor to a
+              // supported syntax.
+              throw new Error(
+                'ember-auto-import does not support dynamic import() with a ' +
+                'template literal that does not contain any expression. Use ' +
+                'a string instead.'
+              );
             } else {
               // Only template literals that match one of the cases tested
-              // before are supported.
+              // before are supported by v2 addon format.
               throw new Error(
                 'ember-auto-import only supports dynamic import() that are ' +
                 'included in the supported subset of dynamic import syntax ' +
