@@ -217,9 +217,12 @@ export default class Analyzer extends Plugin {
               throw new Error(
                 'ember-auto-import only supports dynamic import() that are ' +
                 'included in the supported subset of dynamic import syntax ' +
-                'of v2 addon format. A template literal argument must begin ' +
-                'with a static prefix which either identifies it as (1) an ' +
-                'absoulte URL, (2) a npm package or (3) a relative path.'
+                'of v2 addon format. If the argument given is a template ' +
+                'literal that template literal must begin with a static ' +
+                'prefix which either identifies it as (1) an absoulte URL, ' +
+                '(2) an npm package or (3) a relative path to be supported ' +
+                'by v2 addon format. Ember-auto-import does not support (2) ' +
+                'and (3) yet.'
               );
             }
           }
