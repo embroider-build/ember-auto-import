@@ -54,7 +54,7 @@
     "symlink-or-copy": "^1.2.0",
     "typescript-memoize": "^1.0.0-alpha.3",
     "walk-sync": "^0.3.3",
-    "webpack": "~4.28"
+    "webpack": "^4.43.0"
   },
   "devDependencies": {
     "@types/babel-core": "^6.25.5",
