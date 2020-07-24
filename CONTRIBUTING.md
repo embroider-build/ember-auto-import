@@ -9,7 +9,7 @@ The actual ember addon is in `./packages/ember-auto-import`. The other packages 
 ### Installation
 
 * `git clone <repository-url>`
-* `cd ember-auto-import`
+* `cd packages/ember-auto-import`
 * `yarn install`
 
 ### Building
