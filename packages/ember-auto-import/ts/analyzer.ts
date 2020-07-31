@@ -198,7 +198,7 @@ export default class Analyzer extends Plugin {
               // The static prefix is a NPM package name or a relative path.
               (
                 // This matches a namespaced NPM package name.
-                prefix.startsWith('@') && (prefix.match(/\//) || []).length >= 2
+                prefix.startsWith('@') && (prefix.match(/\//g) || []).length >= 2
               ) ||
               (
                 // This matches an NPM package name without namespace and a
