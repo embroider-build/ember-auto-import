@@ -167,6 +167,26 @@ Using ember-auto-import inside an addon is almost exactly the same as inside an 
 FAQ
 ---
 
+### `global is undefined` or `can't find module "path"` or `can't find module "fs"`
+
+You're trying to use a library that is written to work in NodeJS and not in the browser. You can choose to polyfill the Node feature you need by passing settings to webpack. For example:
+
+
+```
+let app = new EmberApp(defaults, {
+  autoImport: {
+    webpack: {
+      node: {
+        global: true,
+        fs: 'empty'
+      }
+    }
+  }
+```
+
+See [webpack's docs on Node polyfills](https://v4.webpack.js.org/configuration/node/).
+
+
 ###  I use Content Security Policy (CSP) and it breaks ember-auto-import.
 
 See `forbidEval` above.
