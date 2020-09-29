@@ -4896,7 +4896,7 @@ ember-cli-babel@^6.0.0-beta.4, ember-cli-babel@^6.0.0-beta.7, ember-cli-babel@^6
     ember-cli-version-checker "^2.1.2"
     semver "^5.5.0"
 
-ember-cli-babel@^7.1.0, ember-cli-babel@^7.1.2, ember-cli-babel@^7.1.3, ember-cli-babel@^7.10.0, ember-cli-babel@^7.12.0, ember-cli-babel@^7.17.0, ember-cli-babel@^7.20.5, ember-cli-babel@^7.5.0, ember-cli-babel@^7.7.0, ember-cli-babel@^7.7.3, ember-cli-babel@^7.8.0:
+ember-cli-babel@^7.0.0, ember-cli-babel@^7.1.0, ember-cli-babel@^7.1.2, ember-cli-babel@^7.1.3, ember-cli-babel@^7.10.0, ember-cli-babel@^7.12.0, ember-cli-babel@^7.17.0, ember-cli-babel@^7.20.5, ember-cli-babel@^7.5.0, ember-cli-babel@^7.7.0, ember-cli-babel@^7.7.3, ember-cli-babel@^7.8.0:
   version "7.22.1"
   resolved "https://registry.yarnpkg.com/ember-cli-babel/-/ember-cli-babel-7.22.1.tgz#cad28b89cf0e184c93b863d09bc5ba4ce1d2e453"
   integrity sha512-kCT8WbC1AYFtyOpU23ESm22a+gL6fWv8Nzwe8QFQ5u0piJzM9MEudfbjADEaoyKTrjMQTDsrWwEf3yjggDsOng==
@@ -5285,13 +5285,6 @@ ember-cli-version-checker@^4.1.0:
     resolve-package-path "^2.0.0"
     semver "^6.3.0"
     silent-error "^1.1.1"
-
-"ember-cli-version-checker@git+https://github.com/ef4/ember-cli-version-checker#0e33cbcd7faf17ec804b0c3fb64147b131a015de":
-  version "2.1.2"
-  resolved "git+https://github.com/ef4/ember-cli-version-checker#0e33cbcd7faf17ec804b0c3fb64147b131a015de"
-  dependencies:
-    resolve "^1.3.3"
-    semver "^5.3.0"
 
 ember-cli@*, ember-cli@^3.6.0:
   version "3.13.1"
