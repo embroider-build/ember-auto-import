@@ -3,7 +3,7 @@ import makeDebug from 'debug';
 import WebpackBundler from './webpack';
 import Splitter, { BundleDependencies } from './splitter';
 import Package, { reloadDevPackages, Options } from './package';
-import { merge } from 'lodash';
+import { mergeWith } from 'lodash';
 import { join } from 'path';
 import { readFileSync, writeFileSync, emptyDirSync, copySync } from 'fs-extra';
 import BundleConfig from './bundle-config';
@@ -74,9 +74,16 @@ export default class Bundler extends Plugin {
 
   get bundlerHook(): BundlerHook {
     if (!this.cachedBundlerHook) {
-      let extraWebpackConfig = merge(
+      let extraWebpackConfig = mergeWith(
         {},
         ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig)
+        ,
+        (objValue: any, srcValue: any) => {
+          // arrays concat
+          if (Array.isArray(objValue)) {
+            return objValue.concat(srcValue);
+          }
+        }
       );
       if ([...this.options.packages.values()].find(pkg => pkg.forbidsEval)) {
         extraWebpackConfig.devtool = 'source-map';
