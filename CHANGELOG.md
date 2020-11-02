@@ -1,5 +1,12 @@
 # Changelog
 
+### 1.7.0
+ - DOCS: improvement to CONTRIBUTING.md by kiwiupover
+ - BUGFIX: fix merging of webpack configs by @bendemboski
+ - HOUSEKEEPING: upgrade ember-cli-babel by nlfurniss
+ - HOUSEKEEPING: upgrade @embroider/core dep by simonihmig
+ - HOUSEKEEPING: upgrade webpack
+
 ### 1.6.0
  - ENHANCEMENT: add .ts extension to the resolver allowing import of TypeScript modules without having to add the .ts extension by @buschtoens
  - DOCS: document `skipBabel` option by @kasunvp
