@@ -110,7 +110,7 @@ export default class Splitter {
           specifiers.set(imp.specifier, {
             specifier: imp.specifier,
             entrypoint,
-            importedBy: [imp],
+            importedBy: [imp]
           });
         }
       })

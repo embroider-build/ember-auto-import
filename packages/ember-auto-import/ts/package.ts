@@ -113,7 +113,6 @@ export default class Package {
     return { babelOptions, extensions, version };
   }
 
-  // private get pkg() {
   get pkg() {
     if (
       !this.pkgCache ||
