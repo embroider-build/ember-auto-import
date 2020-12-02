@@ -328,7 +328,7 @@
     "@babel/helper-create-class-features-plugin" "^7.10.4"
     "@babel/helper-plugin-utils" "^7.10.4"
 
-"@babel/plugin-proposal-decorators@^7.1.2", "@babel/plugin-proposal-decorators@^7.10.5":
+"@babel/plugin-proposal-decorators@^7.10.5":
   version "7.10.5"
   resolved "https://registry.yarnpkg.com/@babel/plugin-proposal-decorators/-/plugin-proposal-decorators-7.10.5.tgz#42898bba478bc4b1ae242a703a953a7ad350ffb4"
   integrity sha512-Sc5TAQSZuLzgY0664mMDn24Vw2P8g/VhyLyGPaWiHahhgLqeZvcGeyBZOrJW0oSKIK2mvQ22a1ENXBIQLhrEiQ==
@@ -1007,16 +1007,6 @@
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/@ember-data/rfc395-data/-/rfc395-data-0.0.4.tgz#ecb86efdf5d7733a76ff14ea651a1b0ed1f8a843"
   integrity sha512-tGRdvgC9/QMQSuSuJV45xoyhI0Pzjm7A9o/MVVA3HakXIImJbbzx/k/6dO9CUEQXIyS2y0fW6C1XaYOG7rY0FQ==
-
-"@ember-decorators/babel-transforms@^3.1.0":
-  version "3.1.5"
-  resolved "https://registry.yarnpkg.com/@ember-decorators/babel-transforms/-/babel-transforms-3.1.5.tgz#6df543f7f1d862ad54d05555d548805e032f6514"
-  integrity sha512-dTcpIylGj+gU+GM3Se0mVn/NGcIFLDTJYE0h04WtBT+Szon8y0SKFPO4pyEz+NINNU6w+PRP/Y7GsT8txxdrYg==
-  dependencies:
-    "@babel/plugin-proposal-class-properties" "^7.1.0"
-    "@babel/plugin-proposal-decorators" "^7.1.2"
-    ember-cli-babel-plugin-helpers "^1.0.0"
-    ember-cli-version-checker "^2.1.0"
 
 "@ember-decorators/component@^3.1.5":
   version "3.1.5"
@@ -5285,6 +5275,13 @@ ember-cli-version-checker@^4.1.0:
     resolve-package-path "^2.0.0"
     semver "^6.3.0"
     silent-error "^1.1.1"
+
+"ember-cli-version-checker@git+https://github.com/ef4/ember-cli-version-checker#0e33cbcd7faf17ec804b0c3fb64147b131a015de":
+  version "2.1.2"
+  resolved "git+https://github.com/ef4/ember-cli-version-checker#0e33cbcd7faf17ec804b0c3fb64147b131a015de"
+  dependencies:
+    resolve "^1.3.3"
+    semver "^5.3.0"
 
 ember-cli@*, ember-cli@^3.6.0:
   version "3.13.1"
@@ -11238,10 +11235,10 @@ typescript-memoize@^1.0.0-alpha.3:
   dependencies:
     core-js "2.4.1"
 
-typescript@^3.1.6:
-  version "3.6.3"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.6.3.tgz#fea942fabb20f7e1ca7164ff626f1a9f3f70b4da"
-  integrity sha512-N7bceJL1CtRQ2RiG0AQME13ksR7DiuQh/QehubYcghzv20tnh+MQnQIuJddTmsbqYj+dztchykemz0zFzlvdQw==
+typescript@^4.1.2:
+  version "4.1.2"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.1.2.tgz#6369ef22516fe5e10304aae5a5c4862db55380e9"
+  integrity sha512-thGloWsGH3SOxv1SoY7QojKi0tc+8FnOmiarEGMbd/lar7QOEd3hvlx3Fp5y6FlDUGl9L+pd4n2e+oToGMmhRQ==
 
 uc.micro@^1.0.1, uc.micro@^1.0.5:
   version "1.0.6"
