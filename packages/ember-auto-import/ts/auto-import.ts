@@ -5,7 +5,7 @@ import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
 import Append from './broccoli-append';
-import { Tree } from 'broccoli-plugin';
+import { Node } from 'broccoli-node-api';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 const protocol = '__ember_auto_import_protocol_v1__';
@@ -52,7 +52,7 @@ export default class AutoImport {
     return this.primaryPackage === appOrAddon;
   }
 
-  analyze(tree: Tree, appOrAddon: any) {
+  analyze(tree: Node, appOrAddon: any) {
     let pack = Package.lookup(appOrAddon);
     this.packages.add(pack);
     let analyzer = new Analyzer(
@@ -63,7 +63,7 @@ export default class AutoImport {
     return analyzer;
   }
 
-  makeBundler(allAppTree: Tree) {
+  makeBundler(allAppTree: Node) {
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
     let splitter = new Splitter({
@@ -83,7 +83,7 @@ export default class AutoImport {
     });
   }
 
-  addTo(allAppTree: Tree) {
+  addTo(allAppTree: Node) {
     let bundler = debugTree(this.makeBundler(allAppTree), 'output');
 
     let mappings = new Map();
@@ -121,7 +121,7 @@ export default class AutoImport {
     // So we are forced to monkey patch EmberApp. We insert ourselves right at
     // the beginning of addonPostprocessTree.
     let original = host.addonPostprocessTree.bind(host);
-    host.addonPostprocessTree = (which: string, tree: Tree) => {
+    host.addonPostprocessTree = (which: string, tree: Node) => {
       if (which === 'all') {
         tree = this.addTo(tree);
       }

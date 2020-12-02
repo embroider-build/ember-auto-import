@@ -1,4 +1,5 @@
-import Plugin, { Tree } from 'broccoli-plugin';
+import Plugin from 'broccoli-plugin';
+import { Node } from 'broccoli-node-api';
 import makeDebug from 'debug';
 import WebpackBundler from './webpack';
 import Splitter, { BundleDependencies } from './splitter';
@@ -35,7 +36,7 @@ export default class Bundler extends Plugin {
   private cachedBundlerHook: BundlerHook | undefined;
   private didEnsureDirs = false;
 
-  constructor(allAppTree: Tree, private options: BundlerPluginOptions) {
+  constructor(allAppTree: Node, private options: BundlerPluginOptions) {
     super([allAppTree], {
       persistentOutput: true,
       needsCache: true,
@@ -97,7 +98,7 @@ export default class Bundler extends Plugin {
         this.publicAssetURL,
         this.skipBabel,
         this.options.targets,
-        this.cachePath
+        this.cachePath! // cast is OK because we passed needsCache: true to super constructor
       );
     }
     return this.cachedBundlerHook;

@@ -1,4 +1,5 @@
-import Plugin, { Tree } from 'broccoli-plugin';
+import { Node } from 'broccoli-node-api';
+import Plugin from 'broccoli-plugin';
 import walkSync from 'walk-sync';
 import { unlinkSync, rmdirSync, mkdirSync, readFileSync, removeSync } from 'fs-extra';
 import FSTree from 'fs-tree-diff';
@@ -44,7 +45,7 @@ export default class Analyzer extends Plugin {
 
   private parse: undefined | ((source: string) => File);
 
-  constructor(inputTree: Tree, private pack: Package) {
+  constructor(inputTree: Node, private pack: Package) {
     super([inputTree], {
       annotation: 'ember-auto-import-analyzer',
       persistentOutput: true
