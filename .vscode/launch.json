@@ -41,10 +41,10 @@
             "name": "Build sample-merged",
             "program": "${workspaceFolder}/node_modules/.bin/ember",
             "cwd": "${workspaceFolder}/packages/sample-merged",
-            "preLaunchTask": "tsc: build - tsconfig.json",
             "args": [
                 "build"
-            ]
+            ],
+            "outputCapture": "std"
         },
         {
             "type": "node",

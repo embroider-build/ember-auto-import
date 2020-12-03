@@ -1,8 +1,15 @@
 import AutoImport from './auto-import';
 import { Node } from 'broccoli-node-api';
+// @ts-ignore
+import pkg from '../package';
 
 module.exports = {
-  name: 'ember-auto-import',
+  name: pkg.name,
+
+  init(...args: any[]) {
+    this._super.init.apply(this, args);
+    AutoImport.register(this);
+  },
 
   setupPreprocessorRegistry(type: string, registry: any) {
     // we register on our parent registry (so we will process code

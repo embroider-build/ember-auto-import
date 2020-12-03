@@ -4,10 +4,11 @@
 */
 
 import { dirname } from 'path';
+import { AppInstance } from './ember-cli-models';
 const testsPattern = new RegExp(`^/?[^/]+/(tests|test-support)/`);
 
 export default class BundleConfig {
-  constructor(private emberApp: any) {}
+  constructor(private emberApp: AppInstance) {}
 
   // This list of valid bundles, in priority order. The first one in the list that
   // needs a given import will end up with that import.
