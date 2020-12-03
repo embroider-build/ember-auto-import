@@ -8,7 +8,7 @@ import { BundleDependencies } from './splitter';
 import { BundlerHook, BuildResult } from './bundler';
 import BundleConfig from './bundle-config';
 import { ensureDirSync } from 'fs-extra';
-import { babelFilter } from '@embroider/core';
+import { babelFilter, Variant, templateCompilerModule } from '@embroider/core';
 import { Options } from './package';
 
 registerHelper('js-string-escape', jsStringEscape);
@@ -115,7 +115,7 @@ export default class WebpackBundler implements BundlerHook {
       },
       module: {
         noParse: (file) => file === join(this.stagingDir, 'l.js'),
-        rules: [this.babelRule()]
+        rules: [this.babelRule(), this.hbsRule()]
       },
       node: false,
     };
@@ -141,6 +141,10 @@ export default class WebpackBundler implements BundlerHook {
       use: {
         loader: 'babel-loader-8',
         options: {
+          plugins: [
+            require.resolve('babel-plugin-ember-data-packages-polyfill'),
+            require.resolve('babel-plugin-ember-modules-api-polyfill'),
+          ],
           presets: [
             [
               require.resolve('@babel/preset-env'),
@@ -152,6 +156,21 @@ export default class WebpackBundler implements BundlerHook {
           ]
         }
       }
+    };
+  }
+
+  private hbsRule(): webpack.Rule {
+    return {
+      test: /\.hbs$/,
+      use: [
+        {
+          loader: require.resolve('@embroider/webpack/src/webpack-hbs-loader'),
+          options: {
+            templateCompilerFile: TODO,
+            variant: TODO,
+          },
+        },
+      ],
     };
   }
 

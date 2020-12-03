@@ -156,8 +156,8 @@ export default class Package {
       let packageJSON = require(resolve.sync(`${name}/package.json`, {
         basedir: this.root
       }));
-      let keywords = packageJSON.keywords;
-      this.isAddonCache.set(name, keywords && keywords.includes('ember-addon'));
+      let isV1Addon = packageJSON.keywords?.includes('ember-addon') && packageJSON['ember-addon']?.version !== 2;
+      this.isAddonCache.set(name, isV1Addon);
     }
     return this.isAddonCache.get(name) || false;
   }
