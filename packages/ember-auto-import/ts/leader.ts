@@ -1,6 +1,7 @@
 import { gt } from "semver";
 import type AutoImport from "./auto-import";
-import { Project, AddonInstance } from './ember-cli-models';
+import { Project, AddonInstance } from "./ember-cli-models";
+import { Node } from "broccoli-node-api";
 
 const protocolV1 = "__ember_auto_import_protocol_v1__";
 const protocolV2 = "__ember_auto_import_protocol_v2__";
@@ -49,33 +50,48 @@ export class LeaderChooser {
       this.locked = this.tentative.create();
       let v1 = g[protocolV1];
       if (v1?.isV1Placeholder) {
-        g[protocolV1] = this.locked;
+        v1.leader = this.locked;
       }
     }
     return this.locked;
   }
 }
 
+class V1Placeholder {
+  isV1Placeholder = true;
+  leader: AutoImport | undefined;
+
+  // we never want v1-speaking copies of ember-auto-import to consider
+  // themselves primary, so if they're asking here, the answer is no.
+  isPrimary() {
+    return false;
+  }
+
+  // this is the only method that is called after isPrimary returns false. So we
+  // need to implement this one and don't need to implement the other public API
+  // of AutoImport.
+  analyze(tree: Node, addon: AddonInstance) {
+    if (!this.leader) {
+      throw new Error(
+        `bug: expected some protcol v2 copy of ember-auto-import to take charge before any v1 copy started trying to analyze trees`
+      );
+    }
+    return this.leader.analyze(tree, addon);
+  }
+}
+
 // at module load time, preempt all earlier versions of ember-auto-import that
-// don't use our v2 protocol for deciding which copy is in charge. This ensures
-// that the v2 protocol will pick which version is in charge (and it can't pick
-// a v1-speaking copy).
+// don't use our v2 leadership protocol. This ensures that the v2 protocol will
+// pick which version is in charge (and v1-speaking copies won't be eligible).
 (function v1ProtocolCompat() {
   let v1 = g[protocolV1];
-  if (v1 && !v1.isV1Placeholder) {
-    throw new Error(
-      `bug: an old version of ember-auto-import has already taken over. This is unexpected.`
-    );
-  }
-  g[protocolV1] = {
-    isV1Placeholder: true,
-    analyze() {
+  if (v1) {
+    if (!v1.isV1Placeholder) {
       throw new Error(
-        `bug: expected some copy of ember-auto-import to take charge before anybody started trying to analyze trees`
+        `bug: an old version of ember-auto-import has already taken over. This is unexpected.`
       );
-    },
-    isPrimary() {
-      return false;
-    },
-  };
+    }
+  } else {
+    g[protocolV1] = new V1Placeholder;
+  }
 })();

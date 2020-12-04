@@ -11,7 +11,17 @@ import { AddonInstance, AppInstance, findTopmostAddon } from './ember-cli-models
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
-export default class AutoImport {
+// This interface must be stable across all versions of ember-auto-import that
+// speak the same leader-election protocol. So don't change this unless you know
+// what you're doing.
+export interface AutoImportSharedAPI {
+  isPrimary(addonInstance: AddonInstance): boolean;
+  analyze(tree: Node, addon: AddonInstance): Node;
+  included(addonInstance: AddonInstance): void;
+  updateFastBootManifest(manifest: { vendorFiles: string[] }): void;
+}
+
+export default class AutoImport implements AutoImportSharedAPI {
   private primaryPackage: AddonInstance;
   private packages: Set<Package> = new Set();
   private env: 'development' | 'test' | 'production';
@@ -24,7 +34,7 @@ export default class AutoImport {
     LeaderChooser.for(addon).register(addon, () => new AutoImport(addon));
   }
 
-  static lookup(addon: AddonInstance): AutoImport {
+  static lookup(addon: AddonInstance): AutoImportSharedAPI {
     return LeaderChooser.for(addon).leader;
   }
 
@@ -58,7 +68,7 @@ export default class AutoImport {
     return analyzer;
   }
 
-  makeBundler(allAppTree: Node) {
+  private makeBundler(allAppTree: Node) {
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
     let splitter = new Splitter({
