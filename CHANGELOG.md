@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.8.0
+ - ENHANCEMENT: improved leader election protocol between copies of ember-auto-import that ensures the newest one is always in charge.
+ - HOUSEKEEPING: upgrades to typescript and some other deps to get better upstream types
+
 ### 1.7.0
  - DOCS: improvement to CONTRIBUTING.md by kiwiupover
  - BUGFIX: fix merging of webpack configs by @bendemboski
