@@ -12,8 +12,7 @@ const g = (global as any) as {
 
 export class LeaderChooser {
   static for(addon: AddonInstance): LeaderChooser {
-    let g = global as any;
-    let map: WeakMap<Project, LeaderChooser> = g[protocolV2];
+    let map: WeakMap<Project, LeaderChooser> | undefined = g[protocolV2];
     if (!map) {
       map = g[protocolV2] = new WeakMap();
     }
