@@ -147,7 +147,7 @@ export default class WebpackBundler implements BundlerHook {
     this.webpack = webpack(config);
   }
 
-  private babelRule(): webpack.Rule {
+  private babelRule(): webpack.RuleSetRule {
     let shouldTranspile = babelFilter(this.skipBabel);
     let stagingDir = this.stagingDir;
     return {
@@ -187,6 +187,7 @@ export default class WebpackBundler implements BundlerHook {
   }
 
   private summarizeStats(_stats: Required<webpack.Stats>): BuildResult {
+    // @ts-ignore (until https://github.com/webpack/webpack/pull/12079 is merged)
     let stats = _stats.toJson() as Required<webpack.Stats.ToJsonOutput>;
     let output = {
       entrypoints: new Map(),
@@ -235,18 +236,19 @@ export default class WebpackBundler implements BundlerHook {
   private async runWebpack(): Promise<Required<webpack.Stats>> {
     return new Promise((resolve, reject) => {
       this.webpack.run((err, stats) => {
+        const statsString = stats ? stats.toString() : '';
         if (err) {
-          this.consoleWrite(stats.toString());
+          this.consoleWrite(statsString);
           reject(err);
           return;
         }
-        if (stats.hasErrors()) {
-          this.consoleWrite(stats.toString());
+        if (stats?.hasErrors()) {
+          this.consoleWrite(statsString);
           reject(new Error('webpack returned errors to ember-auto-import'));
           return;
         }
-        if (stats.hasWarnings() || process.env.AUTO_IMPORT_VERBOSE) {
-          this.consoleWrite(stats.toString());
+        if (stats?.hasWarnings() || process.env.AUTO_IMPORT_VERBOSE) {
+          this.consoleWrite(statsString);
         }
         // this cast is justified because we already checked hasErrors above
         resolve(stats as Required<webpack.Stats>);

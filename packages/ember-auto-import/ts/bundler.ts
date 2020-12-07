@@ -21,8 +21,13 @@ export interface BundlerPluginOptions {
   targets: unknown;
 }
 
+export interface BundleAsset {
+  name: string;
+  size: number;
+}
+
 export interface BuildResult {
-  entrypoints: Map<string, string[]>;
+  entrypoints: Map<string, BundleAsset[]>;
   lazyAssets: string[];
   dir: string;
 }
