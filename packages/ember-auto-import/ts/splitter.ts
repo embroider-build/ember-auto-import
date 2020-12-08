@@ -8,7 +8,7 @@ import {
   CachedInputFileSystem,
   ResolverFactory
 } from 'enhanced-resolve';
-import pkgUp from 'pkg-up';
+import { findUpPackagePath } from 'resolve-package-path';
 import { dirname } from 'path';
 import BundleConfig from './bundle-config';
 import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
@@ -120,7 +120,7 @@ export default class Splitter {
     if (this.packageVersions.has(entrypoint)) {
       return this.packageVersions.get(entrypoint);
     }
-    let pkgPath = await pkgUp(dirname(entrypoint));
+    let pkgPath = findUpPackagePath(dirname(entrypoint));
     let version = null;
     if (pkgPath) {
       let pkg = require(pkgPath);
