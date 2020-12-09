@@ -114,6 +114,7 @@ export default class WebpackBundler implements BundlerHook {
       },
       output: {
         path: this.outputDir,
+        publicPath: '',
         filename: `chunk.[id].[chunkhash].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,
         libraryTarget: 'var',
