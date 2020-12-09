@@ -7,6 +7,12 @@ import { dirname } from 'path';
 import { AppInstance } from './ember-cli-models';
 const testsPattern = new RegExp(`^/?[^/]+/(tests|test-support)/`);
 
+import type { TreeType } from './analyzer';
+
+function exhausted(value: never): never {
+  throw new Error(`Unknown tree type specified: ${value}`);
+}
+
 export default class BundleConfig {
   constructor(private emberApp: AppInstance) {}
 
@@ -37,6 +43,21 @@ export default class BundleConfig {
           case 'css':
             return this.emberApp.options.outputPaths.vendor.css.replace(/^\//, '');
         }
+    }
+  }
+
+  bundleForTreeType(treeType: TreeType) {
+    switch (treeType) {
+      case 'app':
+      case 'addon':
+        return 'app';
+
+      case 'addon-test-support':
+      case 'test':
+        return 'test';
+
+      default:
+        exhausted(treeType);
     }
   }
 
