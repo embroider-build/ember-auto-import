@@ -1,7 +1,7 @@
 declare module 'broccoli' {
-  import { Tree } from "broccoli-plugin";
+  import { InputNode } from "broccoli-node-api";
   export class Builder {
-    constructor(tree: Tree);
+    constructor(tree: InputNode);
     build(): Promise<void>;
     outputPath: string;
     cleanup(): Promise<void>;

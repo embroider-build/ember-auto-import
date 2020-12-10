@@ -8,7 +8,7 @@ import {
   CachedInputFileSystem,
   ResolverFactory
 } from 'enhanced-resolve';
-import pkgUp from 'pkg-up';
+import { findUpPackagePath } from 'resolve-package-path';
 import { dirname } from 'path';
 import BundleConfig from './bundle-config';
 import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
@@ -120,7 +120,7 @@ export default class Splitter {
     if (this.packageVersions.has(entrypoint)) {
       return this.packageVersions.get(entrypoint);
     }
-    let pkgPath = await pkgUp(dirname(entrypoint));
+    let pkgPath = findUpPackagePath(dirname(entrypoint));
     let version = null;
     if (pkgPath) {
       let pkg = require(pkgPath);
@@ -203,13 +203,16 @@ export default class Splitter {
   private chooseBundle(importedBy: Import[]) {
     let usedInBundles = {} as { [bundleName: string]: boolean };
     importedBy.forEach(usage => {
-      usedInBundles[this.bundleForPath(usage)] = true;
+      usedInBundles[this.bundleFor(usage)] = true;
     });
     return this.options.bundles.names.find(bundle => usedInBundles[bundle])!;
   }
 
-  private bundleForPath(usage: Import) {
-    let bundleName = this.options.bundles.bundleForPath(usage.path);
+  private bundleFor(usage: Import) {
+    let bundleName = usage.treeType === undefined || typeof this.options.bundles.bundleForTreeType !== 'function'
+      ? this.options.bundles.bundleForPath(usage.path)
+      : this.options.bundles.bundleForTreeType(usage.treeType);
+
     if (this.options.bundles.names.indexOf(bundleName) === -1) {
       throw new Error(
         `bundleForPath("${

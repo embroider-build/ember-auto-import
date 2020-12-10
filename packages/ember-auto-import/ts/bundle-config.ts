@@ -4,10 +4,17 @@
 */
 
 import { dirname } from 'path';
+import { AppInstance } from './ember-cli-models';
 const testsPattern = new RegExp(`^/?[^/]+/(tests|test-support)/`);
 
+import type { TreeType } from './analyzer';
+
+function exhausted(value: never): never {
+  throw new Error(`Unknown tree type specified: ${value}`);
+}
+
 export default class BundleConfig {
-  constructor(private emberApp: any) {}
+  constructor(private emberApp: AppInstance) {}
 
   // This list of valid bundles, in priority order. The first one in the list that
   // needs a given import will end up with that import.
@@ -36,6 +43,21 @@ export default class BundleConfig {
           case 'css':
             return this.emberApp.options.outputPaths.vendor.css.replace(/^\//, '');
         }
+    }
+  }
+
+  bundleForTreeType(treeType: TreeType) {
+    switch (treeType) {
+      case 'app':
+      case 'addon':
+        return 'app';
+
+      case 'addon-test-support':
+      case 'test':
+        return 'test';
+
+      default:
+        exhausted(treeType);
     }
   }
 

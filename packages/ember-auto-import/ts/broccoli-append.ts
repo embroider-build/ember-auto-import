@@ -1,4 +1,5 @@
-import Plugin, { Tree } from 'broccoli-plugin';
+import Plugin from 'broccoli-plugin';
+import { Node } from 'broccoli-node-api';
 import { join, extname } from 'path';
 import walkSync, { WalkSyncEntry } from 'walk-sync';
 import { unlinkSync, rmdirSync, mkdirSync, readFileSync, existsSync, writeFileSync, removeSync, readdirSync } from 'fs-extra';
@@ -35,7 +36,7 @@ export default class Append extends Plugin {
   private reverseMappings: Map<string, string>;
   private passthrough: Map<string, string>;
 
-  constructor(upstreamTree: Tree, appendedTree: Tree, options: AppendOptions) {
+  constructor(upstreamTree: Node, appendedTree: Node, options: AppendOptions) {
     super([upstreamTree, appendedTree], {
       annotation: 'ember-auto-import-analyzer',
       persistentOutput: true

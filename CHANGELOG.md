@@ -1,5 +1,16 @@
 # Changelog
 
+### 1.8.0
+ - ENHANCEMENT: improved leader election protocol between copies of ember-auto-import that ensures the newest one is always in charge.
+ - HOUSEKEEPING: upgrades to typescript and some other deps to get better upstream types
+
+### 1.7.0
+ - DOCS: improvement to CONTRIBUTING.md by kiwiupover
+ - BUGFIX: fix merging of webpack configs by @bendemboski
+ - HOUSEKEEPING: upgrade ember-cli-babel by nlfurniss
+ - HOUSEKEEPING: upgrade @embroider/core dep by simonihmig
+ - HOUSEKEEPING: upgrade webpack
+
 ### 1.6.0
  - ENHANCEMENT: add .ts extension to the resolver allowing import of TypeScript modules without having to add the .ts extension by @buschtoens
  - DOCS: document `skipBabel` option by @kasunvp

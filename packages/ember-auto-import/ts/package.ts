@@ -1,10 +1,11 @@
-import resolve from 'resolve';
+import resolvePackagePath from 'resolve-package-path';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 import { Memoize } from 'typescript-memoize';
 import { Configuration } from 'webpack';
+import { AddonInstance, isDeepAddonInstance, Project } from './ember-cli-models';
 
-const cache: WeakMap<any, Package> = new WeakMap();
+const cache: WeakMap<AddonInstance, Package> = new WeakMap();
 let pkgGeneration = 0;
 
 export function reloadDevPackages() {
@@ -25,7 +26,7 @@ export default class Package {
   public root: string;
   public isAddon: boolean;
   private _options: any;
-  private _parent: any;
+  private _parent: Project | AddonInstance;
   private _hasBabelDetails = false;
   private _babelMajorVersion?: number;
   private _babelOptions: any;
@@ -36,29 +37,34 @@ export default class Package {
   private pkgGeneration: number;
   private pkgCache: any;
 
-  static lookup(appOrAddon: any): Package {
-    if (!cache.has(appOrAddon)) {
-      cache.set(appOrAddon, new this(appOrAddon));
+  static lookupParentOf(child: AddonInstance): Package {
+    if (!cache.has(child)) {
+      cache.set(child, new this(child));
     }
-    return cache.get(appOrAddon)!;
+    return cache.get(child)!;
   }
 
-  constructor(appOrAddon: any) {
-    this.name = appOrAddon.parent.pkg.name;
-    this.root = appOrAddon.parent.root;
-    this.isAddon = appOrAddon.parent !== appOrAddon.project;
-    this.isDeveloping = !this.isAddon || this.root === appOrAddon.project.root;
+  constructor(child: AddonInstance) {
+    this.name = child.parent.pkg.name;
+    this.root = child.parent.root;
 
-    // This is the per-package options from ember-cli
-    this._options = this.isAddon
-      ? appOrAddon.parent.options
-      : appOrAddon.app.options;
-    this._parent = appOrAddon.parent;
+    if (isDeepAddonInstance(child)) {
+      this.isAddon = true;
+      this.isDeveloping = this.root === child.project.root;
+      // This is the per-package options from ember-cli
+      this._options = child.parent.options;
+    } else {
+      this.isAddon = false;
+      this.isDeveloping = true;
+      this._options = child.app.options;
+    }
+
+    this._parent = child.parent;
 
     // Stash our own config options
     this.autoImportOptions = this._options.autoImport;
 
-    this.pkgCache = appOrAddon.parent.pkg;
+    this.pkgCache = child.parent.pkg;
     this.pkgGeneration = pkgGeneration;
   }
 
@@ -86,17 +92,17 @@ export default class Package {
   get isFastBootEnabled() {
     return process.env.FASTBOOT_DISABLED !== 'true'
     && !!this._parent.addons.find(
-      (addon: any) => addon.name === 'ember-cli-fastboot'
+      addon => addon.name === 'ember-cli-fastboot'
     );
   }
 
-  private buildBabelOptions(instance: any, options: any) {
+  private buildBabelOptions(instance: Project | AddonInstance, options: any) {
     // Generate the same babel options that the package (meaning app or addon)
     // is using. We will use these so we can configure our parser to
     // match.
     let babelAddon = instance.addons.find(
-      (addon: any) => addon.name === 'ember-cli-babel'
-    );
+      addon => addon.name === 'ember-cli-babel'
+    ) as any;
     let babelOptions = babelAddon.buildBabelOptions(options);
     let extensions = babelOptions.filterExtensions || ['js'];
 
@@ -153,9 +159,13 @@ export default class Package {
 
   isEmberAddonDependency(name: string): boolean {
     if (!this.isAddonCache.has(name)) {
-      let packageJSON = require(resolve.sync(`${name}/package.json`, {
-        basedir: this.root
-      }));
+      let packagePath = resolvePackagePath(name, this.root);
+
+      if (packagePath === null) {
+        throw new Error(`${ this.name } tried to import "${name}" but the package was not resolvable from ${this.root}`);
+      }
+
+      let packageJSON = require(packagePath);
       let keywords = packageJSON.keywords;
       this.isAddonCache.set(name, keywords && keywords.includes('ember-addon'));
     }
