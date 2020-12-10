@@ -203,13 +203,16 @@ export default class Splitter {
   private chooseBundle(importedBy: Import[]) {
     let usedInBundles = {} as { [bundleName: string]: boolean };
     importedBy.forEach(usage => {
-      usedInBundles[this.bundleForPath(usage)] = true;
+      usedInBundles[this.bundleFor(usage)] = true;
     });
     return this.options.bundles.names.find(bundle => usedInBundles[bundle])!;
   }
 
-  private bundleForPath(usage: Import) {
-    let bundleName = this.options.bundles.bundleForPath(usage.path);
+  private bundleFor(usage: Import) {
+    let bundleName = usage.treeType === undefined || typeof this.options.bundles.bundleForTreeType !== 'function'
+      ? this.options.bundles.bundleForPath(usage.path)
+      : this.options.bundles.bundleForTreeType(usage.treeType);
+
     if (this.options.bundles.names.indexOf(bundleName) === -1) {
       throw new Error(
         `bundleForPath("${

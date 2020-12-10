@@ -6,7 +6,7 @@ import FSTree from 'fs-tree-diff';
 import makeDebug from 'debug';
 import { join, extname } from 'path';
 import { isEqual, flatten } from 'lodash';
-import Package from './package';
+import type Package from './package';
 import symlinkOrCopy from 'symlink-or-copy';
 import { TransformOptions } from '@babel/core';
 import { File } from '@babel/types';
@@ -18,7 +18,8 @@ makeDebug.formatters.m = (modules: Import[]) => {
       specifier: m.specifier,
       path: m.path,
       isDynamic: m.isDynamic,
-      package: m.package.name
+      package: m.package.name,
+      treeType: m.treeType
     })),
     null,
     2
@@ -27,11 +28,14 @@ makeDebug.formatters.m = (modules: Import[]) => {
 
 const debug = makeDebug('ember-auto-import:analyzer');
 
+export type TreeType = 'app' | 'addon' | 'addon-test-support' | 'test';
+
 export interface Import {
   path: string;
   package: Package;
   specifier: string;
   isDynamic: boolean;
+  treeType: TreeType | undefined;
 }
 
 /*
@@ -45,7 +49,7 @@ export default class Analyzer extends Plugin {
 
   private parse: undefined | ((source: string) => File);
 
-  constructor(inputTree: Node, private pack: Package) {
+  constructor(inputTree: Node, private pack: Package, private treeType?: TreeType) {
     super([inputTree], {
       annotation: 'ember-auto-import-analyzer',
       persistentOutput: true
@@ -172,7 +176,8 @@ export default class Analyzer extends Plugin {
             isDynamic: true,
             specifier: argument.value,
             path: relativePath,
-            package: this.pack
+            package: this.pack,
+            treeType: this.treeType,
           });
         }
       },
@@ -181,7 +186,8 @@ export default class Analyzer extends Plugin {
           isDynamic: false,
           specifier: path.node.source.value,
           path: relativePath,
-          package: this.pack
+          package: this.pack,
+          treeType: this.treeType,
         });
       },
       ExportNamedDeclaration: (path) => {
@@ -190,7 +196,8 @@ export default class Analyzer extends Plugin {
             isDynamic: false,
             specifier: path.node.source.value,
             path: relativePath,
-            package: this.pack
+            package: this.pack,
+            treeType: this.treeType,
           });
         }
       }

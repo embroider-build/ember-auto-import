@@ -1,6 +1,7 @@
 import Splitter from './splitter';
 import Bundler from './bundler';
 import Analyzer from './analyzer';
+import type { TreeType } from './analyzer';
 import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
@@ -16,7 +17,7 @@ const debugTree = buildDebugCallback('ember-auto-import');
 // what you're doing.
 export interface AutoImportSharedAPI {
   isPrimary(addonInstance: AddonInstance): boolean;
-  analyze(tree: Node, addon: AddonInstance): Node;
+  analyze(tree: Node, addon: AddonInstance, treeType?: TreeType): Node;
   included(addonInstance: AddonInstance): void;
   updateFastBootManifest(manifest: { vendorFiles: string[] }): void;
 }
@@ -57,12 +58,13 @@ export default class AutoImport implements AutoImportSharedAPI {
     return this.primaryPackage === addon;
   }
 
-  analyze(tree: Node, addon: AddonInstance) {
+  analyze(tree: Node, addon: AddonInstance, treeType?: TreeType) {
     let pack = Package.lookupParentOf(addon);
     this.packages.add(pack);
     let analyzer = new Analyzer(
       debugTree(tree, `preprocessor:input-${this.analyzers.size}`),
-      pack
+      pack,
+      treeType
     );
     this.analyzers.set(analyzer, pack);
     return analyzer;

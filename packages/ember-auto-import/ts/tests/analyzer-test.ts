@@ -4,7 +4,7 @@ import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
 import { ensureDirSync, readFileSync, outputFileSync, removeSync, existsSync } from 'fs-extra';
 import { join } from 'path';
-import Package from '../package';
+import type Package from "../package";
 import Analyzer from '../analyzer';
 
 const { module: Qmodule, test } = QUnit;
@@ -14,7 +14,7 @@ Qmodule('analyzer', function(hooks) {
   let builder: Builder;
   let upstream: string;
   let analyzer: Analyzer;
-  let pack: Partial<Package>;
+  let pack: Package;
   let babelOptionsWasAccessed = false;
 
   hooks.beforeEach(function(this: any) {
@@ -26,9 +26,9 @@ Qmodule('analyzer', function(hooks) {
         return {};
       },
       babelMajorVersion: 6,
-      fileExtensions: ['js']
-    };
-    analyzer = new Analyzer(new UnwatchedDir(upstream), pack as Package);
+      fileExtensions: ["js"],
+    } as Package;
+    analyzer = new Analyzer(new UnwatchedDir(upstream), pack);
     builder = new broccoli.Builder(analyzer);
   });
 
@@ -96,7 +96,8 @@ Qmodule('analyzer', function(hooks) {
       isDynamic: false,
       specifier: 'some-package',
       path: 'sample.js',
-      package: pack
+      package: pack,
+      treeType: undefined,
     }]);
   });
 
@@ -113,7 +114,8 @@ Qmodule('analyzer', function(hooks) {
       isDynamic: false,
       specifier: 'some-package',
       path: 'sample.js',
-      package: pack
+      package: pack,
+      treeType: undefined,
     }]);
   });
 
@@ -130,12 +132,14 @@ Qmodule('analyzer', function(hooks) {
       isDynamic: false,
       specifier: 'some-package',
       path: 'sample.js',
-      package: pack
+      package: pack,
+      treeType: undefined,
     },{
       isDynamic: false,
       specifier: 'other-package',
       path: 'sample.js',
-      package: pack
+      package: pack,
+      treeType: undefined,
     }]);
   });
 
