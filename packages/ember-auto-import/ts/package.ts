@@ -1,4 +1,4 @@
-import resolve from 'resolve';
+import resolvePackagePath from 'resolve-package-path';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 import { Memoize } from 'typescript-memoize';
@@ -159,9 +159,13 @@ export default class Package {
 
   isEmberAddonDependency(name: string): boolean {
     if (!this.isAddonCache.has(name)) {
-      let packageJSON = require(resolve.sync(`${name}/package.json`, {
-        basedir: this.root
-      }));
+      let packagePath = resolvePackagePath(name, this.root);
+
+      if (packagePath === null) {
+        throw new Error(`${ this.name } tried to import "${name}" but the package was not resolvable from ${this.root}`);
+      }
+
+      let packageJSON = require(packagePath);
       let keywords = packageJSON.keywords;
       this.isAddonCache.set(name, keywords && keywords.includes('ember-addon'));
     }
