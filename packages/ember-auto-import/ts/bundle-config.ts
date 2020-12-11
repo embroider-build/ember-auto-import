@@ -59,6 +59,9 @@ export default class BundleConfig {
     switch (treeType) {
       case 'app':
       case 'addon':
+      case 'addon-templates':
+      case 'styles':
+      case 'templates':
         return 'app';
 
       case 'addon-test-support':

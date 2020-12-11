@@ -28,7 +28,7 @@ makeDebug.formatters.m = (modules: Import[]) => {
 
 const debug = makeDebug('ember-auto-import:analyzer');
 
-export type TreeType = 'app' | 'addon' | 'addon-test-support' | 'test';
+export type TreeType = 'app' | 'addon' | 'addon-templates' | 'addon-test-support' | 'styles' | 'templates' | 'test';
 
 export interface Import {
   path: string;
