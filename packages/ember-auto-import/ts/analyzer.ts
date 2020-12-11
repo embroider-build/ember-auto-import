@@ -14,13 +14,26 @@ import traverse from "@babel/traverse";
 
 makeDebug.formatters.m = (modules: Import[]) => {
   return JSON.stringify(
-    modules.map(m => ({
-      specifier: m.specifier,
-      path: m.path,
-      isDynamic: m.isDynamic,
-      package: m.package.name,
-      treeType: m.treeType
-    })),
+    modules.map((m) => {
+      if ("specifier" in m) {
+        return {
+          specifier: m.specifier,
+          path: m.path,
+          isDynamic: m.isDynamic,
+          package: m.package.name,
+          treeType: m.treeType,
+        };
+      } else {
+        return {
+          cookedQuasis: m.cookedQuasis,
+          expressionNameHints: m.expressionNameHints,
+          path: m.path,
+          isDynamic: m.isDynamic,
+          package: m.package.name,
+          treeType: m.treeType,
+        };
+      }
+    }),
     null,
     2
   );
@@ -30,13 +43,31 @@ const debug = makeDebug('ember-auto-import:analyzer');
 
 export type TreeType = 'app' | 'addon' | 'addon-test-support' | 'test';
 
-export interface Import {
+interface LiteralImport {
   path: string;
   package: Package;
   specifier: string;
   isDynamic: boolean;
   treeType: TreeType | undefined;
 }
+
+interface TemplateImport {
+  path: string;
+  package: Package;
+  // these are the string parts of the template literal. The first one always
+  // comes before the first expression.
+  cookedQuasis: string[];
+  // for each of the expressions in between the cookedQuasis, this is an
+  // optional hint for what to name the expression that goes there. It's
+  // optional because in general there may not be an obvious name, but in
+  // practice there often is, and we can aid debuggability by using names that
+  // match the original code.
+  expressionNameHints: (string | undefined)[];
+  isDynamic: true;
+  treeType: TreeType | undefined;
+}
+
+export type Import = LiteralImport | TemplateImport;
 
 /*
   Analyzer discovers and maintains info on all the module imports that

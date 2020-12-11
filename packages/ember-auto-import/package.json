@@ -72,6 +72,7 @@
     "@types/lodash": "^4.14.110",
     "@types/node": "^10.7.1",
     "@types/pkg-up": "^2.0.0",
+    "@types/qunit": "^2.11.1",
     "@types/resolve": "^0.0.8",
     "@types/semver": "^7.3.4",
     "@types/webpack": "^4.4.20",
@@ -108,6 +109,7 @@
     "moment": "^2.22.1",
     "quick-temp": "^0.1.8",
     "qunit": "^2.6.1",
+    "qunit-assertions-extra": "^0.8.5",
     "tslint": "^5.10.0",
     "typescript": "^4.1.2"
   },
