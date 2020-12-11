@@ -1,5 +1,5 @@
 import makeDebug from 'debug';
-import Analyzer, { Import } from './analyzer';
+import Analyzer, { Import, LiteralImport, TemplateImport } from './analyzer';
 import Package from './package';
 import { shallowEqual } from './util';
 import { flatten, partition, values } from 'lodash';
@@ -71,49 +71,60 @@ export default class Splitter {
     );
     await Promise.all(
       imports.map(async imp => {
-        if (imp.specifier[0] === '.' || imp.specifier[0] === '/') {
-          // we're only trying to identify imports of external NPM
-          // packages, so relative imports are never relevant.
-          return;
-        }
-
-        let aliasedSpecifier = imp.package.aliasFor(imp.specifier);
-        let parts = aliasedSpecifier.split('/');
-        let packageName;
-        if (aliasedSpecifier[0] === '@') {
-          packageName = `${parts[0]}/${parts[1]}`;
+        if ('specifier' in imp) {
+          await this.handleLiteralImport(imp, specifiers);
         } else {
-          packageName = parts[0];
-        }
-
-        if (imp.package.excludesDependency(packageName)) {
-          // This package has been explicitly excluded.
-          return;
-        }
-
-        if (
-          !imp.package.hasDependency(packageName) ||
-          imp.package.isEmberAddonDependency(packageName)
-        ) {
-          return;
-        }
-        imp.package.assertAllowedDependency(packageName);
-
-        let entrypoint = await resolveEntrypoint(aliasedSpecifier, imp.package);
-        let seenAlready = specifiers.get(imp.specifier);
-        if (seenAlready) {
-          await this.assertSafeVersion(seenAlready, imp, entrypoint);
-          seenAlready.importedBy.push(imp);
-        } else {
-          specifiers.set(imp.specifier, {
-            specifier: imp.specifier,
-            entrypoint,
-            importedBy: [imp]
-          });
+          await this.handleTemplateImport(imp, specifiers);
         }
       })
     );
     return specifiers;
+  }
+
+  private async handleLiteralImport(imp: LiteralImport, specifiers: Map<string, ResolvedImport>) {
+    if (imp.specifier[0] === '.' || imp.specifier[0] === '/') {
+      // we're only trying to identify imports of external NPM
+      // packages, so relative imports are never relevant.
+      return;
+    }
+
+    let aliasedSpecifier = imp.package.aliasFor(imp.specifier);
+    let parts = aliasedSpecifier.split('/');
+    let packageName;
+    if (aliasedSpecifier[0] === '@') {
+      packageName = `${parts[0]}/${parts[1]}`;
+    } else {
+      packageName = parts[0];
+    }
+
+    if (imp.package.excludesDependency(packageName)) {
+      // This package has been explicitly excluded.
+      return;
+    }
+
+    if (
+      !imp.package.hasDependency(packageName) ||
+      imp.package.isEmberAddonDependency(packageName)
+    ) {
+      return;
+    }
+    imp.package.assertAllowedDependency(packageName);
+
+    let entrypoint = await resolveEntrypoint(aliasedSpecifier, imp.package);
+    let seenAlready = specifiers.get(imp.specifier);
+    if (seenAlready) {
+      await this.assertSafeVersion(seenAlready, imp, entrypoint);
+      seenAlready.importedBy.push(imp);
+    } else {
+      specifiers.set(imp.specifier, {
+        specifier: imp.specifier,
+        entrypoint,
+        importedBy: [imp]
+      });
+    }
+  }
+
+  private async handleTemplateImport(imp: TemplateImport, specifiers: Map<string, ResolvedImport>) {
   }
 
   private async versionOfPackage(entrypoint: string) {

@@ -52,7 +52,6 @@
             "name": "Build sample-addon",
             "program": "${workspaceFolder}/node_modules/.bin/ember",
             "cwd": "${workspaceFolder}/packages/sample-addon",
-            "preLaunchTask": "tsc: build - tsconfig.json",
             "args": [
                 "build"
             ]

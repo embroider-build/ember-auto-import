@@ -9,7 +9,7 @@ import { isEqual, flatten } from 'lodash';
 import type Package from './package';
 import symlinkOrCopy from 'symlink-or-copy';
 import { TransformOptions } from '@babel/core';
-import { File } from '@babel/types';
+import { Expression, File } from '@babel/types';
 import traverse from "@babel/traverse";
 
 makeDebug.formatters.m = (modules: Import[]) => {
@@ -43,7 +43,7 @@ const debug = makeDebug('ember-auto-import:analyzer');
 
 export type TreeType = 'app' | 'addon' | 'addon-test-support' | 'test';
 
-interface LiteralImport {
+export interface LiteralImport {
   path: string;
   package: Package;
   specifier: string;
@@ -51,7 +51,7 @@ interface LiteralImport {
   treeType: TreeType | undefined;
 }
 
-interface TemplateImport {
+export interface TemplateImport {
   path: string;
   package: Package;
   // these are the string parts of the template literal. The first one always
@@ -199,87 +199,45 @@ export default class Analyzer extends Plugin {
           // argument, so we can just assume this exists
           let argument = path.node.arguments[0];
 
-          // Only a limited subset dynamic import syntax is allowed by v2
-          // addon package format. It must be either a string literal or a
-          // template string.
-          if (argument.type !== 'StringLiteral' && argument.type !== 'TemplateLiteral') {
-            throw new Error(
-              'ember-auto-import only supports dynamic import() that are ' +
-              'included in the supported subset of dynamic import syntax ' +
-              'of v2 addon format. Only string or template literal arguments ' +
-              `are allowed by that specification but ${argument.type} is used.`
-            );
+          switch (argument.type) {
+            case "StringLiteral":
+              imports.push({
+                isDynamic: true,
+                specifier: argument.value,
+                path: relativePath,
+                package: this.pack,
+                treeType: this.treeType,
+              });
+              break;
+            case "TemplateLiteral":
+              if (argument.quasis.length === 1) {
+                imports.push({
+                  isDynamic: true,
+                  specifier: argument.quasis[0].value.cooked!,
+                  path: relativePath,
+                  package: this.pack,
+                  treeType: this.treeType,
+                });
+              } else {
+                imports.push({
+                  isDynamic: true,
+                  cookedQuasis: argument.quasis.map(
+                    (templateElement) => templateElement.value.cooked!
+                  ),
+                  expressionNameHints: [...argument.expressions].map(
+                    inferNameHint
+                  ),
+                  path: relativePath,
+                  package: this.pack,
+                  treeType: this.treeType,
+                });
+              }
+              break;
+            default:
+              throw new Error(
+                "import() is only allowed to contain string literals or template string literals"
+              );
           }
-
-          // Only template strings that begin with a static prefix which
-          // matches a given list of cases are allowed.
-          if (
-            argument.type === 'TemplateLiteral'
-          ) {
-            // A template literal always starts with a static TemplateElement.
-            // For a template literal like `${foo}` that TemplateElement is
-            // an empty string.
-            let prefix =  argument.quasis[0].value.raw;
-
-            if (
-              // The static prefix may be an absolute URL either with a given
-              // protocol (`http://` or `https://`) or protocol-relative (`//`).
-              /(\w+:)?\/\//.test(prefix)
-            ) {
-              // In this case, Embroider will leave the import() alone. The
-              // browser's implementation of import() is used. The contents of
-              // the URL is beyond the scope of the Embroider build.
-              return;
-            } else if (
-              // The static prefix is a NPM package name or a relative path.
-              (
-                // This matches a namespaced NPM package name.
-                prefix.startsWith('@') && (prefix.match(/\//g) || []).length >= 2
-              ) ||
-              (
-                // This matches an NPM package name without namespace and a
-                // relative path.
-                !prefix.startsWith('@') && prefix.includes('/')
-              )
-            ) {
-              throw new Error(
-                'ember-auto-import does not support dynamic import() with a ' +
-                'template literal that references an NPM package or a relative' +
-                "path yet even though it's allowed by v2 addon format."
-              );
-            } else if (argument.expressions.length < 1) {
-              // A consumer might use a template literal for a static string.
-              // While we could theoretically support that case right now, it's
-              // easier to give the user a quick hint how to refactor to a
-              // supported syntax.
-              throw new Error(
-                'ember-auto-import does not support dynamic import() with a ' +
-                'template literal that does not contain any expression. Use ' +
-                'a string instead.'
-              );
-            } else {
-              // Only template literals that match one of the cases tested
-              // before are supported by v2 addon format.
-              throw new Error(
-                'ember-auto-import only supports dynamic import() that are ' +
-                'included in the supported subset of dynamic import syntax ' +
-                'of v2 addon format. If the argument given is a template ' +
-                'literal that template literal must begin with a static ' +
-                'prefix which either identifies it as (1) an absoulte URL, ' +
-                '(2) an npm package or (3) a relative path to be supported ' +
-                'by v2 addon format. Ember-auto-import does not support (2) ' +
-                'and (3) yet.'
-              );
-            }
-          }
-
-          imports.push({
-            isDynamic: true,
-            specifier: argument.value,
-            path: relativePath,
-            package: this.pack,
-            treeType: this.treeType,
-          });
         }
       },
       ImportDeclaration: (path) => {
@@ -333,4 +291,10 @@ async function babel7Parser(babelOptions: TransformOptions): Promise<(source: st
   return function(source: string) {
     return parseSync(source, babelOptions) as File;
   };
+}
+
+function inferNameHint(exp: Expression) {
+  if (exp.type === 'Identifier') {
+    return exp.name;
+  }
 }
