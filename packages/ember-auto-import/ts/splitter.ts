@@ -9,21 +9,37 @@ import {
   ResolverFactory
 } from 'enhanced-resolve';
 import { findUpPackagePath } from 'resolve-package-path';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import BundleConfig from './bundle-config';
 import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
 
 const debug = makeDebug('ember-auto-import:splitter');
+
+// these are here because we do our own resolving of entrypoints, so we
+// configure enhanced-resolve directly. But in the case of template literal
+// imports, we only resolve down to the right directory and leave the file
+// discovery up to webpack, so webpack needs to also know the options we're
+// using.
+export const sharedResolverOptions = {
+  extensions: ['.js', '.ts', '.json'],
+  mainFields: ['browser', 'module', 'main'],
+};
+
 const resolver = ResolverFactory.createResolver({
   // upstream types seem to be broken here
   fileSystem: new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000) as unknown as AbstractInputFileSystem,
-  extensions: ['.js', '.ts', '.json'],
-  mainFields: ['browser', 'module', 'main']
+  ...sharedResolverOptions,
 });
 
 export interface ResolvedImport {
-  specifier: string;
+  // for literal imports, the actual specifier. For template imports, a string
+  // representation of the template literal like "your-thing/${e}".
+  specifierKey: string;
+
+  // for literal imports, the complete path to the entrypoint file. For template
+  // imports, the complete path up to the first quasi.
   entrypoint: string;
+
   importedBy: Import[];
 }
 
@@ -82,42 +98,28 @@ export default class Splitter {
   }
 
   private async handleLiteralImport(imp: LiteralImport, specifiers: Map<string, ResolvedImport>) {
-    if (imp.specifier[0] === '.' || imp.specifier[0] === '/') {
+    let target = imp.package.resolve(imp.specifier);
+    if (!target) {
+      return;
+    }
+
+    if (target.type === 'local') {
       // we're only trying to identify imports of external NPM
       // packages, so relative imports are never relevant.
+      if (imp.isDynamic) {
+        throw new Error(`ember-auto-import does not support dynamic relative imports. "${imp.specifier}" is relative. To make this work, you need to upgrade to Embroider.`);
+      }
       return;
     }
 
-    let aliasedSpecifier = imp.package.aliasFor(imp.specifier);
-    let parts = aliasedSpecifier.split('/');
-    let packageName;
-    if (aliasedSpecifier[0] === '@') {
-      packageName = `${parts[0]}/${parts[1]}`;
-    } else {
-      packageName = parts[0];
-    }
-
-    if (imp.package.excludesDependency(packageName)) {
-      // This package has been explicitly excluded.
-      return;
-    }
-
-    if (
-      !imp.package.hasDependency(packageName) ||
-      imp.package.isEmberAddonDependency(packageName)
-    ) {
-      return;
-    }
-    imp.package.assertAllowedDependency(packageName);
-
-    let entrypoint = await resolveEntrypoint(aliasedSpecifier, imp.package);
+    let entrypoint = await resolveEntrypoint(target.path, imp.package);
     let seenAlready = specifiers.get(imp.specifier);
     if (seenAlready) {
       await this.assertSafeVersion(seenAlready, imp, entrypoint);
       seenAlready.importedBy.push(imp);
     } else {
       specifiers.set(imp.specifier, {
-        specifier: imp.specifier,
+        specifierKey: imp.specifier,
         entrypoint,
         importedBy: [imp]
       });
@@ -125,6 +127,38 @@ export default class Splitter {
   }
 
   private async handleTemplateImport(imp: TemplateImport, specifiers: Map<string, ResolvedImport>) {
+    let leadingQuasi = imp.cookedQuasis[0];
+
+    if (!isPrecise(leadingQuasi)) {
+      throw new Error(`Dynamic imports must target unambiguous package names. ${leadingQuasi} is ambiguous`);
+    }
+
+    let target = imp.package.resolve(leadingQuasi);
+    if (!target) {
+      return;
+    }
+
+    if (target.type === 'local') {
+      throw new Error(`ember-auto-import does not support dynamic relative imports. "${leadingQuasi}" is relative. To make this work, you need to upgrade to Embroider.`);
+    }
+
+    // this just makes the key look pleasantly like the original template
+    // string, there's nothing magical about "e" here, it just means "an
+    // expression goes here and we don't care which one".c
+    let specifierKey = imp.cookedQuasis.join('${e}');
+
+    let entrypoint = join(target.packagePath.slice(0, -1*"package.json".length), target.local);
+    let seenAlready = specifiers.get(specifierKey);
+    if (seenAlready) {
+      await this.assertSafeVersion(seenAlready, imp, entrypoint);
+      seenAlready.importedBy.push(imp);
+    } else {
+      specifiers.set(specifierKey, {
+        specifierKey,
+        entrypoint,
+        importedBy: [imp]
+      });
+    }
   }
 
   private async versionOfPackage(entrypoint: string) {
@@ -161,7 +195,7 @@ export default class Splitter {
         `${nextImport.package.name} and ${
           have.importedBy[0].package.name
         } are using different versions of ${
-          have.specifier
+          have.specifierKey
         } (${nextVersion} located at ${entrypoint} vs ${haveVersion} located at ${
           have.entrypoint
         })`
@@ -205,7 +239,7 @@ export default class Splitter {
 
   private sortBundle(bundle: BundleDependencies) {
     for (const imports of values(bundle)) {
-      imports.sort((a, b) => a.specifier.localeCompare(b.specifier));
+      imports.sort((a, b) => a.specifierKey.localeCompare(b.specifierKey));
     }
   }
 
@@ -256,7 +290,7 @@ class LazyPrintDeps {
 
   private describeResolvedImport(imp: ResolvedImport) {
     return {
-      specifier: imp.specifier,
+      specifierKey: imp.specifierKey,
       entrypoint: imp.entrypoint,
       importedBy: imp.importedBy.map(this.describeImport.bind(this))
     };
@@ -283,4 +317,17 @@ class LazyPrintDeps {
     }
     return JSON.stringify(output, null, 2);
   }
+}
+
+function count(str: string, letter: string): number {
+  return [...str].reduce((a,b) => a + (b === letter ? 1 : 0), 0);
+}
+
+function isPrecise(leadingQuasi: string): boolean {
+  if (leadingQuasi.startsWith('.') || leadingQuasi.startsWith('/')) {
+    return true;
+  }
+  let slashes = count(leadingQuasi, '/');
+  let minSlashes = leadingQuasi.startsWith('@') ? 2 : 1;
+  return slashes >= minSlashes;
 }

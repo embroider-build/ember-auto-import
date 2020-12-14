@@ -21,6 +21,21 @@ export interface Options {
   skipBabel?: { package: string, semverRange?: string }[];
 }
 
+interface DepResolution {
+  type: 'package';
+  path: string;
+  packageName: string;
+  packagePath: string;
+  local: string;
+}
+
+interface LocalResolution {
+  type: 'local';
+  local: string;
+}
+
+type Resolution = DepResolution | LocalResolution;
+
 export default class Package {
   public name: string;
   public root: string;
@@ -32,7 +47,6 @@ export default class Package {
   private _babelOptions: any;
   private _emberCLIBabelExtensions?: string[];
   private autoImportOptions: Options | undefined;
-  private isAddonCache = new Map<string, boolean>();
   private isDeveloping: boolean;
   private pkgGeneration: number;
   private pkgCache: any;
@@ -140,7 +154,7 @@ export default class Package {
     return `${this.name}/${this.isAddon ? 'addon' : 'app'}`;
   }
 
-  hasDependency(name: string): boolean {
+  private hasDependency(name: string): boolean {
     let pkg = this.pkg;
     return (
       (pkg.dependencies && Boolean(pkg.dependencies[name])) ||
@@ -157,22 +171,46 @@ export default class Package {
     );
   }
 
-  isEmberAddonDependency(name: string): boolean {
-    if (!this.isAddonCache.has(name)) {
-      let packagePath = resolvePackagePath(name, this.root);
-
-      if (packagePath === null) {
-        throw new Error(`${ this.name } tried to import "${name}" but the package was not resolvable from ${this.root}`);
-      }
-
-      let packageJSON = require(packagePath);
-      let keywords = packageJSON.keywords;
-      this.isAddonCache.set(name, keywords && keywords.includes('ember-addon'));
+  resolve(importedPath: string): Resolution | undefined {
+    if (importedPath[0] === '.' || importedPath[0] === '/') {
+      return {
+        type: "local",
+        local: importedPath
+      };
     }
-    return this.isAddonCache.get(name) || false;
+
+    let path = this.aliasFor(importedPath);
+    let [first, ...rest] = path.split('/');
+    let packageName;
+    if (first[0] === '@') {
+      packageName = `${first}/${rest.shift()}`;
+    } else {
+      packageName = first;
+    }
+
+    if (this.excludesDependency(packageName)) {
+      // This package has been explicitly excluded.
+      return;
+    }
+
+    if (!this.hasDependency(packageName)) {
+      return;
+    }
+
+    let packagePath = resolvePackagePath(packageName, this.root);
+    if (packagePath === null) {
+      throw new Error(`${ this.name } tried to import "${name}" but the package was not resolvable from ${this.root}`);
+    }
+
+    if (isEmberAddonDependency(packagePath)) {
+      // ember addon are not auto imported
+      return;
+    }
+    this.assertAllowedDependency(packageName);
+    return { type: 'package', path, packageName, local: rest.join('/'), packagePath };
   }
 
-  assertAllowedDependency(name: string) {
+  private assertAllowedDependency(name: string) {
     if (this.isAddon && !this.hasNonDevDependency(name)) {
       throw new Error(
         `${
@@ -182,7 +220,7 @@ export default class Package {
     }
   }
 
-  excludesDependency(name: string): boolean {
+  private excludesDependency(name: string): boolean {
     return Boolean(
       this.autoImportOptions &&
       this.autoImportOptions.exclude &&
@@ -198,7 +236,7 @@ export default class Package {
     return this.autoImportOptions && this.autoImportOptions.skipBabel;
   }
 
-  aliasFor(name: string): string {
+  private aliasFor(name: string): string {
     return (
       (this.autoImportOptions &&
         this.autoImportOptions.alias &&
@@ -230,5 +268,18 @@ export default class Package {
     return Boolean(
       !this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval
     );
+  }
+}
+
+const isAddonCache = new Map<string, boolean>();
+function isEmberAddonDependency(pathToPackageJSON: string): boolean {
+  let cached = isAddonCache.get(pathToPackageJSON);
+  if (cached === undefined) {
+    let packageJSON = require(pathToPackageJSON);
+    let answer = packageJSON.keywords?.includes('ember-addon') || false;
+    isAddonCache.set(pathToPackageJSON, answer);
+    return answer;
+  } else {
+    return cached;
   }
 }

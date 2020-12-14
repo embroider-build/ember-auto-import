@@ -4,7 +4,7 @@ import { mergeWith, flatten } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
-import { BundleDependencies } from './splitter';
+import { BundleDependencies, sharedResolverOptions } from './splitter';
 import { BundlerHook, BuildResult } from './bundler';
 import BundleConfig from './bundle-config';
 import { ensureDirSync } from 'fs-extra';
@@ -112,6 +112,9 @@ export default class WebpackBundler implements BundlerHook {
           // wants to control those.
           'babel-loader-8': require.resolve('babel-loader'),
         }
+      },
+      resolve: {
+        ...sharedResolverOptions
       },
       module: {
         noParse: (file) => file === join(this.stagingDir, 'l.js'),
