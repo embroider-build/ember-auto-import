@@ -238,7 +238,6 @@ Qmodule('analyzer', function(hooks) {
       } else {
         assert.deepEqual(analyzer.imports, [
           {
-            isDynamic: true,
             cookedQuasis: example[1],
             expressionNameHints: example[2],
             path: "sample.js",

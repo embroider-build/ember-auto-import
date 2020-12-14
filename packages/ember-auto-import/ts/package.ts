@@ -180,25 +180,42 @@ export default class Package {
     );
   }
 
-  resolve(importedPath: string): DepResolution | LocalResolution | URLResolution;
-  resolve(importedPath: string, partial: true): DepResolution | LocalResolution | URLResolution | ImpreciseResolution;
-  resolve(importedPath: string, partial=false): Resolution | undefined {
-    // unambiguous URLs with a scheme are allowed but ignored by us
+  static categorize(importedPath: string, partial = false) {
     if (/^(\w+:)?\/\//.test(importedPath)) {
-      return { type: "url", url: importedPath };
+      return 'url';
     }
 
     if (importedPath[0] === '.' || importedPath[0] === '/') {
-      return {
-        type: "local",
-        local: importedPath
-      };
+      return 'local';
     }
 
     if (partial && !isPrecise(importedPath)) {
-      return {
-        type: "imprecise",
-      };
+      return 'imprecise';
+    }
+    return 'dep';
+  }
+
+  resolve(importedPath: string): DepResolution | LocalResolution | URLResolution;
+  resolve(importedPath: string, partial: true): DepResolution | LocalResolution | URLResolution | ImpreciseResolution;
+  resolve(importedPath: string, partial=false): Resolution | undefined {
+    switch (Package.categorize(importedPath, partial)) {
+      case 'url':
+        // unambiguous URLs with a scheme are allowed but ignored by us
+        if (/^(\w+:)?\/\//.test(importedPath)) {
+          return { type: "url", url: importedPath };
+        }
+      case 'local':
+        return {
+          type: "local",
+          local: importedPath
+        };
+      case 'imprecise':
+        if (partial) {
+          return {
+            type: "imprecise",
+          };
+        }
+        break;
     }
 
     let path = this.aliasFor(importedPath);
@@ -221,7 +238,7 @@ export default class Package {
 
     let packagePath = resolvePackagePath(packageName, this.root);
     if (packagePath === null) {
-      throw new Error(`${ this.name } tried to import "${name}" but the package was not resolvable from ${this.root}`);
+      throw new Error(`${ this.name } tried to import "${packageName}" but the package was not resolvable from ${this.root}`);
     }
 
     if (isEmberAddonDependency(packagePath)) {

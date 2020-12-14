@@ -28,7 +28,6 @@ makeDebug.formatters.m = (modules: Import[]) => {
           cookedQuasis: m.cookedQuasis,
           expressionNameHints: m.expressionNameHints,
           path: m.path,
-          isDynamic: m.isDynamic,
           package: m.package.name,
           treeType: m.treeType,
         };
@@ -63,7 +62,6 @@ export interface TemplateImport {
   // practice there often is, and we can aid debuggability by using names that
   // match the original code.
   expressionNameHints: (string | undefined)[];
-  isDynamic: true;
   treeType: TreeType | undefined;
 }
 
@@ -220,7 +218,6 @@ export default class Analyzer extends Plugin {
                 });
               } else {
                 imports.push({
-                  isDynamic: true,
                   cookedQuasis: argument.quasis.map(
                     (templateElement) => templateElement.value.cooked!
                   ),

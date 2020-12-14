@@ -96,12 +96,12 @@ Qmodule('splitter', function(hooks) {
       if (Array.isArray(example[1])) {
         assert.deepEqual(deps.get("app"), {
           staticImports: [],
-          dynamicImports: [{
-            specifierKey: example[1].join('${e}'),
-            entrypoint: join(project.baseDir, 'node_modules', example[1][0]),
+          dynamicImports: [],
+          dynamicTemplateImports: [{
+            cookedQuasis: [join(project.baseDir, 'node_modules', example[1][0]), ...example[1].slice(1)],
+            expressionNameHints: example[2] as string[],
             importedBy: [
               {
-                isDynamic: true,
                 cookedQuasis: example[1],
                 expressionNameHints: example[2] as string[],
                 path: "sample.js",
@@ -114,8 +114,9 @@ Qmodule('splitter', function(hooks) {
       } else {
         assert.deepEqual(deps.get("app"), {
           staticImports: [],
+          dynamicTemplateImports: [],
           dynamicImports: [{
-            specifierKey: example[1],
+            specifier: example[1],
             entrypoint: join(project.baseDir, 'node_modules', example[1], 'index.js'),
             importedBy: [
               {
@@ -153,6 +154,7 @@ Qmodule('splitter', function(hooks) {
       assert.deepEqual(deps.get("app"), {
         staticImports: [],
         dynamicImports: [],
+        dynamicTemplateImports: [],
       });
     });
   }

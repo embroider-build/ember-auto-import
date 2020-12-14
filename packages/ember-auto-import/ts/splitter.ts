@@ -2,7 +2,7 @@ import makeDebug from 'debug';
 import Analyzer, { Import, LiteralImport, TemplateImport } from './analyzer';
 import Package from './package';
 import { shallowEqual } from './util';
-import { flatten, partition, values } from 'lodash';
+import { flatten, partition } from 'lodash';
 import {
   NodeJsInputFileSystem,
   CachedInputFileSystem,
@@ -32,20 +32,21 @@ const resolver = ResolverFactory.createResolver({
 });
 
 export interface ResolvedImport {
-  // for literal imports, the actual specifier. For template imports, a string
-  // representation of the template literal like "your-thing/${e}".
-  specifierKey: string;
-
-  // for literal imports, the complete path to the entrypoint file. For template
-  // imports, the complete path up to the first quasi.
+  specifier: string;
   entrypoint: string;
+  importedBy: LiteralImport[];
+}
 
-  importedBy: Import[];
+export interface ResolvedTemplateImport {
+  cookedQuasis: string[];
+  expressionNameHints: string[];
+  importedBy: TemplateImport[];
 }
 
 export interface BundleDependencies {
   staticImports: ResolvedImport[];
   dynamicImports: ResolvedImport[];
+  dynamicTemplateImports: ResolvedTemplateImport[];
 }
 
 export interface SplitterOptions {
@@ -81,23 +82,24 @@ export default class Splitter {
   }
 
   private async computeTargets(analyzers: Map<Analyzer, Package>) {
-    let specifiers: Map<string, ResolvedImport> = new Map();
+    let targets: Map<string, ResolvedImport> = new Map();
+    let templateTargets: Map<string, ResolvedTemplateImport> = new Map();
     let imports = flatten(
       [...analyzers.keys()].map(analyzer => analyzer.imports)
     );
     await Promise.all(
       imports.map(async imp => {
         if ('specifier' in imp) {
-          await this.handleLiteralImport(imp, specifiers);
+          await this.handleLiteralImport(imp, targets);
         } else {
-          await this.handleTemplateImport(imp, specifiers);
+          await this.handleTemplateImport(imp, templateTargets);
         }
       })
     );
-    return specifiers;
+    return { targets, templateTargets };
   }
 
-  private async handleLiteralImport(imp: LiteralImport, specifiers: Map<string, ResolvedImport>) {
+  private async handleLiteralImport(imp: LiteralImport, targets: Map<string, ResolvedImport>) {
     let target = imp.package.resolve(imp.specifier);
     if (!target) {
       return;
@@ -120,21 +122,21 @@ export default class Splitter {
     }
 
     let entrypoint = await resolveEntrypoint(target.path, imp.package);
-    let seenAlready = specifiers.get(imp.specifier);
+    let seenAlready = targets.get(imp.specifier);
     if (seenAlready) {
-      await this.assertSafeVersion(seenAlready, imp, entrypoint);
+      await this.assertSafeVersion(seenAlready.entrypoint, seenAlready.importedBy[0], imp, entrypoint);
       seenAlready.importedBy.push(imp);
     } else {
-      specifiers.set(imp.specifier, {
-        specifierKey: imp.specifier,
+      targets.set(imp.specifier, {
+        specifier: imp.specifier,
         entrypoint,
         importedBy: [imp]
       });
     }
   }
 
-  private async handleTemplateImport(imp: TemplateImport, specifiers: Map<string, ResolvedImport>) {
-    let leadingQuasi = imp.cookedQuasis[0];
+  private async handleTemplateImport(imp: TemplateImport, targets: Map<string, ResolvedTemplateImport>) {
+    let [leadingQuasi, ...rest] = imp.cookedQuasis;
 
     let target = imp.package.resolve(leadingQuasi, true);
     if (!target) {
@@ -159,14 +161,14 @@ export default class Splitter {
     let specifierKey = imp.cookedQuasis.join('${e}');
 
     let entrypoint = join(target.packagePath.slice(0, -1*"package.json".length), target.local);
-    let seenAlready = specifiers.get(specifierKey);
+    let seenAlready = targets.get(specifierKey);
     if (seenAlready) {
-      await this.assertSafeVersion(seenAlready, imp, entrypoint);
+      await this.assertSafeVersion(seenAlready.cookedQuasis[0], seenAlready.importedBy[0], imp, entrypoint);
       seenAlready.importedBy.push(imp);
     } else {
-      specifiers.set(specifierKey, {
-        specifierKey,
-        entrypoint,
+      targets.set(specifierKey, {
+        cookedQuasis: [entrypoint, ...rest],
+        expressionNameHints: imp.expressionNameHints.map((hint, index) => hint || `arg${index}`),
         importedBy: [imp]
       });
     }
@@ -187,28 +189,29 @@ export default class Splitter {
   }
 
   private async assertSafeVersion(
-    have: ResolvedImport,
+    haveEntrypoint: string,
+    prevImport: Import,
     nextImport: Import,
     entrypoint: string
   ) {
-    if (have.entrypoint === entrypoint) {
+    if (haveEntrypoint === entrypoint) {
       // both import statements are resolving to the exact same entrypoint --
       // this is the normal and happy case
       return;
     }
 
     let [haveVersion, nextVersion] = await Promise.all([
-      this.versionOfPackage(have.entrypoint),
+      this.versionOfPackage(haveEntrypoint),
       this.versionOfPackage(entrypoint)
     ]);
     if (haveVersion !== nextVersion) {
       throw new Error(
         `${nextImport.package.name} and ${
-          have.importedBy[0].package.name
+          prevImport.package.name
         } are using different versions of ${
-          have.specifierKey
+          'specifier' in prevImport ? prevImport.specifier : prevImport.cookedQuasis[0]
         } (${nextVersion} located at ${entrypoint} vs ${haveVersion} located at ${
-          have.entrypoint
+          haveEntrypoint
         })`
       );
     }
@@ -219,10 +222,10 @@ export default class Splitter {
     let deps: Map<string, BundleDependencies> = new Map();
 
     this.options.bundles.names.forEach(bundleName => {
-      deps.set(bundleName, { staticImports: [], dynamicImports: [] });
+      deps.set(bundleName, { staticImports: [], dynamicImports: [], dynamicTemplateImports: [] });
     });
 
-    for (let target of targets.values()) {
+    for (let target of targets.targets.values()) {
       let [dynamicUses, staticUses] = partition(
         target.importedBy,
         imp => imp.isDynamic
@@ -237,6 +240,11 @@ export default class Splitter {
       }
     }
 
+    for (let target of targets.templateTargets.values()) {
+      let bundleName = this.chooseBundle(target.importedBy);
+      deps.get(bundleName)!.dynamicTemplateImports.push(target);
+    }
+
     this.sortDependencies(deps);
 
     return deps;
@@ -249,9 +257,9 @@ export default class Splitter {
   }
 
   private sortBundle(bundle: BundleDependencies) {
-    for (const imports of values(bundle)) {
-      imports.sort((a, b) => a.specifierKey.localeCompare(b.specifierKey));
-    }
+    bundle.staticImports.sort((a, b) => a.specifier.localeCompare(b.specifier));
+    bundle.dynamicImports.sort((a, b) => a.specifier.localeCompare(b.specifier));
+    bundle.dynamicTemplateImports.sort((a, b) => a.cookedQuasis[0].localeCompare(b.cookedQuasis[0]));
   }
 
   // given that a module is imported by the given list of paths, which
@@ -301,7 +309,7 @@ class LazyPrintDeps {
 
   private describeResolvedImport(imp: ResolvedImport) {
     return {
-      specifierKey: imp.specifierKey,
+      specifier: imp.specifier,
       entrypoint: imp.entrypoint,
       importedBy: imp.importedBy.map(this.describeImport.bind(this))
     };
@@ -310,8 +318,15 @@ class LazyPrintDeps {
   private describeImport(imp: Import) {
     return {
       package: imp.package.name,
-      path: imp.path,
-      isDynamic: imp.isDynamic
+      path: imp.path
+    };
+  }
+
+  private describeTemplateImport(imp: ResolvedTemplateImport) {
+    return {
+      cookedQuasis: imp.cookedQuasis,
+      expressionNameHints: imp.expressionNameHints,
+      importedBy: imp.importedBy.map(this.describeImport.bind(this))
     };
   }
 
@@ -319,11 +334,12 @@ class LazyPrintDeps {
     let output = {} as { [bundle: string]: any };
     for (let [
       bundle,
-      { staticImports, dynamicImports }
+      { staticImports, dynamicImports, dynamicTemplateImports }
     ] of this.deps.entries()) {
       output[bundle] = {
         static: staticImports.map(this.describeResolvedImport.bind(this)),
-        dynamic: dynamicImports.map(this.describeResolvedImport.bind(this))
+        dynamic: dynamicImports.map(this.describeResolvedImport.bind(this)),
+        dynamicTemplate: dynamicTemplateImports.map(this.describeTemplateImport.bind(this)),
       };
     }
     return JSON.stringify(output, null, 2);

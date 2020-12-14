@@ -12,3 +12,7 @@ const App = Application.extend({
 loadInitializers(App, config.modulePrefix);
 
 export default App;
+
+window.go = function(name) {
+  return import(`a-dependency/flavors/${name}`);
+}
