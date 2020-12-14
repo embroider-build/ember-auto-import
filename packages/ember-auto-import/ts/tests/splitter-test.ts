@@ -132,6 +132,31 @@ Qmodule('splitter', function(hooks) {
     });
   }
 
+  let safeURLExamples = [
+    "import('http://example.com/')",
+    "import('https://example.com/')",
+    "import('https://example.com/thing')",
+    "import('//example.com/thing')",
+    "import(`http://${which}`)",
+    "import(`https://${which}`)",
+    "import(`//${which}`)",
+    "import(`http://${which}/rest`)",
+    "import(`https://${which}/rest`)",
+    "import(`//${which}/rest`)",
+  ];
+  for (let src of safeURLExamples) {
+    test(`safe url example: ${src}`, async function(assert) {
+      outputFileSync(join(project.baseDir, "sample.js"), src);
+      await builder.build();
+      let deps = await splitter.deps();
+      assert.deepEqual([...deps.keys()], ["app", "tests"]);
+      assert.deepEqual(deps.get("app"), {
+        staticImports: [],
+        dynamicImports: [],
+      });
+    });
+  }
+
   test("disallowed patttern: partial package", async function (assert) {
     assert.expect(1);
     let src = "import(`lo${dash}`)";

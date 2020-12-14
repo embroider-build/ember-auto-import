@@ -34,7 +34,16 @@ interface LocalResolution {
   local: string;
 }
 
-type Resolution = DepResolution | LocalResolution;
+interface URLResolution {
+  type: 'url';
+  url: string;
+}
+
+interface ImpreciseResolution {
+  type: 'imprecise';
+}
+
+type Resolution = DepResolution | LocalResolution | URLResolution | ImpreciseResolution;
 
 export default class Package {
   public name: string;
@@ -171,11 +180,24 @@ export default class Package {
     );
   }
 
-  resolve(importedPath: string): Resolution | undefined {
+  resolve(importedPath: string): DepResolution | LocalResolution | URLResolution;
+  resolve(importedPath: string, partial: true): DepResolution | LocalResolution | URLResolution | ImpreciseResolution;
+  resolve(importedPath: string, partial=false): Resolution | undefined {
+    // unambiguous URLs with a scheme are allowed but ignored by us
+    if (/^(\w+:)?\/\//.test(importedPath)) {
+      return { type: "url", url: importedPath };
+    }
+
     if (importedPath[0] === '.' || importedPath[0] === '/') {
       return {
         type: "local",
         local: importedPath
+      };
+    }
+
+    if (partial && !isPrecise(importedPath)) {
+      return {
+        type: "imprecise",
       };
     }
 
@@ -282,4 +304,17 @@ function isEmberAddonDependency(pathToPackageJSON: string): boolean {
   } else {
     return cached;
   }
+}
+
+function count(str: string, letter: string): number {
+  return [...str].reduce((a,b) => a + (b === letter ? 1 : 0), 0);
+}
+
+function isPrecise(leadingQuasi: string): boolean {
+  if (leadingQuasi.startsWith('.') || leadingQuasi.startsWith('/')) {
+    return true;
+  }
+  let slashes = count(leadingQuasi, '/');
+  let minSlashes = leadingQuasi.startsWith('@') ? 2 : 1;
+  return slashes >= minSlashes;
 }

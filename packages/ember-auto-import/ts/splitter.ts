@@ -103,6 +103,13 @@ export default class Splitter {
       return;
     }
 
+    if (target.type === 'url') {
+      // people can statically import from URLs if they want to, that's clearly
+      // nothing to do with us (though in practice the rest of ember-cli will
+      // generally be sad about this)
+      return;
+    }
+
     if (target.type === 'local') {
       // we're only trying to identify imports of external NPM
       // packages, so relative imports are never relevant.
@@ -129,17 +136,21 @@ export default class Splitter {
   private async handleTemplateImport(imp: TemplateImport, specifiers: Map<string, ResolvedImport>) {
     let leadingQuasi = imp.cookedQuasis[0];
 
-    if (!isPrecise(leadingQuasi)) {
-      throw new Error(`Dynamic imports must target unambiguous package names. ${leadingQuasi} is ambiguous`);
-    }
-
-    let target = imp.package.resolve(leadingQuasi);
+    let target = imp.package.resolve(leadingQuasi, true);
     if (!target) {
-      return;
+      throw new Error(`ember-auto-import is unable to handle ${leadingQuasi}`);
     }
 
     if (target.type === 'local') {
       throw new Error(`ember-auto-import does not support dynamic relative imports. "${leadingQuasi}" is relative. To make this work, you need to upgrade to Embroider.`);
+    }
+
+    if (target.type === 'imprecise') {
+      throw new Error(`Dynamic imports must target unambiguous package names. ${leadingQuasi} is ambiguous`);
+    }
+
+    if (target.type === 'url') {
+      return;
     }
 
     // this just makes the key look pleasantly like the original template
@@ -317,17 +328,4 @@ class LazyPrintDeps {
     }
     return JSON.stringify(output, null, 2);
   }
-}
-
-function count(str: string, letter: string): number {
-  return [...str].reduce((a,b) => a + (b === letter ? 1 : 0), 0);
-}
-
-function isPrecise(leadingQuasi: string): boolean {
-  if (leadingQuasi.startsWith('.') || leadingQuasi.startsWith('/')) {
-    return true;
-  }
-  let slashes = count(leadingQuasi, '/');
-  let minSlashes = leadingQuasi.startsWith('@') ? 2 : 1;
-  return slashes >= minSlashes;
 }
