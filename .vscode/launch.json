@@ -75,7 +75,7 @@
           "cwd": "${workspaceFolder}/packages/ember-auto-import",
           "args": [
               "js/tests",
-              //"--filter", "passthrough file created"
+              "--filter", "safe url example: import('//example.com/thing')"
           ]
       }
     ]

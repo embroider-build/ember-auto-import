@@ -39,10 +39,10 @@ module.exports = (function(){
     return r('_eai_dyn_' + specifier);
   };
   {{#each staticImports as |module|}}
-    d('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.entrypoint}}'); });
+    d('{{js-string-escape module.specifierKey}}', [], function() { return require('{{js-string-escape module.entrypoint}}'); });
   {{/each}}
   {{#each dynamicImports as |module|}}
-    d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.entrypoint}}'); });
+    d('_eai_dyn_{{js-string-escape module.specifierKey}}', [], function() { return import('{{js-string-escape module.entrypoint}}'); });
   {{/each}}
 })();
 `);
