@@ -6,20 +6,33 @@ import FSTree from 'fs-tree-diff';
 import makeDebug from 'debug';
 import { join, extname } from 'path';
 import { isEqual, flatten } from 'lodash';
-import Package from './package';
+import type Package from './package';
 import symlinkOrCopy from 'symlink-or-copy';
 import { TransformOptions } from '@babel/core';
-import { File } from '@babel/types';
+import { Expression, File } from '@babel/types';
 import traverse from "@babel/traverse";
 
 makeDebug.formatters.m = (modules: Import[]) => {
   return JSON.stringify(
-    modules.map(m => ({
-      specifier: m.specifier,
-      path: m.path,
-      isDynamic: m.isDynamic,
-      package: m.package.name
-    })),
+    modules.map((m) => {
+      if ("specifier" in m) {
+        return {
+          specifier: m.specifier,
+          path: m.path,
+          isDynamic: m.isDynamic,
+          package: m.package.name,
+          treeType: m.treeType,
+        };
+      } else {
+        return {
+          cookedQuasis: m.cookedQuasis,
+          expressionNameHints: m.expressionNameHints,
+          path: m.path,
+          package: m.package.name,
+          treeType: m.treeType,
+        };
+      }
+    }),
     null,
     2
   );
@@ -27,12 +40,32 @@ makeDebug.formatters.m = (modules: Import[]) => {
 
 const debug = makeDebug('ember-auto-import:analyzer');
 
-export interface Import {
+export type TreeType = 'app' | 'addon' | 'addon-templates' | 'addon-test-support' | 'styles' | 'templates' | 'test';
+
+export interface LiteralImport {
   path: string;
   package: Package;
   specifier: string;
   isDynamic: boolean;
+  treeType: TreeType | undefined;
 }
+
+export interface TemplateImport {
+  path: string;
+  package: Package;
+  // these are the string parts of the template literal. The first one always
+  // comes before the first expression.
+  cookedQuasis: string[];
+  // for each of the expressions in between the cookedQuasis, this is an
+  // optional hint for what to name the expression that goes there. It's
+  // optional because in general there may not be an obvious name, but in
+  // practice there often is, and we can aid debuggability by using names that
+  // match the original code.
+  expressionNameHints: (string | undefined)[];
+  treeType: TreeType | undefined;
+}
+
+export type Import = LiteralImport | TemplateImport;
 
 /*
   Analyzer discovers and maintains info on all the module imports that
@@ -45,7 +78,7 @@ export default class Analyzer extends Plugin {
 
   private parse: undefined | ((source: string) => File);
 
-  constructor(inputTree: Node, private pack: Package) {
+  constructor(inputTree: Node, private pack: Package, private treeType?: TreeType) {
     super([inputTree], {
       annotation: 'ember-auto-import-analyzer',
       persistentOutput: true
@@ -163,17 +196,45 @@ export default class Analyzer extends Plugin {
           // it's a syntax error to have anything other than exactly one
           // argument, so we can just assume this exists
           let argument = path.node.arguments[0];
-          if (argument.type !== 'StringLiteral') {
-            throw new Error(
-              'ember-auto-import only supports dynamic import() with a string literal argument.'
-            );
+
+          switch (argument.type) {
+            case "StringLiteral":
+              imports.push({
+                isDynamic: true,
+                specifier: argument.value,
+                path: relativePath,
+                package: this.pack,
+                treeType: this.treeType,
+              });
+              break;
+            case "TemplateLiteral":
+              if (argument.quasis.length === 1) {
+                imports.push({
+                  isDynamic: true,
+                  specifier: argument.quasis[0].value.cooked!,
+                  path: relativePath,
+                  package: this.pack,
+                  treeType: this.treeType,
+                });
+              } else {
+                imports.push({
+                  cookedQuasis: argument.quasis.map(
+                    (templateElement) => templateElement.value.cooked!
+                  ),
+                  expressionNameHints: [...argument.expressions].map(
+                    inferNameHint
+                  ),
+                  path: relativePath,
+                  package: this.pack,
+                  treeType: this.treeType,
+                });
+              }
+              break;
+            default:
+              throw new Error(
+                "import() is only allowed to contain string literals or template string literals"
+              );
           }
-          imports.push({
-            isDynamic: true,
-            specifier: argument.value,
-            path: relativePath,
-            package: this.pack
-          });
         }
       },
       ImportDeclaration: (path) => {
@@ -181,7 +242,8 @@ export default class Analyzer extends Plugin {
           isDynamic: false,
           specifier: path.node.source.value,
           path: relativePath,
-          package: this.pack
+          package: this.pack,
+          treeType: this.treeType,
         });
       },
       ExportNamedDeclaration: (path) => {
@@ -190,7 +252,8 @@ export default class Analyzer extends Plugin {
             isDynamic: false,
             specifier: path.node.source.value,
             path: relativePath,
-            package: this.pack
+            package: this.pack,
+            treeType: this.treeType,
           });
         }
       }
@@ -225,4 +288,10 @@ async function babel7Parser(babelOptions: TransformOptions): Promise<(source: st
   return function(source: string) {
     return parseSync(source, babelOptions) as File;
   };
+}
+
+function inferNameHint(exp: Expression) {
+  if (exp.type === 'Identifier') {
+    return exp.name;
+  }
 }

@@ -41,10 +41,10 @@
             "name": "Build sample-merged",
             "program": "${workspaceFolder}/node_modules/.bin/ember",
             "cwd": "${workspaceFolder}/packages/sample-merged",
-            "preLaunchTask": "tsc: build - tsconfig.json",
             "args": [
                 "build"
-            ]
+            ],
+            "outputCapture": "std"
         },
         {
             "type": "node",
@@ -52,7 +52,6 @@
             "name": "Build sample-addon",
             "program": "${workspaceFolder}/node_modules/.bin/ember",
             "cwd": "${workspaceFolder}/packages/sample-addon",
-            "preLaunchTask": "tsc: build - tsconfig.json",
             "args": [
                 "build"
             ]
@@ -76,7 +75,7 @@
           "cwd": "${workspaceFolder}/packages/ember-auto-import",
           "args": [
               "js/tests",
-              //"--filter", "passthrough file created"
+              "--filter", "safe url example: import('//example.com/thing')"
           ]
       }
     ]
