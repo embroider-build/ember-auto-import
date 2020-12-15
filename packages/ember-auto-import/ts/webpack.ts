@@ -1,10 +1,10 @@
 import webpack, { Configuration } from 'webpack';
 import { join, dirname } from 'path';
-import { mergeWith, flatten } from 'lodash';
+import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
-import { BundleDependencies } from './splitter';
+import { BundleDependencies, ResolvedImport, sharedResolverOptions } from './splitter';
 import { BundlerHook, BuildResult } from './bundler';
 import BundleConfig from './bundle-config';
 import { ensureDirSync } from 'fs-extra';
@@ -12,6 +12,7 @@ import { babelFilter } from '@embroider/core';
 import { Options } from './package';
 
 registerHelper('js-string-escape', jsStringEscape);
+registerHelper('join', function(list, connector) { return list.join(connector); });
 
 const entryTemplate = compile(`
 if (typeof document !== 'undefined') {
@@ -33,10 +34,14 @@ if (typeof document !== 'undefined') {
 }
 
 module.exports = (function(){
-  var d = _eai_d;
-  var r = _eai_r;
-  window.emberAutoImportDynamic = function(specifier) {
-    return r('_eai_dyn_' + specifier);
+  let d = _eai_d;
+  let r = _eai_r;
+  window.emberAutoImportDynamic = function(specifier, ...args) {
+    if (args.length === 0) {
+      return r('_eai_dyn_' + specifier);
+    } else {
+      return r('_eai_dynt_' + specifier)(...args)
+    }
   };
   {{#each staticImports as |module|}}
     d('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.entrypoint}}'); });
@@ -44,8 +49,20 @@ module.exports = (function(){
   {{#each dynamicImports as |module|}}
     d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.entrypoint}}'); });
   {{/each}}
+  {{#each dynamicTemplateImports as |module|}}
+    d('_eai_dynt_{{js-string-escape module.key}}', [], function() {
+      return function({{module.args}}) {
+        return import({{{module.template}}});
+      }
+    });
+  {{/each}}
 })();
-`);
+`) as (args: {
+  staticImports: ResolvedImport[],
+  dynamicImports: ResolvedImport[],
+  dynamicTemplateImports: { key: string, args: string, template: string}[],
+  publicAssetURL: string | undefined;
+}) => string;
 
 // this goes in a file by itself so we can tell webpack not to parse it. That
 // allows us to grab the "require" and "define" from our enclosing scope without
@@ -112,6 +129,9 @@ export default class WebpackBundler implements BundlerHook {
           // wants to control those.
           'babel-loader-8': require.resolve('babel-loader'),
         }
+      },
+      resolve: {
+        ...sharedResolverOptions
       },
       module: {
         noParse: (file) => file === join(this.stagingDir, 'l.js'),
@@ -191,6 +211,11 @@ export default class WebpackBundler implements BundlerHook {
       entryTemplate({
         staticImports: deps.staticImports,
         dynamicImports: deps.dynamicImports,
+        dynamicTemplateImports: deps.dynamicTemplateImports.map(imp => ({
+          key: imp.importedBy[0].cookedQuasis.join("${e}"),
+          args: imp.expressionNameHints.join(','),
+          template: '`' + zip(imp.cookedQuasis, imp.expressionNameHints).map(([q, e]) => q + (e ? '${' + e + '}' : '') ).join('') + '`',
+        })),
         publicAssetURL: this.publicAssetURL
       })
     );

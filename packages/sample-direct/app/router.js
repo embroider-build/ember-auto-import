@@ -8,6 +8,8 @@ const Router = EmberRouter.extend({
 
 Router.map(function() {
   this.route('dynamic-import');
+  this.route('dynamic-flavor', { path: '/flavor/:which' });
+  this.route('native-import');
 });
 
 export default Router;

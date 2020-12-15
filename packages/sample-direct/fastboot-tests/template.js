@@ -38,5 +38,12 @@ module.exports = function(environment) {
       assert.equal(document.querySelector('[data-test="dynamic-import-result"]').textContent.trim(), 'ember-auto-import-a-dependency');
     })
 
+    test('lazy loaded template deps', async function(assert) {
+      let page = await fastboot.visit('/flavor/vanilla');
+      let html = await page.html();
+      let document = new JSDOM(html).window.document;
+      assert.equal(document.querySelector('[data-test="dynamic-import-result"]').textContent.trim(), 'vanilla');
+    })
+
   });
 };

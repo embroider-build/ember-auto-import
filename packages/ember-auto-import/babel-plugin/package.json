@@ -5,7 +5,6 @@
     "node": ">= 6"
   },
   "dependencies": {
-    "babel-plugin-syntax-dynamic-import": "*",
-    "babel-template": "*"
+    "babel-plugin-syntax-dynamic-import": "*"
   }
 }
