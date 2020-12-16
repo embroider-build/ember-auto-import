@@ -11,6 +11,9 @@ jobs:
       fail-fast: false
       matrix:
         eai_scenario: [2.18, stable, beta, canary]
+        suite:
+          - 'cd packages/sample-direct && yarn test'
+
 
     steps:
     - uses: actions/checkout@v1
@@ -23,9 +26,7 @@ jobs:
       env:
         EAI_SCENARIO: ${{ matrix.eai_scenario }}
     - name: test
-      run: |
-        yarn lint
-        yarn test
+      run: ${{ matrix.suite }}
       env:
         EAI_SCENARIO: ${{ matrix.eai_scenario }}
 
