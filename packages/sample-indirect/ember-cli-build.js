@@ -2,12 +2,12 @@
 
 const EmberApp = require('ember-cli/lib/broccoli/ember-app');
 
-module.exports = function(defaults) {
+module.exports = function (defaults) {
   let options = {
     autoImport: {
-      exclude: ['qunit']
-    }
-  }
+      exclude: ['qunit'],
+    },
+  };
 
   if (process.env.CUSTOMIZE_CSP) {
     options.autoImport.forbidEval = true;

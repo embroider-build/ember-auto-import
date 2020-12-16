@@ -10,12 +10,12 @@ import type Package from './package';
 import symlinkOrCopy from 'symlink-or-copy';
 import { TransformOptions } from '@babel/core';
 import { Expression, File } from '@babel/types';
-import traverse from "@babel/traverse";
+import traverse from '@babel/traverse';
 
 makeDebug.formatters.m = (modules: Import[]) => {
   return JSON.stringify(
-    modules.map((m) => {
-      if ("specifier" in m) {
+    modules.map(m => {
+      if ('specifier' in m) {
         return {
           specifier: m.specifier,
           path: m.path,
@@ -81,7 +81,7 @@ export default class Analyzer extends Plugin {
   constructor(inputTree: Node, private pack: Package, private treeType?: TreeType) {
     super([inputTree], {
       annotation: 'ember-auto-import-analyzer',
-      persistentOutput: true
+      persistentOutput: true,
     });
   }
 
@@ -97,7 +97,9 @@ export default class Analyzer extends Plugin {
         this.parse = await babel7Parser(this.pack.babelOptions);
         break;
       default:
-        throw new Error(`don't know how to setup a parser for Babel version ${this.pack.babelMajorVersion} (used by ${this.pack.name})`);
+        throw new Error(
+          `don't know how to setup a parser for Babel version ${this.pack.babelMajorVersion} (used by ${this.pack.name})`
+        );
     }
   }
 
@@ -129,14 +131,11 @@ export default class Analyzer extends Plugin {
           break;
         case 'change':
           removeSync(outputPath);
-          // deliberate fallthrough
+        // deliberate fallthrough
         case 'create': {
           let absoluteInputPath = join(this.inputPaths[0], relativePath);
           if (this.matchesExtension(relativePath)) {
-            this.updateImports(
-              relativePath,
-              readFileSync(absoluteInputPath, 'utf8')
-            );
+            this.updateImports(relativePath, readFileSync(absoluteInputPath, 'utf8'));
           }
           symlinkOrCopy.sync(absoluteInputPath, outputPath);
         }
@@ -175,7 +174,7 @@ export default class Analyzer extends Plugin {
     }
   }
 
-  private parseImports(relativePath :string, source: string): Import[] {
+  private parseImports(relativePath: string, source: string): Import[] {
     let ast: File | undefined;
     try {
       ast = this.parse!(source);
@@ -191,14 +190,14 @@ export default class Analyzer extends Plugin {
     }
 
     traverse(ast, {
-      CallExpression: (path) => {
+      CallExpression: path => {
         if (path.node.callee.type === 'Import') {
           // it's a syntax error to have anything other than exactly one
           // argument, so we can just assume this exists
           let argument = path.node.arguments[0];
 
           switch (argument.type) {
-            case "StringLiteral":
+            case 'StringLiteral':
               imports.push({
                 isDynamic: true,
                 specifier: argument.value,
@@ -207,7 +206,7 @@ export default class Analyzer extends Plugin {
                 treeType: this.treeType,
               });
               break;
-            case "TemplateLiteral":
+            case 'TemplateLiteral':
               if (argument.quasis.length === 1) {
                 imports.push({
                   isDynamic: true,
@@ -218,12 +217,8 @@ export default class Analyzer extends Plugin {
                 });
               } else {
                 imports.push({
-                  cookedQuasis: argument.quasis.map(
-                    (templateElement) => templateElement.value.cooked!
-                  ),
-                  expressionNameHints: [...argument.expressions].map(
-                    inferNameHint
-                  ),
+                  cookedQuasis: argument.quasis.map(templateElement => templateElement.value.cooked!),
+                  expressionNameHints: [...argument.expressions].map(inferNameHint),
                   path: relativePath,
                   package: this.pack,
                   treeType: this.treeType,
@@ -231,13 +226,11 @@ export default class Analyzer extends Plugin {
               }
               break;
             default:
-              throw new Error(
-                "import() is only allowed to contain string literals or template string literals"
-              );
+              throw new Error('import() is only allowed to contain string literals or template string literals');
           }
         }
       },
-      ImportDeclaration: (path) => {
+      ImportDeclaration: path => {
         imports.push({
           isDynamic: false,
           specifier: path.node.source.value,
@@ -246,7 +239,7 @@ export default class Analyzer extends Plugin {
           treeType: this.treeType,
         });
       },
-      ExportNamedDeclaration: (path) => {
+      ExportNamedDeclaration: path => {
         if (path.node.source) {
           imports.push({
             isDynamic: false,
@@ -256,7 +249,7 @@ export default class Analyzer extends Plugin {
             treeType: this.treeType,
           });
         }
-      }
+      },
     });
     return imports;
   }
@@ -269,15 +262,15 @@ async function babel6Parser(babelOptions: unknown): Promise<(source: string) => 
   // missing upstream types (or we are using private API, because babel 6 didn't
   // have a good way to construct a parser directly from the general babel
   // options)
-  const { Pipeline, File }  = (await core) as any;
+  const { Pipeline, File } = (await core) as any;
   const { parse } = await babylon;
 
   let p = new Pipeline();
   let f = new File(babelOptions, p);
   let options = f.parserOpts;
 
-  return function(source) {
-    return parse(source, options) as unknown as File;
+  return function (source) {
+    return (parse(source, options) as unknown) as File;
   };
 }
 
@@ -285,7 +278,7 @@ async function babel7Parser(babelOptions: TransformOptions): Promise<(source: st
   let core = import('@babel/core');
 
   const { parseSync } = await core;
-  return function(source: string) {
+  return function (source: string) {
     return parseSync(source, babelOptions) as File;
   };
 }

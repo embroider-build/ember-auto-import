@@ -1,1 +1,1 @@
-export const name = "browser";
+export const name = 'browser';

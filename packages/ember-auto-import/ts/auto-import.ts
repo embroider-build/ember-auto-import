@@ -61,11 +61,7 @@ export default class AutoImport implements AutoImportSharedAPI {
   analyze(tree: Node, addon: AddonInstance, treeType?: TreeType) {
     let pack = Package.lookupParentOf(addon);
     this.packages.add(pack);
-    let analyzer = new Analyzer(
-      debugTree(tree, `preprocessor:input-${this.analyzers.size}`),
-      pack,
-      treeType
-    );
+    let analyzer = new Analyzer(debugTree(tree, `preprocessor:input-${this.analyzers.size}`), pack, treeType);
     this.analyzers.set(analyzer, pack);
     return analyzer;
   }
@@ -144,7 +140,7 @@ export default class AutoImport implements AutoImportSharedAPI {
     if (!host.options.fingerprint) {
       host.options.fingerprint = {};
     }
-    if (!host.options.fingerprint.hasOwnProperty('exclude')) {
+    if (!('exclude' in host.options.fingerprint)) {
       host.options.fingerprint.exclude = [pattern];
     } else {
       host.options.fingerprint.exclude.push(pattern);
@@ -152,8 +148,6 @@ export default class AutoImport implements AutoImportSharedAPI {
   }
 
   updateFastBootManifest(manifest: { vendorFiles: string[] }) {
-    manifest.vendorFiles.push(
-      `${this.bundles.lazyChunkPath}/auto-import-fastboot.js`
-    );
+    manifest.vendorFiles.push(`${this.bundles.lazyChunkPath}/auto-import-fastboot.js`);
   }
 }

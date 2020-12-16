@@ -1,7 +1,0 @@
-/dist
-/tmp
-/test-apps/*/dist
-/test-apps/*/tmp
-/test-apps/*/node_modules
-/js
-

@@ -62,7 +62,6 @@
             "name": "Build sample-conflict",
             "program": "${workspaceFolder}/node_modules/.bin/ember",
             "cwd": "${workspaceFolder}/packages/sample-conflict",
-            "preLaunchTask": "tsc: build - tsconfig.json",
             "args": [
                 "build"
             ]

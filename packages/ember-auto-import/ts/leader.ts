@@ -1,10 +1,10 @@
-import { gt } from "semver";
-import type AutoImport from "./auto-import";
-import { Project, AddonInstance } from "./ember-cli-models";
-import { Node } from "broccoli-node-api";
+import { gt } from 'semver';
+import type AutoImport from './auto-import';
+import { Project, AddonInstance } from './ember-cli-models';
+import { Node } from 'broccoli-node-api';
 
-const protocolV1 = "__ember_auto_import_protocol_v1__";
-const protocolV2 = "__ember_auto_import_protocol_v2__";
+const protocolV1 = '__ember_auto_import_protocol_v1__';
+const protocolV2 = '__ember_auto_import_protocol_v2__';
 const g = (global as any) as {
   [protocolV1]: any;
   [protocolV2]: WeakMap<Project, LeaderChooser> | undefined;
@@ -86,11 +86,9 @@ class V1Placeholder {
   let v1 = g[protocolV1];
   if (v1) {
     if (!v1.isV1Placeholder) {
-      throw new Error(
-        `bug: an old version of ember-auto-import has already taken over. This is unexpected.`
-      );
+      throw new Error(`bug: an old version of ember-auto-import has already taken over. This is unexpected.`);
     }
   } else {
-    g[protocolV1] = new V1Placeholder;
+    g[protocolV1] = new V1Placeholder();
   }
 })();
