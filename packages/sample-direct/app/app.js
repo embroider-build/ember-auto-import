@@ -6,13 +6,13 @@ import config from './config/environment';
 const App = Application.extend({
   modulePrefix: config.modulePrefix,
   podModulePrefix: config.podModulePrefix,
-  Resolver
+  Resolver,
 });
 
 loadInitializers(App, config.modulePrefix);
 
 export default App;
 
-window.go = function(name) {
+window.go = function (name) {
   return import(`a-dependency/flavors/${name}`);
-}
+};

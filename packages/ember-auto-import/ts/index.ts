@@ -24,7 +24,6 @@ module.exports = {
     registry.add('js', {
       name: 'ember-auto-import-analyzer',
       toTree: (tree: Node, _inputPath: string, _outputPath: string, options: any) => {
-
         let treeType;
 
         if (typeof options === 'object' && options !== null && options.treeType) {
@@ -32,7 +31,7 @@ module.exports = {
         }
 
         return AutoImport.lookup(this).analyze(tree, this, treeType);
-      }
+      },
     });
   },
 
@@ -50,5 +49,5 @@ module.exports = {
       autoImport.updateFastBootManifest(manifest);
     }
     return manifest;
-  }
+  },
 };

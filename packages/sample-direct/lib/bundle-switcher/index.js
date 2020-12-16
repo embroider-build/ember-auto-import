@@ -12,7 +12,7 @@ module.exports = {
     if (which === 'body') {
       return `<script src="${vendorPath()}"></script>`;
     }
-  }
+  },
 };
 
 function vendorPath() {

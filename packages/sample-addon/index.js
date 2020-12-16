@@ -2,7 +2,7 @@
 
 module.exports = {
   name: 'sample-addon',
-  isDevelopingAddon(){
+  isDevelopingAddon() {
     return true;
-  }
+  },
 };

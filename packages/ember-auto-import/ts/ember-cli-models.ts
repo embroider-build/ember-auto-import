@@ -10,7 +10,7 @@ export interface Project {
 }
 
 export interface AppInstance {
-  env: "development" | "test" | "production";
+  env: 'development' | 'test' | 'production';
   project: Project;
   options: any;
   addonPostprocessTree: (which: string, tree: Node) => Node;
@@ -38,9 +38,7 @@ export interface ShallowAddonInstance extends BaseAddonInstance {
 
 export type AddonInstance = DeepAddonInstance | ShallowAddonInstance;
 
-export function isDeepAddonInstance(
-  addon: AddonInstance
-): addon is DeepAddonInstance {
+export function isDeepAddonInstance(addon: AddonInstance): addon is DeepAddonInstance {
   return addon.parent !== addon.project;
 }
 

@@ -18,7 +18,7 @@ export interface Options {
   webpack?: Configuration;
   publicAssetURL?: string;
   forbidEval?: boolean;
-  skipBabel?: { package: string, semverRange?: string }[];
+  skipBabel?: { package: string; semverRange?: string }[];
 }
 
 interface DepResolution {
@@ -92,7 +92,9 @@ export default class Package {
   }
 
   _ensureBabelDetails() {
-    if (this._hasBabelDetails) { return; }
+    if (this._hasBabelDetails) {
+      return;
+    }
     let { babelOptions, extensions, version } = this.buildBabelOptions(this._parent, this._options);
 
     this._emberCLIBabelExtensions = extensions;
@@ -113,9 +115,9 @@ export default class Package {
 
   @Memoize()
   get isFastBootEnabled() {
-    return process.env.FASTBOOT_DISABLED !== 'true'
-    && !!this._parent.addons.find(
-      addon => addon.name === 'ember-cli-fastboot'
+    return (
+      process.env.FASTBOOT_DISABLED !== 'true' &&
+      !!this._parent.addons.find(addon => addon.name === 'ember-cli-fastboot')
     );
   }
 
@@ -123,9 +125,7 @@ export default class Package {
     // Generate the same babel options that the package (meaning app or addon)
     // is using. We will use these so we can configure our parser to
     // match.
-    let babelAddon = instance.addons.find(
-      addon => addon.name === 'ember-cli-babel'
-    ) as any;
+    let babelAddon = instance.addons.find(addon => addon.name === 'ember-cli-babel') as any;
     let babelOptions = babelAddon.buildBabelOptions(options);
     let extensions = babelOptions.filterExtensions || ['js'];
 
@@ -134,24 +134,17 @@ export default class Package {
     delete babelOptions.throwUnlessParallelizable;
     delete babelOptions.filterExtensions;
     if (babelOptions.plugins) {
-      babelOptions.plugins = babelOptions.plugins.filter(
-        (p: any) => !p._parallelBabel
-      );
+      babelOptions.plugins = babelOptions.plugins.filter((p: any) => !p._parallelBabel);
     }
     let version = parseInt(babelAddon.pkg.version.split('.')[0], 10);
     return { babelOptions, extensions, version };
   }
 
   private get pkg() {
-    if (
-      !this.pkgCache ||
-      (this.isDeveloping && pkgGeneration !== this.pkgGeneration)
-    ) {
+    if (!this.pkgCache || (this.isDeveloping && pkgGeneration !== this.pkgGeneration)) {
       // avoiding `require` here because we don't want to go through the
       // require cache.
-      this.pkgCache = JSON.parse(
-        readFileSync(join(this.root, 'package.json'), 'utf-8')
-      );
+      this.pkgCache = JSON.parse(readFileSync(join(this.root, 'package.json'), 'utf-8'));
       this.pkgGeneration = pkgGeneration;
     }
     return this.pkgCache;
@@ -197,22 +190,22 @@ export default class Package {
 
   resolve(importedPath: string): DepResolution | LocalResolution | URLResolution;
   resolve(importedPath: string, partial: true): DepResolution | LocalResolution | URLResolution | ImpreciseResolution;
-  resolve(importedPath: string, partial=false): Resolution | undefined {
+  resolve(importedPath: string, partial = false): Resolution | undefined {
     switch (Package.categorize(importedPath, partial)) {
       case 'url':
         // unambiguous URLs with a scheme are allowed but ignored by us
         if (/^(\w+:)?\/\//.test(importedPath)) {
-          return { type: "url", url: importedPath };
+          return { type: 'url', url: importedPath };
         }
       case 'local':
         return {
-          type: "local",
-          local: importedPath
+          type: 'local',
+          local: importedPath,
         };
       case 'imprecise':
         if (partial) {
           return {
-            type: "imprecise",
+            type: 'imprecise',
           };
         }
         break;
@@ -238,7 +231,9 @@ export default class Package {
 
     let packagePath = resolvePackagePath(packageName, this.root);
     if (packagePath === null) {
-      throw new Error(`${ this.name } tried to import "${packageName}" but the package was not resolvable from ${this.root}`);
+      throw new Error(
+        `${this.name} tried to import "${packageName}" but the package was not resolvable from ${this.root}`
+      );
     }
 
     if (isEmberAddonDependency(packagePath)) {
@@ -246,24 +241,26 @@ export default class Package {
       return;
     }
     this.assertAllowedDependency(packageName);
-    return { type: 'package', path, packageName, local: rest.join('/'), packagePath };
+    return {
+      type: 'package',
+      path,
+      packageName,
+      local: rest.join('/'),
+      packagePath,
+    };
   }
 
   private assertAllowedDependency(name: string) {
     if (this.isAddon && !this.hasNonDevDependency(name)) {
       throw new Error(
-        `${
-          this.name
-        } tried to import "${name}" from addon code, but "${name}" is a devDependency. You may need to move it into dependencies.`
+        `${this.name} tried to import "${name}" from addon code, but "${name}" is a devDependency. You may need to move it into dependencies.`
       );
     }
   }
 
   private excludesDependency(name: string): boolean {
     return Boolean(
-      this.autoImportOptions &&
-      this.autoImportOptions.exclude &&
-      this.autoImportOptions.exclude.includes(name)
+      this.autoImportOptions && this.autoImportOptions.exclude && this.autoImportOptions.exclude.includes(name)
     );
   }
 
@@ -271,17 +268,12 @@ export default class Package {
     return this.autoImportOptions && this.autoImportOptions.webpack;
   }
 
-  get skipBabel(): Options["skipBabel"] {
+  get skipBabel(): Options['skipBabel'] {
     return this.autoImportOptions && this.autoImportOptions.skipBabel;
   }
 
   private aliasFor(name: string): string {
-    return (
-      (this.autoImportOptions &&
-        this.autoImportOptions.alias &&
-        this.autoImportOptions.alias[name]) ||
-      name
-    );
+    return (this.autoImportOptions && this.autoImportOptions.alias && this.autoImportOptions.alias[name]) || name;
   }
 
   get fileExtensions(): string[] {
@@ -304,9 +296,7 @@ export default class Package {
   get forbidsEval(): boolean {
     // only apps (not addons) are allowed to set this, because it's motivated by
     // the apps own Content Security Policy.
-    return Boolean(
-      !this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval
-    );
+    return Boolean(!this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval);
   }
 }
 
@@ -325,7 +315,7 @@ function isEmberAddonDependency(pathToPackageJSON: string): boolean {
 }
 
 function count(str: string, letter: string): number {
-  return [...str].reduce((a,b) => a + (b === letter ? 1 : 0), 0);
+  return [...str].reduce((a, b) => a + (b === letter ? 1 : 0), 0);
 }
 
 function isPrecise(leadingQuasi: string): boolean {

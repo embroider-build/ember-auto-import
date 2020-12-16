@@ -3,21 +3,20 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 2017,
-    sourceType: 'module'
+    sourceType: 'module',
   },
-  plugins: [
-    'ember',
-    '@typescript-eslint',
-  ],
+  plugins: ['ember', '@typescript-eslint', 'prettier'],
   extends: [
     'eslint:recommended',
     'plugin:ember/recommended',
     'plugin:@typescript-eslint/recommended',
+    'plugin:prettier/recommended',
   ],
   env: {
-    browser: true
+    browser: true,
   },
   rules: {
+    'prettier/prettier': 'error',
     'no-var': 'error',
     'prefer-const': 'off',
     'no-fallthrough': 'off', // this doesn't understand typescript's `never`
@@ -42,26 +41,21 @@ module.exports = {
         'babel-plugin/**.js',
         '.eslintrc.js',
       ],
-      excludedFiles: [
-        'addon/**',
-        'addon-test-support/**',
-        'app/**',
-        'tests/dummy/app/**'
-      ],
+      excludedFiles: ['addon/**', 'addon-test-support/**', 'app/**', 'tests/dummy/app/**'],
       parserOptions: {
         sourceType: 'script',
-        ecmaVersion: 2018
+        ecmaVersion: 2018,
       },
       env: {
         browser: false,
-        node: true
+        node: true,
       },
       plugins: ['node'],
       rules: Object.assign({}, require('eslint-plugin-node').configs.recommended.rules, {
         // add your custom rules and overrides for node files here
         'no-var': 'error',
         '@typescript-eslint/no-var-requires': 'off',
-      })
-    }
-  ]
+      }),
+    },
+  ],
 };

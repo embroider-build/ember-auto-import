@@ -12,7 +12,9 @@ import { babelFilter } from '@embroider/core';
 import { Options } from './package';
 
 registerHelper('js-string-escape', jsStringEscape);
-registerHelper('join', function(list, connector) { return list.join(connector); });
+registerHelper('join', function (list, connector) {
+  return list.join(connector);
+});
 
 const entryTemplate = compile(`
 if (typeof document !== 'undefined') {
@@ -58,9 +60,9 @@ module.exports = (function(){
   {{/each}}
 })();
 `) as (args: {
-  staticImports: ResolvedImport[],
-  dynamicImports: ResolvedImport[],
-  dynamicTemplateImports: { key: string, args: string, template: string}[],
+  staticImports: ResolvedImport[];
+  dynamicImports: ResolvedImport[];
+  dynamicTemplateImports: { key: string; args: string; template: string }[];
   publicAssetURL: string | undefined;
 }) => string;
 
@@ -82,12 +84,12 @@ export default class WebpackBundler implements BundlerHook {
   private outputDir: string;
 
   constructor(
-    bundles : BundleConfig,
+    bundles: BundleConfig,
     environment: 'production' | 'development' | 'test',
     extraWebpackConfig: webpack.Configuration | undefined,
     private consoleWrite: (message: string) => void,
     private publicAssetURL: string | undefined,
-    private skipBabel: Required<Options>["skipBabel"],
+    private skipBabel: Required<Options>['skipBabel'],
     private babelTargets: unknown,
     tempArea: string
   ) {
@@ -108,19 +110,19 @@ export default class WebpackBundler implements BundlerHook {
       mode: environment === 'production' ? 'production' : 'development',
       entry,
       performance: {
-        hints: false
+        hints: false,
       },
       output: {
         path: this.outputDir,
         filename: `chunk.[id].[chunkhash].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,
         libraryTarget: 'var',
-        library: '__ember_auto_import__'
+        library: '__ember_auto_import__',
       },
       optimization: {
         splitChunks: {
-          chunks: 'all'
-        }
+          chunks: 'all',
+        },
       },
       resolveLoader: {
         alias: {
@@ -128,14 +130,14 @@ export default class WebpackBundler implements BundlerHook {
           // not overriding the default loader resolution rules in case the app also
           // wants to control those.
           'babel-loader-8': require.resolve('babel-loader'),
-        }
+        },
       },
       resolve: {
-        ...sharedResolverOptions
+        ...sharedResolverOptions,
       },
       module: {
-        noParse: (file) => file === join(this.stagingDir, 'l.js'),
-        rules: [this.babelRule()]
+        noParse: file => file === join(this.stagingDir, 'l.js'),
+        rules: [this.babelRule()],
       },
       node: false,
     };
@@ -166,12 +168,12 @@ export default class WebpackBundler implements BundlerHook {
               require.resolve('@babel/preset-env'),
               {
                 modules: false,
-                targets: this.babelTargets
-              }
-            ]
-          ]
-        }
-      }
+                targets: this.babelTargets,
+              },
+            ],
+          ],
+        },
+      },
     };
   }
 
@@ -189,7 +191,7 @@ export default class WebpackBundler implements BundlerHook {
     let output = {
       entrypoints: new Map(),
       lazyAssets: [] as string[],
-      dir: this.outputDir
+      dir: this.outputDir,
     };
     let nonLazyAssets: Set<string> = new Set();
     for (let id of Object.keys(stats.entrypoints)) {
@@ -212,20 +214,22 @@ export default class WebpackBundler implements BundlerHook {
         staticImports: deps.staticImports,
         dynamicImports: deps.dynamicImports,
         dynamicTemplateImports: deps.dynamicTemplateImports.map(imp => ({
-          key: imp.importedBy[0].cookedQuasis.join("${e}"),
+          key: imp.importedBy[0].cookedQuasis.join('${e}'),
           args: imp.expressionNameHints.join(','),
-          template: '`' + zip(imp.cookedQuasis, imp.expressionNameHints).map(([q, e]) => q + (e ? '${' + e + '}' : '') ).join('') + '`',
+          template:
+            '`' +
+            zip(imp.cookedQuasis, imp.expressionNameHints)
+              .map(([q, e]) => q + (e ? '${' + e + '}' : ''))
+              .join('') +
+            '`',
         })),
-        publicAssetURL: this.publicAssetURL
+        publicAssetURL: this.publicAssetURL,
       })
     );
   }
 
   private writeLoaderFile() {
-    writeFileSync(
-      join(this.stagingDir, `l.js`),
-      loader
-    );
+    writeFileSync(join(this.stagingDir, `l.js`), loader);
   }
 
   private async runWebpack(): Promise<Required<webpack.Stats>> {
@@ -275,7 +279,7 @@ function combine(objValue: any, srcValue: any, key: string) {
 // This function combines any of these with a logical OR.
 function eitherPattern(...patterns: any[]): (resource: string) => boolean {
   let flatPatterns = flatten(patterns);
-  return function(resource) {
+  return function (resource) {
     for (let pattern of flatPatterns) {
       if (pattern instanceof RegExp) {
         if (pattern.test(resource)) {
