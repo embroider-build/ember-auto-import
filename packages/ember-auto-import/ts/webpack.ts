@@ -251,7 +251,7 @@ export default class WebpackBundler implements BundlerHook {
   }
 }
 
-export function mergeConfig(dest: object, ...srcs: object[]) {
+export function mergeConfig(dest: Configuration, ...srcs: Configuration[]) {
   return mergeWith(dest, ...srcs, combine);
 }
 

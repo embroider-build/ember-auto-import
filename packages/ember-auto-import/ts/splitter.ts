@@ -181,6 +181,7 @@ export default class Splitter {
     let pkgPath = findUpPackagePath(dirname(entrypoint));
     let version = null;
     if (pkgPath) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       let pkg = require(pkgPath);
       version = pkg.version;
     }

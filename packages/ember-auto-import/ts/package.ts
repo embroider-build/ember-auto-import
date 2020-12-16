@@ -314,6 +314,7 @@ const isAddonCache = new Map<string, boolean>();
 function isEmberAddonDependency(pathToPackageJSON: string): boolean {
   let cached = isAddonCache.get(pathToPackageJSON);
   if (cached === undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     let packageJSON = require(pathToPackageJSON);
     let answer = packageJSON.keywords?.includes('ember-addon') || false;
     isAddonCache.set(pathToPackageJSON, answer);
