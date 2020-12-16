@@ -144,7 +144,7 @@ export default class AutoImport implements AutoImportSharedAPI {
     if (!host.options.fingerprint) {
       host.options.fingerprint = {};
     }
-    if (!host.options.fingerprint.hasOwnProperty('exclude')) {
+    if (!('exclude' in host.options.fingerprint)) {
       host.options.fingerprint.exclude = [pattern];
     } else {
       host.options.fingerprint.exclude.push(pattern);

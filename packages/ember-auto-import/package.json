@@ -20,7 +20,7 @@
     "compile": "tsc",
     "clean": "git clean -x -f",
     "build": "ember build",
-    "lint": "eslint . && tslint --project .",
+    "lint": "eslint .",
     "start": "ember serve",
     "test": "ember test --test-port=0",
     "test:node": "qunit js/tests",
@@ -75,6 +75,8 @@
     "@types/resolve": "^0.0.8",
     "@types/semver": "^7.3.4",
     "@types/webpack": "^4.4.20",
+    "@typescript-eslint/eslint-plugin": "^4.10.0",
+    "@typescript-eslint/parser": "^4.10.0",
     "babel-eslint": "^8.2.5",
     "broccoli": "^3.2.0",
     "broccoli-asset-rev": "^2.4.5",
@@ -99,6 +101,7 @@
     "ember-source": "~3.1.0",
     "ember-source-channel-url": "^1.0.1",
     "ember-try": "^1.2.1",
+    "eslint": "^7.15.0",
     "eslint-plugin-ember": "^5.0.0",
     "eslint-plugin-node": "^6.0.1",
     "fastboot": "^1.2.0",
@@ -110,7 +113,6 @@
     "quick-temp": "^0.1.8",
     "qunit": "^2.6.1",
     "qunit-assertions-extra": "^0.8.5",
-    "tslint": "^5.10.0",
     "typescript": "^4.1.2"
   },
   "engines": {

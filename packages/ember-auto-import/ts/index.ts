@@ -36,9 +36,9 @@ module.exports = {
     });
   },
 
-  included() {
+  included(...args: unknown[]) {
     let autoImport = AutoImport.lookup(this);
-    this._super.included.apply(this, arguments);
+    this._super.included.apply(this, ...args);
     if (autoImport.isPrimary(this)) {
       autoImport.included(this);
     }

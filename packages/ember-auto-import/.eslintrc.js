@@ -1,22 +1,31 @@
 module.exports = {
   root: true,
-  parser: 'babel-eslint',
+  parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 2017,
     sourceType: 'module'
   },
   plugins: [
-    'ember'
+    'ember',
+    '@typescript-eslint',
   ],
   extends: [
     'eslint:recommended',
-    'plugin:ember/recommended'
+    'plugin:ember/recommended',
+    'plugin:@typescript-eslint/recommended',
   ],
   env: {
     browser: true
   },
   rules: {
-    'no-var': 'error'
+    'no-var': 'error',
+    'prefer-const': 'off',
+    'no-fallthrough': 'off', // this doesn't understand typescript's `never`
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-empty-function': 'off',
+    '@typescript-eslint/ban-ts-comment': 'off',
   },
   overrides: [
     // node files
@@ -29,7 +38,8 @@ module.exports = {
         'tests/dummy/config/**/*.js',
         'lib/**/*.js',
         'fastboot-tests/**/*.js',
-        'babel-plugin/**.js'
+        'babel-plugin/**.js',
+        '.eslintrc.js',
       ],
       excludedFiles: [
         'addon/**',
@@ -48,7 +58,8 @@ module.exports = {
       plugins: ['node'],
       rules: Object.assign({}, require('eslint-plugin-node').configs.recommended.rules, {
         // add your custom rules and overrides for node files here
-        'no-var': 'error'
+        'no-var': 'error',
+        '@typescript-eslint/no-var-requires': 'off',
       })
     }
   ]
