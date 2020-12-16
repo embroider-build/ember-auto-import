@@ -9,25 +9,25 @@ import aModuleDependency from 'a-module-dependency';
 export default Component.extend({
   layout,
 
-  formattedDate: computed(function() {
+  formattedDate: computed(function () {
     return moment('2018-05-31T18:03:01.791Z').format('YYYY-MM-DD');
   }),
 
-  aliasedResult: computed(function() {
+  aliasedResult: computed(function () {
     return innerLib2();
   }),
 
-  fromScoped: computed(function() {
+  fromScoped: computed(function () {
     return fromScoped();
   }),
 
-  moduleDependency: computed(function() {
+  moduleDependency: computed(function () {
     return aModuleDependency();
   }),
 
   // Our test suite imports lodash-es, but our app does not, so it
   // should not be present when we view the app outside the tests.
-  lodashPresent: computed(function() {
+  lodashPresent: computed(function () {
     try {
       window.require('lodash-es');
       return true;

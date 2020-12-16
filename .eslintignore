@@ -1,0 +1,4 @@
+packages/*/dist
+packages/*/tmp
+packages/*/js
+

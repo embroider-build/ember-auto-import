@@ -7,5 +7,5 @@ export default Route.extend({
     } else {
       return { name: 'server' };
     }
-  }
+  },
 });

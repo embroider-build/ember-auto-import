@@ -3,11 +3,7 @@ import Analyzer, { Import, LiteralImport, TemplateImport } from './analyzer';
 import Package from './package';
 import { shallowEqual } from './util';
 import { flatten, partition } from 'lodash';
-import {
-  NodeJsInputFileSystem,
-  CachedInputFileSystem,
-  ResolverFactory
-} from 'enhanced-resolve';
+import { NodeJsInputFileSystem, CachedInputFileSystem, ResolverFactory } from 'enhanced-resolve';
 import { findUpPackagePath } from 'resolve-package-path';
 import { dirname, join } from 'path';
 import BundleConfig from './bundle-config';
@@ -27,7 +23,7 @@ export const sharedResolverOptions = {
 
 const resolver = ResolverFactory.createResolver({
   // upstream types seem to be broken here
-  fileSystem: new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000) as unknown as AbstractInputFileSystem,
+  fileSystem: (new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000) as unknown) as AbstractInputFileSystem,
   ...sharedResolverOptions,
 });
 
@@ -71,9 +67,7 @@ export default class Splitter {
   }
 
   private importsChanged(): boolean {
-    let imports = [...this.options.analyzers.keys()].map(
-      analyzer => analyzer.imports
-    );
+    let imports = [...this.options.analyzers.keys()].map(analyzer => analyzer.imports);
     if (!this.lastImports || !shallowEqual(this.lastImports, imports)) {
       this.lastImports = imports;
       return true;
@@ -84,9 +78,7 @@ export default class Splitter {
   private async computeTargets(analyzers: Map<Analyzer, Package>) {
     let targets: Map<string, ResolvedImport> = new Map();
     let templateTargets: Map<string, ResolvedTemplateImport> = new Map();
-    let imports = flatten(
-      [...analyzers.keys()].map(analyzer => analyzer.imports)
-    );
+    let imports = flatten([...analyzers.keys()].map(analyzer => analyzer.imports));
     await Promise.all(
       imports.map(async imp => {
         if ('specifier' in imp) {
@@ -116,7 +108,9 @@ export default class Splitter {
       // we're only trying to identify imports of external NPM
       // packages, so relative imports are never relevant.
       if (imp.isDynamic) {
-        throw new Error(`ember-auto-import does not support dynamic relative imports. "${imp.specifier}" is relative. To make this work, you need to upgrade to Embroider.`);
+        throw new Error(
+          `ember-auto-import does not support dynamic relative imports. "${imp.specifier}" is relative. To make this work, you need to upgrade to Embroider.`
+        );
       }
       return;
     }
@@ -130,7 +124,7 @@ export default class Splitter {
       targets.set(imp.specifier, {
         specifier: imp.specifier,
         entrypoint,
-        importedBy: [imp]
+        importedBy: [imp],
       });
     }
   }
@@ -144,7 +138,9 @@ export default class Splitter {
     }
 
     if (target.type === 'local') {
-      throw new Error(`ember-auto-import does not support dynamic relative imports. "${leadingQuasi}" is relative. To make this work, you need to upgrade to Embroider.`);
+      throw new Error(
+        `ember-auto-import does not support dynamic relative imports. "${leadingQuasi}" is relative. To make this work, you need to upgrade to Embroider.`
+      );
     }
 
     if (target.type === 'imprecise') {
@@ -160,7 +156,7 @@ export default class Splitter {
     // expression goes here and we don't care which one".c
     let specifierKey = imp.cookedQuasis.join('${e}');
 
-    let entrypoint = join(target.packagePath.slice(0, -1*"package.json".length), target.local);
+    let entrypoint = join(target.packagePath.slice(0, -1 * 'package.json'.length), target.local);
     let seenAlready = targets.get(specifierKey);
     if (seenAlready) {
       await this.assertSafeVersion(seenAlready.cookedQuasis[0], seenAlready.importedBy[0], imp, entrypoint);
@@ -169,7 +165,7 @@ export default class Splitter {
       targets.set(specifierKey, {
         cookedQuasis: [entrypoint, ...rest],
         expressionNameHints: imp.expressionNameHints.map((hint, index) => hint || `arg${index}`),
-        importedBy: [imp]
+        importedBy: [imp],
       });
     }
   }
@@ -181,6 +177,7 @@ export default class Splitter {
     let pkgPath = findUpPackagePath(dirname(entrypoint));
     let version = null;
     if (pkgPath) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       let pkg = require(pkgPath);
       version = pkg.version;
     }
@@ -188,12 +185,7 @@ export default class Splitter {
     return version;
   }
 
-  private async assertSafeVersion(
-    haveEntrypoint: string,
-    prevImport: Import,
-    nextImport: Import,
-    entrypoint: string
-  ) {
+  private async assertSafeVersion(haveEntrypoint: string, prevImport: Import, nextImport: Import, entrypoint: string) {
     if (haveEntrypoint === entrypoint) {
       // both import statements are resolving to the exact same entrypoint --
       // this is the normal and happy case
@@ -202,34 +194,31 @@ export default class Splitter {
 
     let [haveVersion, nextVersion] = await Promise.all([
       this.versionOfPackage(haveEntrypoint),
-      this.versionOfPackage(entrypoint)
+      this.versionOfPackage(entrypoint),
     ]);
     if (haveVersion !== nextVersion) {
       throw new Error(
-        `${nextImport.package.name} and ${
-          prevImport.package.name
-        } are using different versions of ${
+        `${nextImport.package.name} and ${prevImport.package.name} are using different versions of ${
           'specifier' in prevImport ? prevImport.specifier : prevImport.cookedQuasis[0]
-        } (${nextVersion} located at ${entrypoint} vs ${haveVersion} located at ${
-          haveEntrypoint
-        })`
+        } (${nextVersion} located at ${entrypoint} vs ${haveVersion} located at ${haveEntrypoint})`
       );
     }
   }
 
-  private async computeDeps(analyzers: SplitterOptions["analyzers"]): Promise<Map<string, BundleDependencies>> {
+  private async computeDeps(analyzers: SplitterOptions['analyzers']): Promise<Map<string, BundleDependencies>> {
     let targets = await this.computeTargets(analyzers);
     let deps: Map<string, BundleDependencies> = new Map();
 
     this.options.bundles.names.forEach(bundleName => {
-      deps.set(bundleName, { staticImports: [], dynamicImports: [], dynamicTemplateImports: [] });
+      deps.set(bundleName, {
+        staticImports: [],
+        dynamicImports: [],
+        dynamicTemplateImports: [],
+      });
     });
 
     for (let target of targets.targets.values()) {
-      let [dynamicUses, staticUses] = partition(
-        target.importedBy,
-        imp => imp.isDynamic
-      );
+      let [dynamicUses, staticUses] = partition(target.importedBy, imp => imp.isDynamic);
       if (staticUses.length > 0) {
         let bundleName = this.chooseBundle(staticUses);
         deps.get(bundleName)!.staticImports.push(target);
@@ -273,17 +262,16 @@ export default class Splitter {
   }
 
   private bundleFor(usage: Import) {
-    let bundleName = usage.treeType === undefined || typeof this.options.bundles.bundleForTreeType !== 'function'
-      ? this.options.bundles.bundleForPath(usage.path)
-      : this.options.bundles.bundleForTreeType(usage.treeType);
+    let bundleName =
+      usage.treeType === undefined || typeof this.options.bundles.bundleForTreeType !== 'function'
+        ? this.options.bundles.bundleForPath(usage.path)
+        : this.options.bundles.bundleForTreeType(usage.treeType);
 
     if (this.options.bundles.names.indexOf(bundleName) === -1) {
       throw new Error(
         `bundleForPath("${
           usage.path
-        }") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.names.join(
-          ','
-        )}`
+        }") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.names.join(',')}`
       );
     }
     debug('bundleForPath("%s")=%s', usage.path, bundleName);
@@ -311,14 +299,14 @@ class LazyPrintDeps {
     return {
       specifier: imp.specifier,
       entrypoint: imp.entrypoint,
-      importedBy: imp.importedBy.map(this.describeImport.bind(this))
+      importedBy: imp.importedBy.map(this.describeImport.bind(this)),
     };
   }
 
   private describeImport(imp: Import) {
     return {
       package: imp.package.name,
-      path: imp.path
+      path: imp.path,
     };
   }
 
@@ -326,16 +314,13 @@ class LazyPrintDeps {
     return {
       cookedQuasis: imp.cookedQuasis,
       expressionNameHints: imp.expressionNameHints,
-      importedBy: imp.importedBy.map(this.describeImport.bind(this))
+      importedBy: imp.importedBy.map(this.describeImport.bind(this)),
     };
   }
 
   toString() {
     let output = {} as { [bundle: string]: any };
-    for (let [
-      bundle,
-      { staticImports, dynamicImports, dynamicTemplateImports }
-    ] of this.deps.entries()) {
+    for (let [bundle, { staticImports, dynamicImports, dynamicTemplateImports }] of this.deps.entries()) {
       output[bundle] = {
         static: staticImports.map(this.describeResolvedImport.bind(this)),
         dynamic: dynamicImports.map(this.describeResolvedImport.bind(this)),

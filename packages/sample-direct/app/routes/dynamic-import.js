@@ -5,5 +5,5 @@ export default Route.extend({
     return import('a-dependency').then(result => {
       return { aDependency: result.default };
     });
-  }
+  },
 });

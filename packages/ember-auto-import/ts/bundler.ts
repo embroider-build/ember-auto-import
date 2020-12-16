@@ -45,13 +45,9 @@ export default class Bundler extends Plugin {
 
   @Memoize()
   private get rootPackage(): Package {
-    let rootPackage = [...this.options.packages.values()].find(
-      pkg => !pkg.isAddon
-    );
+    let rootPackage = [...this.options.packages.values()].find(pkg => !pkg.isAddon);
     if (!rootPackage) {
-      throw new Error(
-        `bug in ember-auto-import, there should always be a Package representing the app`
-      );
+      throw new Error(`bug in ember-auto-import, there should always be a Package representing the app`);
     }
     return rootPackage;
   }
@@ -77,8 +73,7 @@ export default class Bundler extends Plugin {
     if (!this.cachedBundlerHook) {
       let extraWebpackConfig = mergeWith(
         {},
-        ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig)
-        ,
+        ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig),
         (objValue: any, srcValue: any) => {
           // arrays concat
           if (Array.isArray(objValue)) {
@@ -132,10 +127,7 @@ export default class Bundler extends Plugin {
     for (let bundle of this.options.bundles.names) {
       if (entrypoints.has(bundle)) {
         entrypoints.get(bundle)!.forEach(asset => {
-          copySync(
-            join(dir, asset),
-            join(this.outputPath, 'entrypoints', bundle, asset)
-          );
+          copySync(join(dir, asset), join(this.outputPath, 'entrypoints', bundle, asset));
         });
       }
     }
@@ -157,10 +149,7 @@ export default class Bundler extends Plugin {
       })
       .filter(Boolean);
     if (this.rootPackage.isFastBootEnabled) {
-      writeFileSync(
-        join(this.outputPath, 'lazy', 'auto-import-fastboot.js'),
-        contents.join('\n')
-      );
+      writeFileSync(join(this.outputPath, 'lazy', 'auto-import-fastboot.js'), contents.join('\n'));
     }
   }
 }

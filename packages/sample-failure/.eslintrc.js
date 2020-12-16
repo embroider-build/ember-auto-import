@@ -24,7 +24,8 @@ module.exports = {
         'index.js',
         'testem.js',
         'config/**/*.js',
-        'tests/dummy/config/**/*.js'
+        'tests/dummy/config/**/*.js',
+        '.eslintrc.js',
       ],
       excludedFiles: [
         'addon/**',

@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.10.0
+ - ENHANCEMENT: we are now compatible with the Embroider package spec's handling of `import()`. Template string literals are allowed so long as they point unambiguously to modules within a specific package, or are unambiguously a URL.
+ - BUGFIX: the test-support tree detection feature in 1.9.0 didn't actually match ember-cli's naming scheme, by @rwjblue.
+
 ### 1.9.0
  - ENHANCEMENT: use new API from ember-cli to reliably detect which trees are test-support only, even when addons override the default naming scheme by @rwjblue
  - ENHANCEMENT: switch to resolve-package-path for better shared caching with the rest of ember-cli by @rwjblue

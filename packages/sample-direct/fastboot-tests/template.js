@@ -4,46 +4,47 @@ const { module: Qmodule, test } = require('qunit');
 const jsdom = require('jsdom');
 const { JSDOM } = jsdom;
 
-module.exports = function(environment) {
-  Qmodule(`sample-direct | fastboot ${environment}`, function(hooks) {
-
+module.exports = function (environment) {
+  Qmodule(`sample-direct | fastboot ${environment}`, function (hooks) {
     let fastboot;
 
-    hooks.before(async function() {
+    hooks.before(async function () {
       execFileSync('node', [require.resolve('ember-cli/bin/ember'), 'build', '--environment', environment]);
       fastboot = new FastBoot({
         distPath: 'dist',
-        resilient: false
-      })
+        resilient: false,
+      });
     });
 
-    test('no test deps in app', async function(assert) {
+    test('no test deps in app', async function (assert) {
       let page = await fastboot.visit('/');
       let html = await page.html();
       let document = new JSDOM(html).window.document;
       assert.equal(document.querySelector('.lodash').textContent.trim(), 'no', 'expected lodash to not be present');
-    })
+    });
 
-    test('app deps in app', async function(assert) {
+    test('app deps in app', async function (assert) {
       let page = await fastboot.visit('/');
       let html = await page.html();
       let document = new JSDOM(html).window.document;
       assert.equal(document.querySelector('.hello-world').textContent.trim(), '2018-05-31', 'expected moment to work');
-    })
+    });
 
-    test('lazy loaded deps', async function(assert) {
+    test('lazy loaded deps', async function (assert) {
       let page = await fastboot.visit('/dynamic-import');
       let html = await page.html();
       let document = new JSDOM(html).window.document;
-      assert.equal(document.querySelector('[data-test="dynamic-import-result"]').textContent.trim(), 'ember-auto-import-a-dependency');
-    })
+      assert.equal(
+        document.querySelector('[data-test="dynamic-import-result"]').textContent.trim(),
+        'ember-auto-import-a-dependency'
+      );
+    });
 
-    test('lazy loaded template deps', async function(assert) {
+    test('lazy loaded template deps', async function (assert) {
       let page = await fastboot.visit('/flavor/vanilla');
       let html = await page.html();
       let document = new JSDOM(html).window.document;
       assert.equal(document.querySelector('[data-test="dynamic-import-result"]').textContent.trim(), 'vanilla');
-    })
-
+    });
   });
 };

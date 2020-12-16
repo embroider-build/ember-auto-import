@@ -29,7 +29,6 @@
     "ember-ajax": "*",
     "ember-cli": "*",
     "ember-cli-dependency-checker": "*",
-    "ember-cli-eslint": "*",
     "ember-cli-htmlbars-inline-precompile": "*",
     "ember-cli-inject-live-reload": "*",
     "ember-cli-qunit": "*",
@@ -44,7 +43,6 @@
     "ember-source": "*",
     "ember-source-channel-url": "*",
     "ember-try": "*",
-    "eslint-plugin-ember": "*",
     "eslint-plugin-node": "*",
     "loader.js": "*"
   },

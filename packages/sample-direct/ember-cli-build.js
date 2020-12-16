@@ -2,24 +2,24 @@
 
 const EmberApp = require('ember-cli/lib/broccoli/ember-app');
 
-module.exports = function(defaults) {
+module.exports = function (defaults) {
   let options = {
     autoImport: {
       exclude: ['qunit'],
       alias: {
-        'my-aliased-module': 'inner-lib2'
-      }
+        'my-aliased-module': 'inner-lib2',
+      },
     },
     babel: {
-      plugins: [require('ember-auto-import/babel-plugin')]
-    }
+      plugins: [require('ember-auto-import/babel-plugin')],
+    },
   };
 
   if (process.env.CUSTOMIZE_BUNDLES) {
     options.outputPaths = {
       vendor: {
-        js: process.env.CUSTOMIZE_BUNDLES
-      }
+        js: process.env.CUSTOMIZE_BUNDLES,
+      },
     };
   }
 
