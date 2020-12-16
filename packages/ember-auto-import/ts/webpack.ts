@@ -179,7 +179,7 @@ export default class WebpackBundler implements BundlerHook {
     };
   }
 
-  private hbsRule(): webpack.Rule {
+  private hbsRule(): webpack.RuleSetRule {
     return {
       test: /\.hbs$/,
       use: [
