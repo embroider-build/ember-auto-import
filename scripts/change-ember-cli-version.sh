@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-./scripts/link-them.sh
-
 case "$EAI_SCENARIO" in
     "2.18")
         version="~2.18.0"
@@ -36,3 +34,5 @@ else
   fi
 
 fi
+
+./scripts/link-them.sh
