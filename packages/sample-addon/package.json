@@ -32,7 +32,6 @@
     "ember-ajax": "*",
     "ember-cli": "*",
     "ember-cli-dependency-checker": "*",
-    "ember-cli-eslint": "*",
     "ember-cli-htmlbars-inline-precompile": "*",
     "ember-cli-inject-live-reload": "*",
     "ember-cli-qunit": "*",
@@ -47,13 +46,11 @@
     "ember-source": "*",
     "ember-source-channel-url": "*",
     "ember-try": "*",
-    "eslint-plugin-ember": "*",
-    "eslint-plugin-node": "*",
     "loader.js": "*",
     "moment": "*"
   },
   "engines": {
-    "node": "^4.5 || 6.* || >= 7.*"
+    "node": ">= 12"
   },
   "ember-addon": {
     "configPath": "tests/dummy/config"

@@ -3,8 +3,6 @@ name: Node CI
 on: [push,pull_request]
 
 jobs:
-  build:
-
     runs-on: ubuntu-latest
 
     strategy:
@@ -44,6 +42,9 @@ jobs:
             eai_scenario: 2.18
           - suite: 'cd packages/sample-direct      && yarn test:custom-bundles-fastboot'
             eai_scenario: 2.18
+        include:
+          - suite: 'for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs yarn eslint'
+            eai_scenario: ""
 
     steps:
     - uses: actions/checkout@v1
