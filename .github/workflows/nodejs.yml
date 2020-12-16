@@ -39,11 +39,11 @@ jobs:
           - 'cd packages/ember-auto-import  && yarn test:node'
         exclude:
           - suite: 'cd packages/sample-direct      && yarn test:custom-bundles'
-            ea_scenario: 2.18
+            eai_scenario: 2.18
           - suite: 'cd packages/sample-direct      && yarn test:custom-bundles-top'
-            ea_scenario: 2.18
+            eai_scenario: 2.18
           - suite: 'cd packages/sample-direct      && yarn test:custom-bundles-fastboot'
-            ea_scenario: 2.18
+            eai_scenario: 2.18
 
     steps:
     - uses: actions/checkout@v1
