@@ -3,6 +3,7 @@ import layout from '../templates/components/hello-world';
 import moment from 'moment';
 import { computed } from '@ember/object';
 import innerLib2 from 'my-aliased-module';
+import aliasedDeeperNamed from 'my-aliased-module/deeper/named';
 import fromScoped from '@ef4/scoped-lib';
 import aModuleDependency from 'a-module-dependency';
 
@@ -15,6 +16,10 @@ export default Component.extend({
 
   aliasedResult: computed(function () {
     return innerLib2();
+  }),
+
+  prefixAliasedResult: computed(function () {
+    return aliasedDeeperNamed();
   }),
 
   fromScoped: computed(function () {
