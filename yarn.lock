@@ -1802,6 +1802,14 @@
     resolve "^1.8.1"
     semver "^7.3.2"
 
+"@embroider/util@0.34.0":
+  version "0.34.0"
+  resolved "https://registry.yarnpkg.com/@embroider/util/-/util-0.34.0.tgz#ae8f9fbf4ff54aa03dd889de8349c0be0c5bc7fb"
+  integrity sha512-4vPjZMNHIzO9D/QSqXsmRRW5AzmtLtRPWbeAfI8VJOTNqf3gYA7AWqqrwWm2v5oVmGIAsOHG1sZsD4ZCdlMQew==
+  dependencies:
+    "@embroider/macros" "0.34.0"
+    ember-cli-babel "^7.22.1"
+
 "@eslint/eslintrc@^0.2.2":
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/@eslint/eslintrc/-/eslintrc-0.2.2.tgz#d01fc791e2fc33e88a29d6f3dc7e93d0cd784b76"
@@ -5850,7 +5858,7 @@ ember-cli-babel@^7.0.0, ember-cli-babel@^7.1.0, ember-cli-babel@^7.1.2, ember-cl
     rimraf "^3.0.1"
     semver "^5.5.0"
 
-ember-cli-babel@^7.23.0:
+ember-cli-babel@^7.22.1, ember-cli-babel@^7.23.0:
   version "7.23.0"
   resolved "https://registry.yarnpkg.com/ember-cli-babel/-/ember-cli-babel-7.23.0.tgz#ec580aa2c115d0810e454dd5c2fffce238284b92"
   integrity sha512-ix58DlRDAbGITtdJoRUPcAoQwKLYr/x/kIXjU9u1ATyhmuUjqb+0FDXghOWbkNihGiNOqBBR49+LBgK9AeBcNw==
