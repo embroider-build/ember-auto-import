@@ -36,13 +36,13 @@ if (typeof document !== 'undefined') {
 }
 
 module.exports = (function(){
-  let d = _eai_d;
-  let r = _eai_r;
-  window.emberAutoImportDynamic = function(specifier, ...args) {
-    if (args.length === 0) {
+  var d = _eai_d;
+  var r = _eai_r;
+  window.emberAutoImportDynamic = function(specifier) {
+    if (arguments.length === 1) {
       return r('_eai_dyn_' + specifier);
     } else {
-      return r('_eai_dynt_' + specifier)(...args)
+      return r('_eai_dynt_' + specifier)(Array.prototype.slice.call(arguments, 1))
     }
   };
   {{#each staticImports as |module|}}
