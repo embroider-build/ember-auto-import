@@ -16,6 +16,11 @@ module('Integration | Component | hello-world', function (hooks) {
     assert.equal(document.querySelector('.aliased').textContent.trim(), 'innerlib2 loaded');
   });
 
+  test('using a prefix match aliased module', async function (assert) {
+    await render(hbs`{{hello-world}}`);
+    assert.equal(document.querySelector('.prefix-aliased').textContent.trim(), 'deeper named');
+  });
+
   test('using a scoped module', async function (assert) {
     await render(hbs`{{hello-world}}`);
     assert.equal(document.querySelector('.scoped').textContent.trim(), 'this-is-from-ef4-scoped');
