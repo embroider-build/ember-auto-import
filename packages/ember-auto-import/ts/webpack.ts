@@ -215,7 +215,7 @@ export default class WebpackBundler implements BundlerHook {
       test: /\.hbs$/,
       use: [
         {
-          loader: require.resolve('@embroider/webpack/src/webpack-hbs-loader'),
+          loader: require.resolve('@embroider/hbs-loader'),
           options,
         },
       ],

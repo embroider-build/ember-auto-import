@@ -9,7 +9,7 @@
   "license": "MIT",
   "scripts": {},
   "dependencies": {
-    "@embroider/util": "0.34.0"
+    "@embroider/util": "0.35.0"
   },
   "private": true,
   "devDependencies": {},
