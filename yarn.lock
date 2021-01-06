@@ -3556,14 +3556,6 @@ broccoli-debug@^0.6.1, broccoli-debug@^0.6.4, broccoli-debug@^0.6.5:
     symlink-or-copy "^1.1.8"
     tree-sync "^1.2.2"
 
-broccoli-file-creator@^1.1.1:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/broccoli-file-creator/-/broccoli-file-creator-1.2.0.tgz#27f1b25b1b00e7bb7bf3d5d7abed5f4d5388df4d"
-  integrity sha512-l9zthHg6bAtnOfRr/ieZ1srRQEsufMZID7xGYRW3aBDv3u/3Eux+Iawl10tAGYE5pL9YB4n5X4vxkp6iNOoZ9g==
-  dependencies:
-    broccoli-plugin "^1.1.0"
-    mkdirp "^0.5.1"
-
 broccoli-file-creator@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/broccoli-file-creator/-/broccoli-file-creator-2.1.1.tgz#7351dd2496c762cfce7736ce9b49e3fce0c7b7db"
@@ -5357,17 +5349,6 @@ ember-cli-qunit@*, ember-cli-qunit@^4.1.1:
     ember-cli-babel "^6.11.0"
     ember-qunit "^3.5.0"
 
-ember-cli-shims@*, ember-cli-shims@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/ember-cli-shims/-/ember-cli-shims-1.2.0.tgz#0f53aff0aab80b5f29da3a9731bac56169dd941f"
-  integrity sha1-D1Ov8Kq4C18p2jqXMbrFYWndlB8=
-  dependencies:
-    broccoli-file-creator "^1.1.1"
-    broccoli-merge-trees "^2.0.0"
-    ember-cli-version-checker "^2.0.0"
-    ember-rfc176-data "^0.3.1"
-    silent-error "^1.0.1"
-
 ember-cli-sri@*, ember-cli-sri@^2.1.0:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/ember-cli-sri/-/ember-cli-sri-2.1.1.tgz#971620934a4b9183cf7923cc03e178b83aa907fd"
@@ -5733,7 +5714,7 @@ ember-resolver@*, ember-resolver@^8.0.2:
     ember-cli-version-checker "^5.1.1"
     resolve "^1.17.0"
 
-ember-rfc176-data@^0.3.1, ember-rfc176-data@^0.3.13, ember-rfc176-data@^0.3.16, ember-rfc176-data@^0.3.5:
+ember-rfc176-data@^0.3.13, ember-rfc176-data@^0.3.16, ember-rfc176-data@^0.3.5:
   version "0.3.16"
   resolved "https://registry.yarnpkg.com/ember-rfc176-data/-/ember-rfc176-data-0.3.16.tgz#2ace0ac9cf9016d493a74a1d931643a308679803"
   integrity sha512-IYAzffS90r2ybAcx8c2qprYfkxa70G+/UPkxMN1hw55DU5S2aLOX6v3umKDZItoRhrvZMCnzwsdfKSrKdC9Wbg==
