@@ -18,6 +18,7 @@
     "test": "ember test --test-port=0"
   },
   "devDependencies": {
+    "@ember/test-helpers": "*",
     "a-dependency": "*",
     "a-module-dependency": "*",
     "broccoli-asset-rev": "*",
@@ -30,13 +31,13 @@
     "ember-cli-inject-live-reload": "*",
     "ember-cli-template-lint": "*",
     "ember-cli-terser": "*",
-    "ember-decorators": "^3.1.0",
     "ember-load-initializers": "*",
     "ember-maybe-import-regenerator": "*",
     "ember-qunit": "*",
     "ember-resolver": "*",
     "ember-source": "*",
     "loader.js": "*",
+    "qunit": "*",
     "qunit-dom": "*"
   },
   "engines": {

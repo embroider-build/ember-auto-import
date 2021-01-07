@@ -27,7 +27,6 @@
     "ember-cli-fastboot": "*",
     "ember-cli-htmlbars": "*",
     "ember-cli-inject-live-reload": "*",
-    "ember-cli-qunit": "*",
     "ember-cli-sri": "*",
     "ember-cli-terser": "*",
     "ember-export-application-global": "*",

@@ -11,8 +11,7 @@ jobs:
       matrix:
         eai_scenario: [2.18, stable, beta, canary]
         suite:
-          - 'cd packages/sample-direct      && yarn test'
-          - 'cd packages/sample-direct      && yarn test'
+          - 'cd packages/sample-direct      && yarn test:ember'
           - 'cd packages/sample-direct      && yarn test:fastboot'
           - 'cd packages/sample-direct      && yarn test:prod'
           - 'cd packages/sample-direct      && yarn test:custom-bundles'
@@ -32,10 +31,11 @@ jobs:
           - 'cd packages/sample-typescript4 && yarn test'
           - 'cd packages/sample-noconflict  && yarn test'
           - 'cd packages/sample-noparse     && yarn test'
-          - 'cd packages/ember-auto-import  && yarn test'
+          - 'cd packages/ember-auto-import  && yarn test:ember'
+          - 'cd packages/ember-auto-import  && yarn test:node'
+          - 'cd packages/ember-auto-import  && yarn lint'
           - 'cd packages/sample-es-latest   && yarn test'
           - 'cd packages/sample-skip-babel  && yarn test'
-          - 'cd packages/ember-auto-import  && yarn test:node'
         exclude:
           - suite: 'cd packages/sample-direct      && yarn test:custom-bundles'
             eai_scenario: 2.18
