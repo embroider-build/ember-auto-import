@@ -226,6 +226,9 @@ function stubAddonInstance(baseDir: string): AddonInstance {
         },
       } as any,
     ],
+    isEnabled() {
+      return true;
+    },
   };
   let app: AppInstance = {
     env: 'development',
@@ -242,5 +245,8 @@ function stubAddonInstance(baseDir: string): AddonInstance {
     root: '/fake',
     options: {},
     addons: [],
+    isEnabled() {
+      return true;
+    },
   };
 }
