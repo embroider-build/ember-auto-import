@@ -137,7 +137,7 @@ export default class WebpackBundler implements BundlerHook {
         ...sharedResolverOptions,
       },
       module: {
-        noParse: (file: String) => file === join(this.stagingDir, 'l.js'),
+        noParse: (file: string) => file === join(this.stagingDir, 'l.js'),
         rules: [this.babelRule()],
       },
       node: false,
