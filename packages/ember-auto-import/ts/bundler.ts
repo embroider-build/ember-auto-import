@@ -132,7 +132,7 @@ export default class Bundler extends Plugin {
     for (let bundle of this.options.bundles.names) {
       if (entrypoints.has(bundle)) {
         entrypoints.get(bundle)!.forEach(asset => {
-          copySync(join(dir, asset), join(this.outputPath, 'entrypoints', bundle, asset));
+          copySync(join(dir, asset.name), join(this.outputPath, 'entrypoints', bundle, asset.name));
         });
       }
     }

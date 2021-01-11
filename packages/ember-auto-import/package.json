@@ -54,7 +54,7 @@
     "symlink-or-copy": "^1.2.0",
     "typescript-memoize": "^1.0.0-alpha.3",
     "walk-sync": "^0.3.3",
-    "webpack": "^5.9.0"
+    "webpack": "^5.12.3"
   },
   "devDependencies": {
     "@types/babel-core": "^6.25.5",
@@ -74,7 +74,7 @@
     "@types/qunit": "^2.11.1",
     "@types/resolve": "^0.0.8",
     "@types/semver": "^7.3.4",
-    "@types/webpack": "^4.4.20",
+    "@types/webpack": "^4.41.25",
     "broccoli": "^3.2.0",
     "broccoli-asset-rev": "^2.4.5",
     "broccoli-source": "^3.0.0",
