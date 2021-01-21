@@ -34,6 +34,7 @@ export default Component.extend({
   // should not be present when we view the app outside the tests.
   lodashPresent: computed(function () {
     try {
+      // eslint-disable-next-line no-undef
       _non_webpack_require('lodash-es');
       return true;
     } catch (err) {
