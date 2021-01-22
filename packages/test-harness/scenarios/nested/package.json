@@ -1,5 +1,5 @@
 {
   "devDependencies": {
-    "my-addon": "@ef4/test-support:addon-template:my-addon"
+    "my-addon": "@ef4/test-harness:addon-template:my-addon"
   }
 }

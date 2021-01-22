@@ -58,9 +58,9 @@
       "type": "node",
       "request": "launch",
       "name": "Run test-harness prepare",
-      "program": "${workspaceFolder}/packages/test-harness/cli.js",
+      "runtimeArgs": ["-r", "ts-node/register"],
       "cwd": "${workspaceFolder}/packages/test-harness",
-      "args": ["prepare", "app-template", "scenarios/noparse"]
+      "args": ["${workspaceFolder}/packages/test-harness/cli.ts", "prepare", "app-template", "scenarios/nested"]
     },
     {
       "type": "node",

@@ -1,4 +1,6 @@
-require('yargs')
+import yargs = require('yargs');
+
+yargs
   .command(
     'prepare <base> <scenario>',
     'Prepare a project by combining a base project and a scenario layer',
