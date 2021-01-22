@@ -1,0 +1,10 @@
+autoImport: {
+  webpack: {
+    module: {
+      // this sampe app exists to test that users can customize noParse and
+      // their customization takes effect *without* breaking our own
+      // internal use of noParse.
+      noParse: /\bnoparsed-dependency\b/
+    }
+  }
+}
