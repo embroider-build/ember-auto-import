@@ -31,7 +31,7 @@ jobs:
           - 'cd packages/sample-typescript2 && yarn test'
           - 'cd packages/sample-typescript4 && yarn test'
           - 'cd packages/sample-noconflict  && yarn test'
-          - 'cd packages/sample-noparse     && yarn test'
+          - 'cd packages/test-harness       && ./cli run app-template scenarios/noparse test'
           - 'cd packages/ember-auto-import  && yarn test'
           - 'cd packages/sample-es-latest   && yarn test'
           - 'cd packages/sample-skip-babel  && yarn test'

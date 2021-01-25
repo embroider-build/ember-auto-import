@@ -19,6 +19,7 @@ module.exports = {
       files: [
         'cli.ts',
         'prepare.ts',
+        'run.ts',
         '.eslintrc.js',
         'scenarios/.eslintrc.js',
         'scenarios/.template-lintrc.js',
