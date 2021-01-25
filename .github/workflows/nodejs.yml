@@ -33,8 +33,8 @@ jobs:
           - 'cd packages/sample-noconflict  && yarn test'
           - 'cd packages/test-harness       && ./cli run app-template scenarios/noparse test'
           - 'cd packages/ember-auto-import  && yarn test'
-          - 'cd packages/test-harness       && ./cli run app-templates scenarios/eslatest test'
-          - 'cd packages/sample-skip-babel  && yarn test'
+          - 'cd packages/test-harness       && ./cli run app-template scenarios/eslatest test'
+          - 'cd packages/test-harness       && ./cli run app-template scenarios/skip-babel test'
           - 'cd packages/ember-auto-import  && yarn test:node'
         exclude:
           - suite: 'cd packages/sample-direct      && yarn test:custom-bundles'
