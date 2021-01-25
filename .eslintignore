@@ -1,4 +1,5 @@
 packages/*/dist
 packages/*/tmp
 packages/*/js
+packages/test-harness/output
 *.d.ts

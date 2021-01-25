@@ -13,7 +13,7 @@ function run(params: Params) {
   const prepare = require('./prepare');
   prepare(params);
   chdir(params.outdir);
-  let child = spawn(`yarn`, [params.command], { stdio: [0, 1] });
+  let child = spawn(`yarn`, [params.command], { stdio: ['inherit', 'inherit', 'inherit'] });
   child.on('close', (code: number) => {
     exit(code);
   });
