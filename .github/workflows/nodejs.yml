@@ -27,7 +27,7 @@ jobs:
           - 'cd packages/sample-merged      && yarn test'
           - 'cd packages/sample-conflict    && yarn test'
           - 'cd packages/sample-babel7      && yarn test'
-          - 'cd packages/sample-typescript  && yarn test'
+          - 'cd packages/test-harness       && ./cli run app-template scenarios/sample-typescript test'
           - 'cd packages/sample-typescript2 && yarn test'
           - 'cd packages/sample-typescript4 && yarn test'
           - 'cd packages/test-harness       && ./cli run app-template scenarios/noconflict build'
