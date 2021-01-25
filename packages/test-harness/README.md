@@ -26,7 +26,24 @@ If you create a file with a matching name in a scenario, it will be inlined to r
 
 ## Managing NPM dependencies
 
-We don't run a separate yarn install for each scenario, so all the dependencies that appear in both base projects and scenarios should also be added to this package's `devDependencies`. You can use yarn aliasing to accommodate multiple versions of the same package.
+We don't run a separate yarn install for each scenario, so all the dependencies that appear in both base projects and scenarios should also be added to this package's `devDependencies`.
+
+To accommodate multiple versions of the same package, use aliasing in the parent like:
+
+```js
+  "devDependencies": {
+    "ember-cli-typescript3": "npm:ember-cli-typescript@^3.0.0",
+    "ember-cli-typescript4": "npm:ember-cli-typescript@^4.0.0",
+  }
+```
+
+And then to access one of these from a scenario's `package.json`, say:
+
+```js
+  "devDependencies": {
+    "ember-cli-typescript": "@ef4/parent:ember-cli-typescript3"
+  }
+```
 
 ## Nested scenarios
 

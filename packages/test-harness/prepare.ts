@@ -11,14 +11,14 @@ const {
 } = require('fs-extra');
 const { mergeWith, uniq } = require('lodash');
 
-interface Params {
+interface PrepareParams {
   outdir: string;
   base: string;
   scenario: string;
 }
 
 module.exports = prepare;
-function prepare(params: Params) {
+function prepare(params: PrepareParams) {
   removeSync(params.outdir);
 
   // all files get layered
@@ -49,7 +49,7 @@ function mergePackageJSONs(pkgs: unknown[]) {
   return mergeWith({}, ...pkgs, appendArraysUniq);
 }
 
-function insertSnippet(argv: Params, targetFile: string, snippetFile: string) {
+function insertSnippet(argv: PrepareParams, targetFile: string, snippetFile: string) {
   let snippetPath = resolve(argv.scenario, snippetFile);
   if (existsSync(snippetPath)) {
     let targetPath = resolve(argv.outdir, targetFile);
@@ -60,7 +60,7 @@ function insertSnippet(argv: Params, targetFile: string, snippetFile: string) {
   }
 }
 
-function linkDependencies(params: Params) {
+function linkDependencies(params: PrepareParams) {
   let pkg = readJSONSync(resolve(params.outdir, 'package.json'));
   for (let section of ['dependencies', 'devDependencies', 'peerDependencies']) {
     if (pkg[section]) {
@@ -75,6 +75,10 @@ function linkDependencies(params: Params) {
             // output goes inside node_modules of parent output
             outdir: resolve(params.outdir, 'node_modules', pkgName),
           });
+        } else if (range.startsWith('@ef4/parent:')) {
+          let [, nameInParent] = range.split(':');
+          let target = dirname(require.resolve(`${nameInParent}/package.json`));
+          ensureSymlinkSync(target, resolve(params.outdir, 'node_modules', pkgName));
         } else {
           let target = dirname(require.resolve(`${pkgName}/package.json`));
           ensureSymlinkSync(target, resolve(params.outdir, 'node_modules', pkgName));

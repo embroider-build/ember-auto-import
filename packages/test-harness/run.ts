@@ -1,7 +1,7 @@
 const { chdir, exit } = require('process');
 const { spawn } = require('child_process');
 
-interface Params {
+interface RunParams {
   outdir: string;
   base: string;
   scenario: string;
@@ -9,7 +9,7 @@ interface Params {
 }
 
 module.exports = run;
-function run(params: Params) {
+function run(params: RunParams) {
   const prepare = require('./prepare');
   prepare(params);
   chdir(params.outdir);

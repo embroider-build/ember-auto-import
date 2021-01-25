@@ -4,7 +4,7 @@
     "@types/ember": "^3.0.25",
     "a-dependency": "0.0.1",
     "a-pure-ts-dependency": "0.0.1",
-    "ember-cli-typescript": "^3.0.0",
+    "ember-cli-typescript": "@ef4/parent:ember-cli-typescript3",
     "typescript": "^4.1.2"
   }
 }
