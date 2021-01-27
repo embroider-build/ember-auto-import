@@ -2,7 +2,7 @@
 
 This package allows us to have many apps and addons within our test suite, without worrying about keeping them all separately up-to-date.
 
-We combine base projects (like `./app-template`) with specific scenarios (like `./scenarios/noparse`) to generate apps and/or addons on the fly.
+We combine base projects (like `project-templates/app-template`) with specific scenarios (like `scenarios/noparse`) to generate apps and/or addons on the fly.
 
 ## Layering files
 
@@ -12,7 +12,13 @@ Any file in the scenario will overwrite the corresponding path in the base proje
 
 `package.json` in the scenario merges (with uniq array append) with the base project's `package.json`.
 
-You can use this to add dependencies, but see "Managing NPM dependencies" below for an additional required step.
+When we combine the layers we will make sure to symlink packages so they come
+from the correct source (base vs scenario).
+
+## Depending on other scenarios
+
+If one of your dependencies resolves to another scenario, we will properly setup
+that scenario recursively.
 
 ## Inserting snippets
 
@@ -23,34 +29,3 @@ Some places in the base project include special comments like:
 ```
 
 If you create a file with a matching name in a scenario, it will be inlined to replace the comment.
-
-## Managing NPM dependencies
-
-We don't run a separate yarn install for each scenario, so all the dependencies that appear in both base projects and scenarios should also be added to this package's `devDependencies`.
-
-To accommodate multiple versions of the same package, use aliasing in the parent like:
-
-```js
-  "devDependencies": {
-    "ember-cli-typescript3": "npm:ember-cli-typescript@^3.0.0",
-    "ember-cli-typescript4": "npm:ember-cli-typescript@^4.0.0",
-  }
-```
-
-And then to access one of these from a scenario's `package.json`, say:
-
-```js
-  "devDependencies": {
-    "ember-cli-typescript": "@ef4/parent:ember-cli-typescript3"
-  }
-```
-
-## Nested scenarios
-
-If you specially format a dependency in package.json like:
-
-```js
-  "my-addon": "@ef4/test-harness:addon-template:some-scenario"
-```
-
-That means we will combine `addon-template` and `some-scenario` to generate the package `my-addon` and make sure it's available in your resulting project.
