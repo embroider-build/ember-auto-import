@@ -1,0 +1,7 @@
+{
+  "name": "eslatest",
+  "version": "0.0.0",
+  "devDependencies": {
+    "a-module-dependency": "0.0.1"
+  }
+}

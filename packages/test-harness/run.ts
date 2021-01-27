@@ -1,16 +1,14 @@
-const { chdir, exit } = require('process');
-const { spawn } = require('child_process');
+import { chdir, exit } from 'process';
+import { spawn } from 'child_process';
+import prepare from './prepare';
 
 interface RunParams {
   outdir: string;
-  base: string;
   scenario: string;
   command: string;
 }
 
-module.exports = run;
-function run(params: RunParams) {
-  const prepare = require('./prepare');
+export default function run(params: RunParams) {
   prepare(params);
   chdir(params.outdir);
   let child = spawn(`yarn`, [params.command], { stdio: ['inherit', 'inherit', 'inherit'] });

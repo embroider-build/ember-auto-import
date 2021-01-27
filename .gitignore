@@ -1,5 +1,11 @@
 packages/*/node_modules
 packages/*/tmp
 packages/*/dist
+scenarios/*/node_modules
+scenarios/*/tmp
+scenarios/*/dist
+project-templates/*/node_modules
+project-templates/*/tmp
+project-templates/*/dist
 node_modules
 yarn-error.log

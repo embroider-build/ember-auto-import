@@ -1,5 +1,6 @@
-const { resolve, dirname } = require('path');
-const {
+import { resolve, dirname, join, basename } from 'path';
+
+import {
   copySync,
   removeSync,
   existsSync,
@@ -8,39 +9,48 @@ const {
   writeFileSync,
   readFileSync,
   ensureSymlinkSync,
-} = require('fs-extra');
-const { mergeWith, uniq } = require('lodash');
+} from 'fs-extra';
+
+import { mergeWith, uniq } from 'lodash';
 
 interface PrepareParams {
   outdir: string;
-  base: string;
   scenario: string;
 }
 
-module.exports = prepare;
-function prepare(params: PrepareParams) {
+const monorepo = resolve(__dirname, '..', '..');
+
+export default function prepare(params: PrepareParams) {
   removeSync(params.outdir);
 
+  let scenarioPath = join(monorepo, 'scenarios', params.scenario);
+  let scenarioPkg = readJSONSync(join(scenarioPath, 'package.json'));
+  let baseName = scenarioPkg['ember-auto-import-test-harness']?.base || 'app-template';
+  let basePath = join(monorepo, 'project-templates', baseName);
+
   // all files get layered
-  copySync(params.base, params.outdir);
-  copySync(params.scenario, params.outdir);
+  copySync(basePath, params.outdir, { filter: noNodeModules });
+  copySync(scenarioPath, params.outdir, { filter: noNodeModules });
 
   // package.json gets merged
-  let pkgs = [];
-  for (let file of [resolve(params.base, 'package.json'), resolve(params.scenario, 'package.json')]) {
-    if (existsSync(file)) {
-      pkgs.push(readJSONSync(file));
+  let basePkg = readJSONSync(join(basePath, 'package.json'));
+  outputJSONSync(resolve(params.outdir, 'package.json'), mergePackageJSONs([basePkg, scenarioPkg]), { spaces: 2 });
+
+  // app name gets adjusted
+  for (let file of ['config/environment.js', 'app/index.html', 'tests/index.html']) {
+    let path = resolve(params.outdir, file);
+    let pattern = new RegExp(`\\b${baseName}\\b`, 'g');
+    if (existsSync(path)) {
+      writeFileSync(path, readFileSync(path, 'utf8').replace(pattern, params.scenario));
     }
   }
-  outputJSONSync(resolve(params.outdir, 'package.json'), mergePackageJSONs(pkgs), { spaces: 2 });
 
   // specific insertable snippets get inserted
-  insertSnippet(params, 'ember-cli-build.js', 'ember-app-options.snippet');
-
-  linkDependencies(params);
+  insertSnippet(params.outdir, scenarioPath, 'ember-cli-build.js', 'ember-app-options.snippet');
+  linkDependencies(params.outdir, basePath, scenarioPath, scenarioPkg);
 }
 
-function mergePackageJSONs(pkgs: unknown[]) {
+function mergePackageJSONs(pkgs: any[]) {
   function appendArraysUniq(objValue: any, srcValue: any) {
     if (Array.isArray(objValue)) {
       return uniq(objValue.concat(srcValue));
@@ -49,42 +59,49 @@ function mergePackageJSONs(pkgs: unknown[]) {
   return mergeWith({}, ...pkgs, appendArraysUniq);
 }
 
-function insertSnippet(argv: PrepareParams, targetFile: string, snippetFile: string) {
-  let snippetPath = resolve(argv.scenario, snippetFile);
+function insertSnippet(outdir: string, scenarioPath: string, targetFile: string, snippetFile: string) {
+  let snippetPath = join(scenarioPath, snippetFile);
   if (existsSync(snippetPath)) {
-    let targetPath = resolve(argv.outdir, targetFile);
+    let targetPath = resolve(outdir, targetFile);
     writeFileSync(
       targetPath,
-      readFileSync(targetPath, 'utf8').replace(`//TARGET:${snippetFile}`, readFileSync(snippetPath))
+      readFileSync(targetPath, 'utf8').replace(`//TARGET:${snippetFile}`, readFileSync(snippetPath, 'utf8'))
     );
   }
 }
 
-function linkDependencies(params: PrepareParams) {
-  let pkg = readJSONSync(resolve(params.outdir, 'package.json'));
+function linkDependencies(outdir: string, basePath: string, scenarioPath: string, scenarioPkg: any) {
+  let pkg = readJSONSync(resolve(outdir, 'package.json'));
   for (let section of ['dependencies', 'devDependencies', 'peerDependencies']) {
     if (pkg[section]) {
-      for (let [pkgName, range] of Object.entries(pkg[section] as { [name: string]: string })) {
-        if (range.startsWith('@ef4/test-harness:')) {
-          let [, base, scenario] = range.split(':');
-          prepare({
-            // new base is resolved relative to parent base's parent dir
-            base: resolve(params.base, '..', base),
-            // new scenario is resolved relative to parent scenario's parent dir
-            scenario: resolve(params.scenario, '..', scenario),
-            // output goes inside node_modules of parent output
-            outdir: resolve(params.outdir, 'node_modules', pkgName),
-          });
-        } else if (range.startsWith('@ef4/parent:')) {
-          let [, nameInParent] = range.split(':');
-          let target = dirname(require.resolve(`${nameInParent}/package.json`));
-          ensureSymlinkSync(target, resolve(params.outdir, 'node_modules', pkgName));
+      for (let pkgName of Object.keys(pkg[section] as { [name: string]: string })) {
+        let basedir: string;
+        if (scenarioPkg[section]?.[pkgName]) {
+          basedir = scenarioPath;
         } else {
-          let target = dirname(require.resolve(`${pkgName}/package.json`));
-          ensureSymlinkSync(target, resolve(params.outdir, 'node_modules', pkgName));
+          basedir = basePath;
+        }
+        let target = dirname(require.resolve(`${pkgName}/package.json`, { paths: [basedir] }));
+        if (isScenario(target)) {
+          prepare({
+            scenario: basename(target),
+            // output goes inside node_modules of parent output
+            outdir: resolve(outdir, 'node_modules', pkgName),
+          });
+        } else {
+          ensureSymlinkSync(target, resolve(outdir, 'node_modules', pkgName));
         }
       }
     }
   }
-  ensureSymlinkSync(resolve(__dirname, 'node_modules', '.bin'), resolve(params.outdir, 'node_modules', '.bin'));
+  ensureSymlinkSync(join(basePath, 'node_modules', '.bin'), resolve(outdir, 'node_modules', '.bin'));
+}
+
+const scenarios = join(monorepo, 'scenarios');
+function isScenario(path: string) {
+  return path.startsWith(scenarios);
+}
+
+function noNodeModules(path: string): boolean {
+  return !/node_modules/.test(path);
 }

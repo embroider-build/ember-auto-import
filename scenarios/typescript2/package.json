@@ -1,0 +1,9 @@
+{
+  "name": "typescript2",
+  "version": "0.0.0",
+  "devDependencies": {
+    "@types/ember": "^3.0.25",
+    "a-dependency": "0.0.1",
+    "ember-cli-typescript": "^2.0.0"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "noparse",
+  "version": "0.0.0",
+  "devDependencies": {
+    "a-dependency": "0.0.1",
+    "noparsed-dependency": "0.0.1"
+  }
+}

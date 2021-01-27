@@ -1,7 +1,0 @@
-{
-  "devDependencies": {
-    "@types/ember": "^3.0.25",
-    "a-dependency": "0.0.1",
-    "ember-cli-typescript": "@ef4/parent:ember-cli-typescript2"
-  }
-}

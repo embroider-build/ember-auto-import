@@ -1,48 +1,49 @@
-import yargs = require('yargs');
+import yargs from 'yargs';
 
 yargs
   .command(
-    'prepare <base> <scenario>',
-    'Prepare a project by combining a base project and a scenario layer',
-    yargs => {
-      yargs.positional('base', {
-        type: 'string',
-        description: 'path to base project',
-      });
-      yargs.positional('scenario', {
-        type: 'string',
-        description: 'path to scenario layer',
-      });
-      yargs.option('outdir', {
-        type: 'string',
-        description: 'output directory',
-        default: 'output',
-      });
-    },
-    require('./prepare')
+    'prepare',
+    'Prepare a scenario to run by combining it with its base template and linking all dependencies',
+    yargs =>
+      yargs
+        .option('scenario', {
+          type: 'string',
+          description: 'name of scenario to prepare',
+          demandOption: true,
+        })
+        .option('outdir', {
+          type: 'string',
+          description: 'output directory',
+          default: 'project',
+        }),
+    async argv => {
+      let prepare = await import('./prepare');
+      prepare.default(argv);
+    }
   )
   .command(
-    'run <base> <scenario> <command>',
-    'Prepares a project and then executes the given command in that project',
-    yargs => {
-      yargs.positional('base', {
-        type: 'string',
-        description: 'path to base project',
-      });
-      yargs.positional('scenario', {
-        type: 'string',
-        description: 'path to scenario layer',
-      });
-      yargs.positional('command', {
-        type: 'string',
-        description: 'the name of a command that appears in package.json scripts in the resulting project',
-      });
-      yargs.option('outdir', {
-        type: 'string',
-        description: 'output directory',
-        default: 'output',
-      });
-    },
-    require('./run')
+    'run',
+    'Prepares a scenario and then executes the given command in that project',
+    yargs =>
+      yargs
+        .option('scenario', {
+          type: 'string',
+          description: 'path to scenario layer',
+          demandOption: true,
+        })
+        .option('command', {
+          type: 'string',
+          description: 'the name of a command that appears in package.json scripts in the resulting project',
+          demandOption: true,
+        })
+        .option('outdir', {
+          type: 'string',
+          description: 'output directory',
+          default: 'output',
+        }),
+    async argv => {
+      let run = await import('./run');
+      run.default(argv);
+    }
   )
   .help().argv;
