@@ -60,7 +60,7 @@
       "name": "Run test-harness prepare",
       "runtimeArgs": ["-r", "ts-node/register"],
       "cwd": "${workspaceFolder}/packages/test-harness",
-      "args": ["${workspaceFolder}/packages/test-harness/cli.ts", "prepare", "--scenario", "nested"]
+      "args": ["${workspaceFolder}/packages/test-harness/cli.ts", "prepare", "--scenario", "typescript3"]
     },
     {
       "type": "node",

@@ -97,9 +97,9 @@ function linkDependencies(outdir: string, basePath: string, scenarioPath: string
   ensureSymlinkSync(join(basePath, 'node_modules', '.bin'), resolve(outdir, 'node_modules', '.bin'));
 }
 
-const scenarios = join(monorepo, 'scenarios');
+const scenariosPattern = new RegExp(`^${join(monorepo, 'scenarios')}\\/[^\\/]+$`);
 function isScenario(path: string) {
-  return path.startsWith(scenarios);
+  return scenariosPattern.test(path);
 }
 
 function noNodeModules(path: string): boolean {

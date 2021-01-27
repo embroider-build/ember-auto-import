@@ -16,20 +16,7 @@ module.exports = {
   overrides: [
     // node files
     {
-      files: [
-        'cli.ts',
-        'prepare.ts',
-        'run.ts',
-        '.eslintrc.js',
-        'scenarios/*/.eslintrc.js',
-        'scenarios/*/.template-lintrc.js',
-        'scenarios/*/ember-cli-build.js',
-        'scenarios/*/testem.js',
-        'scenarios/*/blueprints/*/index.js',
-        'scenarios/*/config/**/*.js',
-        'scenarios/*/lib/*/index.js',
-        'scenarios/*/server/**/*.js',
-      ],
+      files: ['cli.ts', 'prepare.ts', 'run.ts', '.eslintrc.js'],
       parserOptions: {
         sourceType: 'script',
       },
@@ -41,17 +28,10 @@ module.exports = {
       extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'plugin:prettier/recommended'],
       rules: Object.assign({}, require('eslint-plugin-node').configs.recommended.rules, {
         // add your custom rules and overrides for node files here
-
-        // this can be removed once the following is fixed
-        // https://github.com/mysticatea/eslint-plugin-node/issues/77
         'node/no-unpublished-require': 'off',
-        'node/no-unsupported-features': [
-          'error',
-          {
-            ignores: ['modules'],
-          },
-        ],
+        'node/no-unsupported-features/es-syntax': 'off',
         'node/no-missing-require': 'off',
+        'node/no-missing-import': 'off',
         'prettier/prettier': 'error',
         'no-var': 'error',
         'prefer-const': 'off',
