@@ -1,0 +1,11 @@
+{
+  "name": "sample-conflict",
+  "version": "0.0.0",
+  "scripts": {
+    "test": "./ensure-failed-build.sh"
+  },
+  "devDependencies": {
+    "inner-lib": "0.0.3",
+    "sample-addon": "0.0.0"
+  }
+}
