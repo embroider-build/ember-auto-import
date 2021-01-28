@@ -26,7 +26,7 @@ jobs:
           - 'cd packages/sample-failure     && yarn test'
           - 'cd packages/sample-merged      && yarn test'
           - 'cd packages/sample-conflict    && yarn test'
-          - 'cd packages/sample-babel7      && yarn test'
+          - './packages/test-harness/cli run --scenario sample-babel7 --command test'
           - './packages/test-harness/cli run --scenario typescript2 --command test'
           - './packages/test-harness/cli run --scenario typescript3 --command test'
           - './packages/test-harness/cli run --scenario typescript4 --command test'
