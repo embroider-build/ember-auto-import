@@ -1,5 +1,5 @@
 import resolvePackagePath from 'resolve-package-path';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { readFileSync } from 'fs';
 import { Memoize } from 'typescript-memoize';
 import { Configuration } from 'webpack';
@@ -19,6 +19,7 @@ export interface Options {
   publicAssetURL?: string;
   forbidEval?: boolean;
   skipBabel?: { package: string; semverRange?: string }[];
+  watchDependencies?: string[];
 }
 
 interface DepResolution {
@@ -304,6 +305,20 @@ export default class Package {
     // only apps (not addons) are allowed to set this, because it's motivated by
     // the apps own Content Security Policy.
     return Boolean(!this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval);
+  }
+
+  get watchedDirectories(): string[] | undefined {
+    // only apps (not addons) are allowed to set this
+    if (!this.isAddon && this.autoImportOptions?.watchDependencies) {
+      return this.autoImportOptions.watchDependencies
+        .map(name => {
+          let path = resolvePackagePath(name, this.root);
+          if (path) {
+            return dirname(path);
+          }
+        })
+        .filter(Boolean) as string[];
+    }
   }
 }
 
