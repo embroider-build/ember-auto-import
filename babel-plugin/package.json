@@ -1,0 +1,10 @@
+{
+  "name": "ember-auto-import-internal-babel-plugin",
+  "private": true,
+  "engines":{
+    "node": ">= 6"
+  },
+  "dependencies": {
+    "babel-plugin-syntax-dynamic-import": "*"
+  }
+}

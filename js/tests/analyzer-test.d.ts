@@ -1,0 +1,1 @@
+import 'qunit-assertions-extra';
