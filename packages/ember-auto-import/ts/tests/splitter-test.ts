@@ -53,36 +53,36 @@ Qmodule('splitter', function (hooks) {
     project.dispose();
   });
 
-  let handledDynamicExamples = [
-    ["import('alpha');", 'alpha'],
-    ["import('@beta/thing');", '@beta/thing'],
-    ['import(`alpha`);', 'alpha'],
-    ['import(`@beta/thing`);', '@beta/thing'],
-    ["import('alpha/mod');", 'alpha/mod'],
-    ["import('@beta/thing/mod');", '@beta/thing/mod'],
-    ['import(`alpha/mod`);', 'alpha/mod'],
-    ['import(`@beta/thing/mod`);', '@beta/thing/mod'],
-    ['import(`alpha/${foo}`);', ['alpha/', ''], ['foo']],
-    ['import(`alpha/in${foo}`);', ['alpha/in', ''], ['foo']],
-    ['import(`@beta/thing/${foo}`);', ['@beta/thing/', ''], ['foo']],
-    ['import(`@beta/thing/in${foo}`);', ['@beta/thing/in', ''], ['foo']],
-    ['import(`alpha/${foo}/component`);', ['alpha/', '/component'], ['foo']],
-    ['import(`@beta/thing/${foo}/component`);', ['@beta/thing/', '/component'], ['foo']],
-    ['import(`alpha/${foo}/component/${bar}`);', ['alpha/', '/component/', ''], ['foo', 'bar']],
-    ['import(`@beta/thing/${foo}/component/${bar}`);', ['@beta/thing/', '/component/', ''], ['foo', 'bar']],
+  let handledImportCallExamples = [
+    ["'alpha'", 'alpha'],
+    ["'@beta/thing'", '@beta/thing'],
+    ['`alpha`', 'alpha'],
+    ['`@beta/thing`', '@beta/thing'],
+    ["'alpha/mod'", 'alpha/mod'],
+    ["'@beta/thing/mod'", '@beta/thing/mod'],
+    ['`alpha/mod`', 'alpha/mod'],
+    ['`@beta/thing/mod`', '@beta/thing/mod'],
+    ['`alpha/${foo}`', ['alpha/', ''], ['foo']],
+    ['`alpha/in${foo}`', ['alpha/in', ''], ['foo']],
+    ['`@beta/thing/${foo}`', ['@beta/thing/', ''], ['foo']],
+    ['`@beta/thing/in${foo}`', ['@beta/thing/in', ''], ['foo']],
+    ['`alpha/${foo}/component`', ['alpha/', '/component'], ['foo']],
+    ['`@beta/thing/${foo}/component`', ['@beta/thing/', '/component'], ['foo']],
+    ['`alpha/${foo}/component/${bar}`', ['alpha/', '/component/', ''], ['foo', 'bar']],
+    ['`@beta/thing/${foo}/component/${bar}`', ['@beta/thing/', '/component/', ''], ['foo', 'bar']],
   ];
 
-  for (let example of handledDynamicExamples) {
-    let [src] = example;
-    test(`handled dynamic exmaple: ${src}`, async function (assert) {
-      outputFileSync(join(project.baseDir, 'sample.js'), src);
+  for (let example of handledImportCallExamples) {
+    let [arg] = example;
+    test(`handled dynamic example: import(${arg})`, async function (assert) {
+      outputFileSync(join(project.baseDir, 'sample.js'), `import(${arg})`);
       await builder.build();
       let deps = await splitter.deps();
       assert.deepEqual([...deps.keys()], ['app', 'tests']);
-      assert.deepEqual(deps.get('app')?.staticImports, []);
       if (Array.isArray(example[1])) {
         assert.deepEqual(deps.get('app'), {
           staticImports: [],
+          staticTemplateImports: [],
           dynamicImports: [],
           dynamicTemplateImports: [
             {
@@ -90,6 +90,7 @@ Qmodule('splitter', function (hooks) {
               expressionNameHints: example[2] as string[],
               importedBy: [
                 {
+                  isDynamic: true,
                   cookedQuasis: example[1],
                   expressionNameHints: example[2] as string[],
                   path: 'sample.js',
@@ -103,6 +104,7 @@ Qmodule('splitter', function (hooks) {
       } else {
         assert.deepEqual(deps.get('app'), {
           staticImports: [],
+          staticTemplateImports: [],
           dynamicTemplateImports: [],
           dynamicImports: [
             {
@@ -111,6 +113,63 @@ Qmodule('splitter', function (hooks) {
               importedBy: [
                 {
                   isDynamic: true,
+                  specifier: example[1],
+                  path: 'sample.js',
+                  package: pack,
+                  treeType: undefined,
+                },
+              ],
+            },
+          ],
+        });
+      }
+    });
+  }
+
+  for (let example of handledImportCallExamples) {
+    let [arg] = example;
+    test(`handled import example: importSync(${arg})`, async function (assert) {
+      outputFileSync(
+        join(project.baseDir, 'sample.js'),
+        `import { importSync } from '@embroider/macros'; importSync(${arg})`
+      );
+      await builder.build();
+      let deps = await splitter.deps();
+      assert.deepEqual([...deps.keys()], ['app', 'tests']);
+      if (Array.isArray(example[1])) {
+        assert.deepEqual(deps.get('app'), {
+          staticImports: [],
+          dynamicTemplateImports: [],
+          dynamicImports: [],
+          staticTemplateImports: [
+            {
+              cookedQuasis: [join(project.baseDir, 'node_modules', example[1][0]), ...example[1].slice(1)],
+              expressionNameHints: example[2] as string[],
+              importedBy: [
+                {
+                  isDynamic: false,
+                  cookedQuasis: example[1],
+                  expressionNameHints: example[2] as string[],
+                  path: 'sample.js',
+                  package: pack,
+                  treeType: undefined,
+                },
+              ],
+            },
+          ],
+        });
+      } else {
+        assert.deepEqual(deps.get('app'), {
+          dynamicImports: [],
+          staticTemplateImports: [],
+          dynamicTemplateImports: [],
+          staticImports: [
+            {
+              specifier: example[1],
+              entrypoint: join(project.baseDir, 'node_modules', example[1], 'index.js'),
+              importedBy: [
+                {
+                  isDynamic: false,
                   specifier: example[1],
                   path: 'sample.js',
                   package: pack,
@@ -146,6 +205,7 @@ Qmodule('splitter', function (hooks) {
       assert.deepEqual([...deps.keys()], ['app', 'tests']);
       assert.deepEqual(deps.get('app'), {
         staticImports: [],
+        staticTemplateImports: [],
         dynamicImports: [],
         dynamicTemplateImports: [],
       });

@@ -181,7 +181,7 @@ Qmodule('analyzer', function (hooks) {
     return exp.length === 2;
   }
 
-  let legalDyamicExamples: (LiteralExample | TemplateExample)[] = [
+  let legalDynamicExamples: (LiteralExample | TemplateExample)[] = [
     ["import('alpha');", 'alpha'],
     ["import('@beta/thing');", '@beta/thing'],
     ['import(`gamma`);', 'gamma'],
@@ -215,7 +215,7 @@ Qmodule('analyzer', function (hooks) {
     ['import(`@beta/thing/${foo}/component/${bar}`);', ['@beta/thing/', '/component/', ''], ['foo', 'bar']],
   ];
 
-  for (let example of legalDyamicExamples) {
+  for (let example of legalDynamicExamples) {
     let [src] = example;
     test(`dynamic import example: ${src}`, async function (assert) {
       outputFileSync(join(upstream, 'sample.js'), src);
@@ -233,6 +233,71 @@ Qmodule('analyzer', function (hooks) {
       } else {
         assert.deepEqual(analyzer.imports, [
           {
+            isDynamic: true,
+            cookedQuasis: example[1],
+            expressionNameHints: example[2],
+            path: 'sample.js',
+            package: pack,
+            treeType: undefined,
+          },
+        ]);
+      }
+    });
+  }
+
+  let legalImportSyncExamples: (LiteralExample | TemplateExample)[] = [
+    ["importSync('alpha');", 'alpha'],
+    ["importSync('@beta/thing');", '@beta/thing'],
+    ['importSync(`gamma`);', 'gamma'],
+    ['importSync(`@delta/thing`);', '@delta/thing'],
+    ["importSync('epsilon/mod');", 'epsilon/mod'],
+    ["importSync('@zeta/thing/mod');", '@zeta/thing/mod'],
+    ['importSync(`eta/mod`);', 'eta/mod'],
+    ['importSync(`@theta/thing/mod`);', '@theta/thing/mod'],
+    ['importSync(`alpha/${foo}`);', ['alpha/', ''], ['foo']],
+    ['importSync(`@beta/thing/${foo}`);', ['@beta/thing/', ''], ['foo']],
+    ['importSync(`alpha/${foo}/component`);', ['alpha/', '/component'], ['foo']],
+    ['importSync(`@beta/thing/${foo}/component`);', ['@beta/thing/', '/component'], ['foo']],
+    ['importSync(`alpha/${foo}/component/${bar}`);', ['alpha/', '/component/', ''], ['foo', 'bar']],
+    ['importSync(`@beta/thing/${foo}/component/${bar}`);', ['@beta/thing/', '/component/', ''], ['foo', 'bar']],
+  ];
+
+  for (let example of legalImportSyncExamples) {
+    let [src] = example;
+    test(`importSync example: ${src}`, async function (assert) {
+      outputFileSync(
+        join(upstream, 'sample.js'),
+        `import { importSync } from '@embroider/macros'; ${src}`
+      );
+      await builder.build();
+      if (isLiteralExample(example)) {
+        assert.deepEqual(analyzer.imports, [
+          {
+            isDynamic: false,
+            specifier: '@embroider/macros',
+            path: 'sample.js',
+            package: pack,
+            treeType: undefined,
+          },
+          {
+            isDynamic: false,
+            specifier: example[1],
+            path: 'sample.js',
+            package: pack,
+            treeType: undefined,
+          },
+        ]);
+      } else {
+        assert.deepEqual(analyzer.imports, [
+          {
+            isDynamic: false,
+            specifier: '@embroider/macros',
+            path: 'sample.js',
+            package: pack,
+            treeType: undefined,
+          },
+          {
+            isDynamic: false,
             cookedQuasis: example[1],
             expressionNameHints: example[2],
             path: 'sample.js',

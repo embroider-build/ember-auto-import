@@ -9,7 +9,7 @@ import { isEqual, flatten } from 'lodash';
 import type Package from './package';
 import symlinkOrCopy from 'symlink-or-copy';
 import { TransformOptions } from '@babel/core';
-import { Expression, File } from '@babel/types';
+import { CallExpression, Expression, File } from '@babel/types';
 import traverse from '@babel/traverse';
 
 makeDebug.formatters.m = (modules: Import[]) => {
@@ -28,6 +28,7 @@ makeDebug.formatters.m = (modules: Import[]) => {
           cookedQuasis: m.cookedQuasis,
           expressionNameHints: m.expressionNameHints,
           path: m.path,
+          isDynamic: m.isDynamic,
           package: m.package.name,
           treeType: m.treeType,
         };
@@ -42,17 +43,18 @@ const debug = makeDebug('ember-auto-import:analyzer');
 
 export type TreeType = 'app' | 'addon' | 'addon-templates' | 'addon-test-support' | 'styles' | 'templates' | 'test';
 
-export interface LiteralImport {
+interface BaseImport {
   path: string;
   package: Package;
-  specifier: string;
   isDynamic: boolean;
   treeType: TreeType | undefined;
 }
 
-export interface TemplateImport {
-  path: string;
-  package: Package;
+export interface LiteralImport extends BaseImport {
+  specifier: string;
+}
+
+export interface TemplateImport extends BaseImport {
   // these are the string parts of the template literal. The first one always
   // comes before the first expression.
   cookedQuasis: string[];
@@ -62,7 +64,6 @@ export interface TemplateImport {
   // practice there often is, and we can aid debuggability by using names that
   // match the original code.
   expressionNameHints: (string | undefined)[];
-  treeType: TreeType | undefined;
 }
 
 export type Import = LiteralImport | TemplateImport;
@@ -174,6 +175,48 @@ export default class Analyzer extends Plugin {
     }
   }
 
+  private processImportCallExpression(
+    relativePath: string,
+    args: CallExpression['arguments'],
+    isDynamic: boolean
+  ): Import {
+    // it's a syntax error to have anything other than exactly one
+    // argument, so we can just assume this exists
+    let argument = args[0];
+
+    switch (argument.type) {
+      case 'StringLiteral':
+        return {
+          isDynamic,
+          specifier: argument.value,
+          path: relativePath,
+          package: this.pack,
+          treeType: this.treeType,
+        };
+      case 'TemplateLiteral':
+        if (argument.quasis.length === 1) {
+          return {
+            isDynamic,
+            specifier: argument.quasis[0].value.cooked!,
+            path: relativePath,
+            package: this.pack,
+            treeType: this.treeType,
+          };
+        } else {
+          return {
+            isDynamic,
+            cookedQuasis: argument.quasis.map(templateElement => templateElement.value.cooked!),
+            expressionNameHints: [...argument.expressions].map(inferNameHint),
+            path: relativePath,
+            package: this.pack,
+            treeType: this.treeType,
+          };
+        }
+      default:
+        throw new Error('import() is only allowed to contain string literals or template string literals');
+    }
+  }
+
   private parseImports(relativePath: string, source: string): Import[] {
     let ast: File | undefined;
     try {
@@ -191,43 +234,11 @@ export default class Analyzer extends Plugin {
 
     traverse(ast, {
       CallExpression: path => {
-        if (path.node.callee.type === 'Import') {
-          // it's a syntax error to have anything other than exactly one
-          // argument, so we can just assume this exists
-          let argument = path.node.arguments[0];
-
-          switch (argument.type) {
-            case 'StringLiteral':
-              imports.push({
-                isDynamic: true,
-                specifier: argument.value,
-                path: relativePath,
-                package: this.pack,
-                treeType: this.treeType,
-              });
-              break;
-            case 'TemplateLiteral':
-              if (argument.quasis.length === 1) {
-                imports.push({
-                  isDynamic: true,
-                  specifier: argument.quasis[0].value.cooked!,
-                  path: relativePath,
-                  package: this.pack,
-                  treeType: this.treeType,
-                });
-              } else {
-                imports.push({
-                  cookedQuasis: argument.quasis.map(templateElement => templateElement.value.cooked!),
-                  expressionNameHints: [...argument.expressions].map(inferNameHint),
-                  path: relativePath,
-                  package: this.pack,
-                  treeType: this.treeType,
-                });
-              }
-              break;
-            default:
-              throw new Error('import() is only allowed to contain string literals or template string literals');
-          }
+        let callee = path.get('callee');
+        if (callee.type === 'Import') {
+          imports.push(this.processImportCallExpression(relativePath, path.node.arguments, true));
+        } else if (callee.isIdentifier() && callee.referencesImport('@embroider/macros', 'importSync')) {
+          imports.push(this.processImportCallExpression(relativePath, path.node.arguments, false));
         }
       },
       ImportDeclaration: path => {

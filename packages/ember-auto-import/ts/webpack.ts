@@ -4,7 +4,7 @@ import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
-import { BundleDependencies, ResolvedImport, sharedResolverOptions } from './splitter';
+import { BundleDependencies, ResolvedImport, ResolvedTemplateImport, sharedResolverOptions } from './splitter';
 import { BundlerHook, BuildResult } from './bundler';
 import BundleConfig from './bundle-config';
 import { ensureDirSync } from 'fs-extra';
@@ -51,6 +51,13 @@ module.exports = (function(){
   {{#each dynamicImports as |module|}}
     d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.entrypoint}}'); });
   {{/each}}
+  {{#each staticTemplateImports as |module|}}
+    d('_eai_dynt_{{js-string-escape module.key}}', [], function() {
+      return function({{module.args}}) {
+        return require({{{module.template}}});
+      }
+    });
+  {{/each}}
   {{#each dynamicTemplateImports as |module|}}
     d('_eai_dynt_{{js-string-escape module.key}}', [], function() {
       return function({{module.args}}) {
@@ -62,6 +69,7 @@ module.exports = (function(){
 `) as (args: {
   staticImports: ResolvedImport[];
   dynamicImports: ResolvedImport[];
+  staticTemplateImports: { key: string; args: string; template: string }[];
   dynamicTemplateImports: { key: string; args: string; template: string }[];
   publicAssetURL: string | undefined;
 }) => string;
@@ -216,21 +224,24 @@ export default class WebpackBundler implements BundlerHook {
   }
 
   private writeEntryFile(name: string, deps: BundleDependencies) {
+    const mapTemplateImports = (imp: ResolvedTemplateImport) => ({
+      key: imp.importedBy[0].cookedQuasis.join('${e}'),
+      args: imp.expressionNameHints.join(','),
+      template:
+        '`' +
+        zip(imp.cookedQuasis, imp.expressionNameHints)
+          .map(([q, e]) => q + (e ? '${' + e + '}' : ''))
+          .join('') +
+        '`',
+    });
+
     writeFileSync(
       join(this.stagingDir, `${name}.js`),
       entryTemplate({
         staticImports: deps.staticImports,
         dynamicImports: deps.dynamicImports,
-        dynamicTemplateImports: deps.dynamicTemplateImports.map(imp => ({
-          key: imp.importedBy[0].cookedQuasis.join('${e}'),
-          args: imp.expressionNameHints.join(','),
-          template:
-            '`' +
-            zip(imp.cookedQuasis, imp.expressionNameHints)
-              .map(([q, e]) => q + (e ? '${' + e + '}' : ''))
-              .join('') +
-            '`',
-        })),
+        dynamicTemplateImports: deps.dynamicTemplateImports.map(mapTemplateImports),
+        staticTemplateImports: deps.staticTemplateImports.map(mapTemplateImports),
         publicAssetURL: this.publicAssetURL,
       })
     );
