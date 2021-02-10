@@ -24,6 +24,8 @@
   },
   "devDependencies": {
     "@ef4/scoped-lib": "*",
+    "@embroider/macros": "^0.36.0",
+    "another-dependency": "*",
     "a-dependency": "*",
     "a-module-dependency": "*",
     "broccoli-asset-rev": "*",
