@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "devDependencies": {
     "a-dependency": "0.0.1",
+    "a-module-dependency": "0.0.1",
     "ember-cli-babel": "^7.1.2"
   }
 }
