@@ -15,7 +15,8 @@
     "lint:hbs": "ember-template-lint .",
     "lint:js": "eslint .",
     "start": "ember serve",
-    "test": "ember test"
+    "test": "ember test",
+    "ci-scenario": "ember try:one $EAI_SCENARIO"
   },
   "devDependencies": {
     "@ember/optional-features": "^1.0.0",

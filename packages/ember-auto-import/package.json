@@ -24,7 +24,9 @@
     "start": "ember serve",
     "test": "ember test --test-port=0",
     "test:node": "qunit js/tests",
-    "prepare": "yarn compile"
+    "prepare": "yarn compile",
+    "ci-scenario": "ember try:one $EAI_SCENARIO",
+    "ci-scenario-node": "ember try:one $EAI_SCENARIO --- yarn test:node"
   },
   "dependencies": {
     "@babel/core": "^7.1.6",
