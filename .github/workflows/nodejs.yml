@@ -9,31 +9,32 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        eai_scenario: [2.18, stable, beta, canary]
+        # eai_scenario: [2.18, stable, beta, canary]
+        eai_scenario: ['default']
         suite:
-          - 'cd packages/sample-direct      && yarn test'
-          - 'cd packages/sample-direct      && yarn test'
-          - 'cd packages/sample-direct      && yarn test:fastboot'
-          - 'cd packages/sample-direct      && yarn test:prod'
-          - 'cd packages/sample-direct      && yarn test:custom-bundles'
-          - 'cd packages/sample-direct      && yarn test:custom-bundles-top'
-          - 'cd packages/sample-direct      && yarn test:custom-bundles-fastboot'
-          - 'cd packages/sample-direct      && yarn test:custom-csp'
-          - 'cd packages/sample-indirect    && yarn test'
-          - 'cd packages/sample-indirect    && yarn test:fastboot'
-          - 'cd packages/sample-indirect    && yarn test:custom-csp'
-          - 'cd packages/sample-addon       && yarn test'
-          - 'cd packages/sample-failure     && yarn test'
-          - 'cd packages/sample-merged      && yarn test'
-          - 'cd packages/sample-conflict    && yarn test'
+          # - 'cd packages/sample-direct      && yarn test'
+          # - 'cd packages/sample-direct      && yarn test'
+          # - 'cd packages/sample-direct      && yarn test:fastboot'
+          # - 'cd packages/sample-direct      && yarn test:prod'
+          # - 'cd packages/sample-direct      && yarn test:custom-bundles'
+          # - 'cd packages/sample-direct      && yarn test:custom-bundles-top'
+          # - 'cd packages/sample-direct      && yarn test:custom-bundles-fastboot'
+          # - 'cd packages/sample-direct      && yarn test:custom-csp'
+          # - 'cd packages/sample-indirect    && yarn test'
+          # - 'cd packages/sample-indirect    && yarn test:fastboot'
+          # - 'cd packages/sample-indirect    && yarn test:custom-csp'
+          # - 'cd packages/sample-failure     && yarn test'
+          # - 'cd packages/sample-merged      && yarn test'
           - './packages/test-harness/cli run --scenario sample-babel7 --command test'
           - './packages/test-harness/cli run --scenario typescript2 --command test'
           - './packages/test-harness/cli run --scenario typescript3 --command test'
           - './packages/test-harness/cli run --scenario typescript4 --command test'
-          - './packages/test-harness/cli run --scenario noconflict --command build'
+          - './packages/test-harness/cli run --scenario noconflict --command test'
+          - './packages/test-harness/cli run --scenario conflict --command test'
           - './packages/test-harness/cli run --scenario noparse --command test'
           - './packages/test-harness/cli run --scenario eslatest --command test'
           - './packages/test-harness/cli run --scenario skip-babel --command test'
+          - './packages/test-harness/cli run --scenario sample-addon --command test'
           - 'cd packages/ember-auto-import  && yarn test'
           - 'cd packages/ember-auto-import  && yarn test:node'
         exclude:
@@ -44,8 +45,8 @@ jobs:
           - suite: 'cd packages/sample-direct      && yarn test:custom-bundles-fastboot'
             eai_scenario: 2.18
         include:
-          - suite: 'for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs yarn eslint --ext .js,.ts'
-            eai_scenario: ''
+          # - suite: 'for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs yarn eslint --ext .js,.ts'
+          #   eai_scenario: ''
 
     steps:
       - uses: actions/checkout@v1

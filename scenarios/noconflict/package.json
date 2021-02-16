@@ -1,8 +1,11 @@
 {
-  "name": "noconflict",
+  "name": "sample-conflict",
   "version": "0.0.0",
+  "scripts": {
+    "test": "./ensure-build.sh"
+  },
   "devDependencies": {
-    "inner-lib": "*",
-    "sample-addon": "*"
+    "inner-lib": "0.0.1",
+    "sample-addon": "0.0.0"
   }
 }

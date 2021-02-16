@@ -5,7 +5,7 @@
     "test": "./ensure-failed-build.sh"
   },
   "devDependencies": {
-    "inner-lib": "0.0.3",
+    "inner-lib": "0.0.1",
     "sample-addon": "0.0.0"
   }
 }

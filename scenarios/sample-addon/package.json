@@ -9,5 +9,8 @@
   },
   "devDependencies": {
     "moment": "^2.22.1"
+  },
+  "ember-auto-import-test-harness": {
+    "base": "addon-template"
   }
 }

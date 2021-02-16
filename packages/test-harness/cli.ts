@@ -14,7 +14,7 @@ yargs
         .option('outdir', {
           type: 'string',
           description: 'output directory',
-          default: 'project',
+          default: 'projects/output',
         }),
     async argv => {
       let prepare = await import('./prepare');
@@ -39,7 +39,7 @@ yargs
         .option('outdir', {
           type: 'string',
           description: 'output directory',
-          default: 'output',
+          default: 'projects/output',
         }),
     async argv => {
       let run = await import('./run');

@@ -7,5 +7,6 @@ scenarios/*/dist
 project-templates/*/node_modules
 project-templates/*/tmp
 project-templates/*/dist
+projects/output/*
 node_modules
 yarn-error.log
