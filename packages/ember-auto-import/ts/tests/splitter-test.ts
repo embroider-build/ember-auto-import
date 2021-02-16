@@ -135,6 +135,8 @@ Qmodule('splitter', function (hooks) {
     'import(`http://${which}/rest`)',
     'import(`https://${which}/rest`)',
     'import(`//${which}/rest`)',
+    'import(`data:application/javascript;base64,ZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24oKSB7IHJldHVybiAxIH0=`)',
+    'import(`data:application/javascript;base64,${code}`)',
   ];
   for (let src of safeURLExamples) {
     test(`safe url example: ${src}`, async function (assert) {

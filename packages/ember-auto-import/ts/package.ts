@@ -174,7 +174,7 @@ export default class Package {
   }
 
   static categorize(importedPath: string, partial = false) {
-    if (/^(\w+:)?\/\//.test(importedPath)) {
+    if (/^(\w+:)?\/\//.test(importedPath) || importedPath.startsWith('data:')) {
       return 'url';
     }
 
@@ -193,10 +193,7 @@ export default class Package {
   resolve(importedPath: string, partial = false): Resolution | undefined {
     switch (Package.categorize(importedPath, partial)) {
       case 'url':
-        // unambiguous URLs with a scheme are allowed but ignored by us
-        if (/^(\w+:)?\/\//.test(importedPath)) {
-          return { type: 'url', url: importedPath };
-        }
+        return { type: 'url', url: importedPath };
       case 'local':
         return {
           type: 'local',
