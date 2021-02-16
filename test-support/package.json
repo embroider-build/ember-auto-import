@@ -1,0 +1,17 @@
+{
+  "name": "@ef4/test-support",
+  "version": "0.0.0",
+  "bin": {
+    "test-cli": "./cli"
+  },
+  "dependencies": {
+    "@types/fs-extra": "^9.0.7",
+    "@types/yargs": "^16.0.0",
+    "fixturify-project": "*",
+    "fs-extra": "^9.1.0",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.1.5",
+    "yargs": "^16.2.0"
+  },
+  "license": "MIT"
+}

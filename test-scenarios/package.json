@@ -1,0 +1,11 @@
+{
+  "name": "@ef4/test-scenarios",
+  "version": "0.0.0",
+  "dependencies": {
+    "fixturify-project": "*"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "lodash": "^4.17.20"
+  }
+}
