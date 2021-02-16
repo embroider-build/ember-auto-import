@@ -62,3 +62,5 @@ jobs:
       - run: yarn
       - name: test
         run: ${{ matrix.suite }}
+        env:
+          EAI_SCENARIO: ${{ matrix.EAI_SCENARIO }}
