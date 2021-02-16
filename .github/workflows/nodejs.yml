@@ -44,9 +44,9 @@ jobs:
             eai_scenario: 2.18
           - suite: 'cd packages/sample-direct      && yarn test:custom-bundles-fastboot'
             eai_scenario: 2.18
-        include:
-          # - suite: 'for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs yarn eslint --ext .js,.ts'
-          #   eai_scenario: ''
+        # include:
+        #   - suite: 'for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs yarn eslint --ext .js,.ts'
+        #     eai_scenario: ''
 
     steps:
       - uses: actions/checkout@v1
