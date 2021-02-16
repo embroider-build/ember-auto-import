@@ -1,6 +1,7 @@
 import { module, test } from 'qunit';
 import { visit, currentURL } from '@ember/test-helpers';
 import { setupApplicationTest } from 'ember-qunit';
+import ENV from 'sample-direct/config/environment';
 
 module('Acceptance | dynamic import', function (hooks) {
   setupApplicationTest(hooks);
@@ -27,10 +28,12 @@ module('Acceptance | dynamic import', function (hooks) {
     assert.equal(document.querySelector('[data-test="dynamic-import-result"]').textContent.trim(), expected);
   });
 
-  test('browser can use native import of data uri', async function (assert) {
-    await visit('/data-import');
-    assert.equal(currentURL(), '/data-import');
-    let expected = typeof FastBoot === 'undefined' ? 'browser' : 'server';
-    assert.equal(document.querySelector('[data-test="dynamic-import-result"]').textContent.trim(), expected);
-  });
+  if (!ENV.customizeCSP) {
+    test('browser can use native import of data uri', async function (assert) {
+      await visit('/data-import');
+      assert.equal(currentURL(), '/data-import');
+      let expected = typeof FastBoot === 'undefined' ? 'browser' : 'server';
+      assert.equal(document.querySelector('[data-test="dynamic-import-result"]').textContent.trim(), expected);
+    });
+  }
 });
