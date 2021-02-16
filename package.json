@@ -7,6 +7,9 @@
   },
   "workspaces": [
     "packages/*",
+    "app-template",
+    "addon-template",
+    "test-scenarios",
     "types/*"
   ],
   "resolutions": {
