@@ -6,6 +6,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "lodash": "^4.17.20"
+    "lodash": "^4.17.20",
+    "ember-cli-beta": "npm:ember-cli@beta"
   }
 }

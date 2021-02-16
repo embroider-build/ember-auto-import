@@ -3,13 +3,21 @@ import yargs from 'yargs';
 yargs
   .command(
     'prepare',
-    'Prepare a test scenario by writing it out as a complete app on disk',
+    'Prepare a test by writing it out as a complete app on disk',
     yargs =>
       yargs
-        .option('scenario', {
+        .option('test', {
           type: 'string',
-          description: 'path to scenario module',
+          description: 'path to test module',
           demandOption: true,
+        })
+        .option('scenarioConfig', {
+          type: 'string',
+          description: 'path to optional scenario configuration that can override dependencies in the test',
+        })
+        .option('scenarioName', {
+          type: 'string',
+          description: 'name of a scenario in scenarioConfig',
         })
         .option('outdir', {
           type: 'string',
@@ -23,12 +31,12 @@ yargs
   )
   .command(
     'run',
-    'Run a test scenario by preparing it and invoking a command',
+    'Run a test by preparing it and invoking a command',
     yargs =>
       yargs
-        .option('scenario', {
+        .option('test', {
           type: 'string',
-          description: 'path to scenario module',
+          description: 'path to test module',
           demandOption: true,
         })
         .option('command', {

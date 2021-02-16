@@ -2,13 +2,27 @@ import type Project from 'fixturify-project';
 import { removeSync, renameSync } from 'fs-extra';
 
 interface PrepareOptions {
-  scenario: string;
+  test: string;
   outdir: string;
+  scenarioConfig?: string;
+  scenarioName?: string;
 }
 
 export default async function prepare(opts: PrepareOptions) {
-  let scenarioModule = await import(opts.scenario);
+  let scenarioModule = await import(opts.test);
   let project = scenarioModule.default as Project;
+
+  if (opts.scenarioName) {
+    if (!opts.scenarioConfig) {
+      throw new Error(`you must pass scenarioConfig when using scenarioName`);
+    }
+    let scenarioConfigModule = await import(opts.scenarioConfig);
+    let scenario = scenarioConfigModule[opts.scenarioName];
+    if (!scenario) {
+      throw new Error(`no scenario named ${opts.scenarioName} in ${opts.scenarioConfig}`);
+    }
+    project = await scenario(project);
+  }
 
   // fixturify-project always puts your project in a directory whose name is
   // controlled by project.name, under the actual outdir you give it. We don't

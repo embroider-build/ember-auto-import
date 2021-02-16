@@ -6,7 +6,7 @@ import { dirSync, setGracefulCleanup } from 'tmp';
 setGracefulCleanup();
 
 interface RunParams {
-  scenario: string;
+  test: string;
   command: string;
 }
 
@@ -14,7 +14,7 @@ export default async function run(params: RunParams) {
   let outdir = dirSync().name;
   await prepare({
     outdir,
-    scenario: params.scenario,
+    test: params.test,
   });
   chdir(outdir);
   let child = spawn(`yarn`, [params.command], { stdio: ['inherit', 'inherit', 'inherit'] });
