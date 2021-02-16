@@ -49,4 +49,23 @@ yargs
       await run.default(argv);
     }
   )
+  .command(
+    'list',
+    'List all the tests that need to run',
+    yargs =>
+      yargs
+        .option('testsGlob', {
+          type: 'string',
+          description: 'glob for all your test modules',
+          demandOption: true,
+        })
+        .option('scenarioConfig', {
+          type: 'string',
+          description: 'path to optional scenario config. Each of your tests will run under every scenario.',
+        }),
+    async argv => {
+      let run = await import('./list');
+      await run.default(argv);
+    }
+  )
   .help().argv;
