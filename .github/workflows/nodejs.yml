@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # eai_scenario: [2.18, stable, beta, canary]
+        EAI_SCENARIO: ['ember-lts-2.18', 'ember-release', 'ember-beta', 'ember-canary']
         suite:
           # - 'cd packages/sample-direct      && yarn test'
           # - 'cd packages/sample-direct      && yarn test'
@@ -24,25 +24,25 @@ jobs:
           # - 'cd packages/sample-indirect    && yarn test:custom-csp'
           # - 'cd packages/sample-failure     && yarn test'
           # - 'cd packages/sample-merged      && yarn test'
-          - './packages/test-harness/cli run --scenario sample-babel7 --command test'
-          - './packages/test-harness/cli run --scenario typescript2 --command test'
-          - './packages/test-harness/cli run --scenario typescript3 --command test'
-          - './packages/test-harness/cli run --scenario typescript4 --command test'
-          - './packages/test-harness/cli run --scenario noconflict --command test'
-          - './packages/test-harness/cli run --scenario conflict --command test'
-          - './packages/test-harness/cli run --scenario noparse --command test'
-          - './packages/test-harness/cli run --scenario eslatest --command test'
-          - './packages/test-harness/cli run --scenario skip-babel --command test'
-          - './packages/test-harness/cli run --scenario sample-addon --command test'
+          - './packages/test-harness/cli run --scenario sample-babel7 --command try:one $EAI_SCENARIO'
+          - './packages/test-harness/cli run --scenario typescript2 --command try:one $EAI_SCENARIO'
+          - './packages/test-harness/cli run --scenario typescript3 --command try:one $EAI_SCENARIO'
+          - './packages/test-harness/cli run --scenario typescript4 --command try:one $EAI_SCENARIO'
+          - './packages/test-harness/cli run --scenario noconflict --command try:one $EAI_SCENARIO'
+          - './packages/test-harness/cli run --scenario conflict --command try:one $EAI_SCENARIO'
+          - './packages/test-harness/cli run --scenario noparse --command try:one $EAI_SCENARIO'
+          - './packages/test-harness/cli run --scenario eslatest --command try:one $EAI_SCENARIO'
+          - './packages/test-harness/cli run --scenario skip-babel --command try:one $EAI_SCENARIO'
+          - './packages/test-harness/cli run --scenario sample-addon --command try:one $EAI_SCENARIO'
           - 'cd packages/ember-auto-import  && yarn test'
           - 'cd packages/ember-auto-import  && yarn test:node'
         exclude:
           - suite: 'cd packages/sample-direct      && yarn test:custom-bundles'
           - suite: 'cd packages/sample-direct      && yarn test:custom-bundles-top'
           - suite: 'cd packages/sample-direct      && yarn test:custom-bundles-fastboot'
-        # include:
-        #   - suite: 'for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs yarn eslint --ext .js,.ts'
-        #     eai_scenario: ''
+        include:
+          - suite: 'for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs yarn eslint --ext .js,.ts'
+            EAI_SCENARIO: ''
 
     steps:
       - uses: actions/checkout@v1
