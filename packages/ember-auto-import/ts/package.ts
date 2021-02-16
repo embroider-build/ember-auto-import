@@ -1,5 +1,5 @@
 import resolvePackagePath from 'resolve-package-path';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { readFileSync } from 'fs';
 import { Memoize } from 'typescript-memoize';
 import { Configuration } from 'webpack';
@@ -19,6 +19,7 @@ export interface Options {
   publicAssetURL?: string;
   forbidEval?: boolean;
   skipBabel?: { package: string; semverRange?: string }[];
+  watchDependencies?: (string | string[])[];
 }
 
 interface DepResolution {
@@ -174,7 +175,7 @@ export default class Package {
   }
 
   static categorize(importedPath: string, partial = false) {
-    if (/^(\w+:)?\/\//.test(importedPath)) {
+    if (/^(\w+:)?\/\//.test(importedPath) || importedPath.startsWith('data:')) {
       return 'url';
     }
 
@@ -193,10 +194,7 @@ export default class Package {
   resolve(importedPath: string, partial = false): Resolution | undefined {
     switch (Package.categorize(importedPath, partial)) {
       case 'url':
-        // unambiguous URLs with a scheme are allowed but ignored by us
-        if (/^(\w+:)?\/\//.test(importedPath)) {
-          return { type: 'url', url: importedPath };
-        }
+        return { type: 'url', url: importedPath };
       case 'local':
         return {
           type: 'local',
@@ -304,6 +302,31 @@ export default class Package {
     // only apps (not addons) are allowed to set this, because it's motivated by
     // the apps own Content Security Policy.
     return Boolean(!this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval);
+  }
+
+  get watchedDirectories(): string[] | undefined {
+    // only apps (not addons) are allowed to set this
+    if (!this.isAddon && this.autoImportOptions?.watchDependencies) {
+      return this.autoImportOptions.watchDependencies
+        .map(nameOrNames => {
+          let names: string[];
+          if (typeof nameOrNames === 'string') {
+            names = [nameOrNames];
+          } else {
+            names = nameOrNames;
+          }
+          let cursor = this.root;
+          for (let name of names) {
+            let path = resolvePackagePath(name, cursor);
+            if (!path) {
+              return undefined;
+            }
+            cursor = dirname(path);
+          }
+          return cursor;
+        })
+        .filter(Boolean) as string[];
+    }
   }
 }
 

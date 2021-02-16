@@ -9,6 +9,7 @@ import { join } from 'path';
 import { readFileSync, writeFileSync, emptyDirSync, copySync } from 'fs-extra';
 import BundleConfig from './bundle-config';
 import { Memoize } from 'typescript-memoize';
+import { WatchedDir } from 'broccoli-source';
 
 const debug = makeDebug('ember-auto-import:bundler');
 
@@ -34,13 +35,19 @@ export interface BundlerHook {
 export default class Bundler extends Plugin {
   private lastDeps: Map<string, BundleDependencies> | undefined;
   private cachedBundlerHook: BundlerHook | undefined;
-  private didEnsureDirs = false;
+  private didEnsureDirs: boolean;
+  private options: BundlerPluginOptions;
+  private isWatchingSomeDeps: boolean;
 
-  constructor(allAppTree: Node, private options: BundlerPluginOptions) {
-    super([allAppTree], {
+  constructor(allAppTree: Node, options: BundlerPluginOptions) {
+    let deps = depsFor(allAppTree, options.packages);
+    super(deps, {
       persistentOutput: true,
       needsCache: true,
     });
+    this.options = options;
+    this.didEnsureDirs = false;
+    this.isWatchingSomeDeps = deps.length > 1;
   }
 
   @Memoize()
@@ -104,7 +111,7 @@ export default class Bundler extends Plugin {
     reloadDevPackages();
     let { splitter } = this.options;
     let bundleDeps = await splitter.deps();
-    if (bundleDeps !== this.lastDeps) {
+    if (bundleDeps !== this.lastDeps || this.isWatchingSomeDeps) {
       let buildResult = await this.bundlerHook.build(bundleDeps);
       this.addEntrypoints(buildResult);
       this.addLazyAssets(buildResult);
@@ -152,4 +159,15 @@ export default class Bundler extends Plugin {
       writeFileSync(join(this.outputPath, 'lazy', 'auto-import-fastboot.js'), contents.join('\n'));
     }
   }
+}
+
+function depsFor(allAppTree: Node, packages: Set<Package>) {
+  let deps = [allAppTree];
+  for (let pkg of packages) {
+    let watched = pkg.watchedDirectories;
+    if (watched) {
+      deps = deps.concat(watched.map(dir => new WatchedDir(dir)));
+    }
+  }
+  return deps;
 }

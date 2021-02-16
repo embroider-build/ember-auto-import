@@ -10,6 +10,7 @@ Router.map(function () {
   this.route('dynamic-import');
   this.route('dynamic-flavor', { path: '/flavor/:which' });
   this.route('native-import');
+  this.route('data-import');
 });
 
 export default Router;

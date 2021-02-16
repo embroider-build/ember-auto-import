@@ -1,7 +1,3 @@
-# NEXT: integrate change-ember-cli-version.sh and link-them.sh with the new test harness
-
-One option is to bake ember-try into the app-template so each of our scenarios also supports multiple ember-try scenarios.
-
 # ember-auto-import
 
 Just `import` from NPM, with zero configuration.
@@ -108,6 +104,12 @@ let app = new EmberApp(defaults, {
         // list can continue
       },
     ],
+    watchDependencies: [
+      // trigger rebuilds if "some-lib" changes during development
+      'some-lib',
+      // trigger rebuilds if "some-lib"'s inner dependency "other-lib" changes
+      ['some-lib', 'other-lib'],
+    ],
     webpack: {
       // extra webpack configuration goes here
     },
@@ -122,6 +124,7 @@ Supported Options
 - `forbidEval`: _boolean_, defaults to false. We use `eval` in development by default (because that is the fastest way to provide sourcemaps). If you need to comply with a strict Content Security Policy (CSP), you can set `forbidEval: true`. You will still get sourcemaps, they will just use a slower implementation.
 - `publicAssetURL`: where to load additional dynamic javascript files from. You usually don't need to set this -- the default works for most apps. However, if you're using `<script defer>` or another method of asynchronously loading your vendor.js script you will need to set this to the URL where your asset directory is served (typically `/assets`).
 - `skipBabel`: _list of objects, defaults to []_. The specified packages will be skipped from babel transpilation.
+- `watchDependencies`: _list of strings or string arrays, defaults to []_. Tells ember-auto-import that you'd like to trigger a rebuild if one of these auto-imported dependencies changes. Pass a package name that refers to one of your own dependencies, or pass an array of package names to address a deeper dependency.
 - `webpack`: _object_, An object that will get merged into the configuration we pass to webpack. This lets you work around quirks in underlying libraries and otherwise customize the way Webpack will assemble your dependencies.
 
 ## Usage from Addons

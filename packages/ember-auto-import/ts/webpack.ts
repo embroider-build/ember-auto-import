@@ -114,7 +114,9 @@ export default class WebpackBundler implements BundlerHook {
       },
       output: {
         path: this.outputDir,
-        filename: `chunk.[id].[chunkhash].js`,
+        // entry chunks need to have stable names, so we can more easily gather
+        // them all up to append to Ember's vendor.js
+        filename: `chunk.[id].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,
         libraryTarget: 'var',
         library: '__ember_auto_import__',
@@ -122,6 +124,12 @@ export default class WebpackBundler implements BundlerHook {
       optimization: {
         splitChunks: {
           chunks: 'all',
+          cacheGroups: {
+            // similar to above, entry vendor chunks need to have stable names
+            vendors: {
+              filename: 'chunk.[name].js',
+            } as any, // typings are missing a valid documented option
+          },
         },
       },
       resolveLoader: {
