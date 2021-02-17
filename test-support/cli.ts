@@ -43,9 +43,41 @@ yargs
           type: 'string',
           description: 'command to invoke via yarn',
           default: 'test',
+        })
+        .option('scenarioConfig', {
+          type: 'string',
+          description: 'path to optional scenario configuration that can override dependencies in the test',
+        })
+        .option('scenarioName', {
+          type: 'string',
+          description: 'name of a scenario in scenarioConfig',
         }),
     async argv => {
       let run = await import('./run');
+      await run.default(argv);
+    }
+  )
+  .command(
+    'runall',
+    'Run all matching tests',
+    yargs =>
+      yargs
+        .option('testsGlob', {
+          type: 'string',
+          description: 'glob for all your test modules',
+          demandOption: true,
+        })
+        .option('scenarioConfig', {
+          type: 'string',
+          description: 'path to optional scenario config. Each of your tests will run under every scenario.',
+        })
+        .option('command', {
+          type: 'string',
+          description: 'command to invoke via yarn in each test app',
+          default: 'test',
+        }),
+    async argv => {
+      let run = await import('./runall');
       await run.default(argv);
     }
   )
@@ -62,6 +94,10 @@ yargs
         .option('scenarioConfig', {
           type: 'string',
           description: 'path to optional scenario config. Each of your tests will run under every scenario.',
+        })
+        .option('githubMatrix', {
+          type: 'boolean',
+          description: 'format the output for consumption as a GitHub Actions matrix',
         }),
     async argv => {
       let run = await import('./list');

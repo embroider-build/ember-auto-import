@@ -1,5 +1,6 @@
 import type Project from 'fixturify-project';
 import { removeSync, renameSync } from 'fs-extra';
+import { resolve } from 'path';
 
 interface PrepareOptions {
   test: string;
@@ -9,14 +10,14 @@ interface PrepareOptions {
 }
 
 export default async function prepare(opts: PrepareOptions) {
-  let scenarioModule = await import(opts.test);
+  let scenarioModule = await import(resolve(opts.test));
   let project = scenarioModule.default as Project;
 
   if (opts.scenarioName) {
     if (!opts.scenarioConfig) {
       throw new Error(`you must pass scenarioConfig when using scenarioName`);
     }
-    let scenarioConfigModule = await import(opts.scenarioConfig);
+    let scenarioConfigModule = await import(resolve(opts.scenarioConfig));
     let scenario = scenarioConfigModule[opts.scenarioName];
     if (!scenario) {
       throw new Error(`no scenario named ${opts.scenarioName} in ${opts.scenarioConfig}`);

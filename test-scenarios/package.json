@@ -2,7 +2,10 @@
   "name": "@ef4/test-scenarios",
   "version": "0.0.0",
   "dependencies": {
-    "fixturify-project": "*"
+    "@types/qunit": "^2.11.1",
+    "fixturify-project": "*",
+    "qunit": "^2.6.1",
+    "ts-node": "^9.1.1"
   },
   "license": "MIT",
   "devDependencies": {
