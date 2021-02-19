@@ -1,107 +1,57 @@
 import yargs from 'yargs';
 
 yargs
+  .demandCommand(1, 'Use one of the above commands')
   .command(
-    'prepare',
-    'Prepare a test by writing it out as a complete app on disk',
+    'list',
+    'List all the scenarios defined in your test suite',
     yargs =>
       yargs
-        .option('test', {
+        .option('files', {
           type: 'string',
-          description: 'path to test module',
+          description: 'globs for all your test files',
           demandOption: true,
         })
-        .option('scenarioConfig', {
+        .array('files')
+        .option('require', {
           type: 'string',
-          description: 'path to optional scenario configuration that can override dependencies in the test',
+          description: 'module(s) to require before we try to load your tests.',
         })
-        .option('scenarioName', {
+        .array('require'),
+    async argv => {
+      let mod = await import('./list');
+      await mod.printList(argv);
+    }
+  )
+  .command(
+    'output',
+    'Write out one of your test scenario apps as a real app on disk, so you can inspect, debug, and run it',
+    yargs =>
+      yargs
+        .option('scenario', {
           type: 'string',
-          description: 'name of a scenario in scenarioConfig',
+          description: 'Name of scenario. The first scenario to contain this substring will be chosen.',
+          demandOption: true,
         })
         .option('outdir', {
           type: 'string',
-          description: 'output directory',
+          description: 'Where to write the app',
           default: 'output',
-        }),
-    async argv => {
-      let prepare = await import('./prepare');
-      await prepare.default(argv);
-    }
-  )
-  .command(
-    'run',
-    'Run a test by preparing it and invoking a command',
-    yargs =>
-      yargs
-        .option('test', {
+        })
+        .option('files', {
           type: 'string',
-          description: 'path to test module',
+          description: 'globs for all your test files',
           demandOption: true,
         })
-        .option('command', {
+        .array('files')
+        .option('require', {
           type: 'string',
-          description: 'command to invoke via yarn',
-          default: 'test',
+          description: 'module(s) to require before we try to load your tests.',
         })
-        .option('scenarioConfig', {
-          type: 'string',
-          description: 'path to optional scenario configuration that can override dependencies in the test',
-        })
-        .option('scenarioName', {
-          type: 'string',
-          description: 'name of a scenario in scenarioConfig',
-        }),
+        .array('require'),
     async argv => {
-      let run = await import('./run');
-      await run.default(argv);
-    }
-  )
-  .command(
-    'runall',
-    'Run all matching tests',
-    yargs =>
-      yargs
-        .option('testsGlob', {
-          type: 'string',
-          description: 'glob for all your test modules',
-          demandOption: true,
-        })
-        .option('scenarioConfig', {
-          type: 'string',
-          description: 'path to optional scenario config. Each of your tests will run under every scenario.',
-        })
-        .option('command', {
-          type: 'string',
-          description: 'command to invoke via yarn in each test app',
-          default: 'test',
-        }),
-    async argv => {
-      let run = await import('./runall');
-      await run.default(argv);
-    }
-  )
-  .command(
-    'list',
-    'List all the tests that need to run',
-    yargs =>
-      yargs
-        .option('testsGlob', {
-          type: 'string',
-          description: 'glob for all your test modules',
-          demandOption: true,
-        })
-        .option('scenarioConfig', {
-          type: 'string',
-          description: 'path to optional scenario config. Each of your tests will run under every scenario.',
-        })
-        .option('githubMatrix', {
-          type: 'boolean',
-          description: 'format the output for consumption as a GitHub Actions matrix',
-        }),
-    async argv => {
-      let run = await import('./list');
-      await run.default(argv);
+      let mod = await import('./output');
+      await mod.output(argv);
     }
   )
   .help().argv;

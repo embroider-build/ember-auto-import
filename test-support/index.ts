@@ -2,7 +2,7 @@ import Project from 'fixturify-project';
 import { dirSync, setGracefulCleanup } from 'tmp';
 import { spawn } from 'child_process';
 import { join } from 'path';
-import { renameSync, unlinkSync } from 'fs-extra';
+import { renameSync, removeSync } from 'fs-extra';
 
 setGracefulCleanup();
 
@@ -45,12 +45,16 @@ export class Scenarios {
   ) {}
 }
 
+export const seenScenarios: Scenario[] = [];
+
 export class Scenario {
   constructor(
     public name: string,
     private getBaseScenario: () => Project | Promise<Project>,
     private mutators: ProjectMutator[]
-  ) {}
+  ) {
+    seenScenarios.push(this);
+  }
 
   async prepare(outdir?: string): Promise<PreparedApp> {
     let project = await this.getBaseScenario();
@@ -65,7 +69,7 @@ export class Scenario {
       // do a little dance with a temporary name.
       project.writeSync(outdir + '--tmp');
       renameSync(join(outdir + '--tmp', project.name), outdir);
-      unlinkSync(outdir + '--tmp');
+      removeSync(outdir + '--tmp');
       dir = outdir;
     } else {
       let parent = dirSync().name;
