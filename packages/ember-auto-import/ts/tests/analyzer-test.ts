@@ -265,10 +265,7 @@ Qmodule('analyzer', function (hooks) {
   for (let example of legalImportSyncExamples) {
     let [src] = example;
     test(`importSync example: ${src}`, async function (assert) {
-      outputFileSync(
-        join(upstream, 'sample.js'),
-        `import { importSync } from '@embroider/macros'; ${src}`
-      );
+      outputFileSync(join(upstream, 'sample.js'), `import { importSync } from '@embroider/macros'; ${src}`);
       await builder.build();
       if (isLiteralExample(example)) {
         assert.deepEqual(analyzer.imports, [

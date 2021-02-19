@@ -1,7 +1,7 @@
 // @ts-ignore
 import syntax from 'babel-plugin-syntax-dynamic-import';
 import { NodePath } from '@babel/core';
-import { Import, CallExpression, callExpression, identifier, stringLiteral } from '@babel/types';
+import { CallExpression, callExpression, identifier, Import, stringLiteral } from '@babel/types';
 import Package from './package';
 
 function emberAutoImport() {
@@ -20,6 +20,31 @@ function emberAutoImport() {
           let cat = Package.categorize(arg.quasis[0].value.cooked!, true);
           if (cat === 'dep') {
             call.replaceWith(
+              callExpression(identifier('emberAutoImportDynamic'), [
+                stringLiteral(arg.quasis.map(q => q.value.cooked).join('${e}')),
+                ...arg.expressions,
+              ])
+            );
+          }
+        }
+      },
+      CallExpression(path: NodePath<CallExpression>) {
+        let callee = path.get('callee');
+
+        if (callee.isIdentifier() && callee.referencesImport('@embroider/macros', 'importSync')) {
+          let arg = path.node.arguments[0];
+          if (arg.type === 'StringLiteral') {
+            let cat = Package.categorize(arg.value);
+            if (cat === 'url') {
+              throw new Error('You cannot use importSync() with a URL.');
+            }
+            callee.replaceWith(identifier('require'));
+          } else if (arg.type === 'TemplateLiteral') {
+            let cat = Package.categorize(arg.quasis[0].value.cooked!, true);
+            if (cat === 'url') {
+              throw new Error('You cannot use importSync() with a URL.');
+            }
+            path.replaceWith(
               callExpression(identifier('emberAutoImportDynamic'), [
                 stringLiteral(arg.quasis.map(q => q.value.cooked).join('${e}')),
                 ...arg.expressions,
