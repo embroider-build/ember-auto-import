@@ -1,9 +1,11 @@
-import { join } from 'path';
 import merge from 'lodash/merge';
-import { testApp } from '@ef4/test-support';
+import { appScenarios } from './scenarios';
+import { PreparedApp } from '@ef4/test-support';
+import QUnit from 'qunit';
+const { module: Qmodule, test } = QUnit;
 
-testApp('empty app', join(__dirname, '..', 'app-template'), function ({ setup, test }) {
-  setup(async function (project) {
+appScenarios
+  .map('empty-app', project => {
     merge(project.files, {
       app: {
         templates: {
@@ -29,10 +31,16 @@ testApp('empty app', join(__dirname, '..', 'app-template'), function ({ setup, t
         },
       },
     });
+  })
+  .forEachScenario(scenario => {
+    Qmodule(scenario.name, function (hooks) {
+      let app: PreparedApp;
+      hooks.before(async () => {
+        app = await scenario.prepare();
+      });
+      test('yarn test', async function (assert) {
+        let result = await app.execute('yarn test');
+        assert.equal(result.exitCode, 0, result.output);
+      });
+    });
   });
-
-  test('ember test', async function (assert, app) {
-    let { exitCode } = await app.execute('test');
-    assert.equal(exitCode, 0);
-  });
-});

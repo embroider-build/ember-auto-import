@@ -1,16 +1,14 @@
-import merge from 'lodash/merge';
-import { defineScenario } from '@ef4/test-support';
+import { join } from 'path';
+import { Scenarios, Project } from '@ef4/test-support';
 
-defineScenario('fails on purpose', async function (project) {
-  merge(project.files, {
-    tests: {
-      acceptance: {
-        'foo-test.js': 'throw new Error("boom")',
-      },
-    },
-  });
-});
-
-defineScenario('beta', async function (project) {
+async function beta(project: Project) {
   project.linkDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-beta' });
-});
+}
+
+export const appScenarios = Scenarios.fromDir(join(__dirname, '..', 'app-template'))
+  .add('default', () => {})
+  .add('beta', beta);
+
+export const addonScenarios = Scenarios.fromDir(join(__dirname, '..', 'addon-template'))
+  .add('default', () => {})
+  .add('beta', beta);
