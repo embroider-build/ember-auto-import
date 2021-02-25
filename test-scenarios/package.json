@@ -16,6 +16,8 @@
   "license": "MIT",
   "devDependencies": {
     "lodash": "^4.17.20",
-    "ember-cli-beta": "npm:ember-cli@beta"
+    "ember-cli-beta": "npm:ember-cli@beta",
+    "typescript-4": "npm:typescript@^4.1.2",
+    "ember-cli-typescript-3": "npm:ember-cli-typescript@^3.0.0",
   }
 }
