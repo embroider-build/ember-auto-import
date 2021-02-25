@@ -5,7 +5,13 @@
     "@types/qunit": "^2.11.1",
     "fixturify-project": "*",
     "qunit": "^2.6.1",
-    "ts-node": "^9.1.1"
+    "ts-node": "^9.1.1",
+    "@ef4/test-support": "*"
+  },
+  "scripts": {
+    "test:run": "qunit --require ts-node/register",
+    "test:list": "test-cli list --require=scenarios.ts --files=*-test.ts",
+    "test:output": "test-cli output --require=scenarios.ts --files=*-test.ts"
   },
   "license": "MIT",
   "devDependencies": {
