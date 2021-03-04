@@ -9,7 +9,7 @@
     "@ef4/test-support": "*"
   },
   "scripts": {
-    "test:run": "qunit --require ts-node/register",
+    "test:run": "qunit --require ts-node/register *-test.ts",
     "test:list": "test-cli list --files=*-test.ts",
     "test:output": "test-cli output --files=*-test.ts"
   },
