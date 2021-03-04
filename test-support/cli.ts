@@ -17,7 +17,8 @@ yargs
           type: 'string',
           description: 'module(s) to require before we try to load your tests.',
         })
-        .array('require'),
+        .array('require')
+        .option('matrix', { type: 'boolean', default: false }),
     async argv => {
       let mod = await import('./list');
       await mod.printList(argv);

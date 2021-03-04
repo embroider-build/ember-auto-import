@@ -5,6 +5,7 @@ import { resolve } from 'path';
 export interface ListParams {
   files: string[];
   require: string[] | undefined;
+  matrix: boolean;
 }
 
 export async function list(params: ListParams): Promise<Scenario[]> {
@@ -22,7 +23,21 @@ export async function list(params: ListParams): Promise<Scenario[]> {
 }
 
 export async function printList(params: ListParams) {
-  for (let scenario of await list(params)) {
-    process.stdout.write(scenario.name + '\n');
+  let scenarios = await list(params);
+  if (params.matrix) {
+    process.stdout.write(
+      JSON.stringify({
+        include: scenarios.map(scenario => ({
+          name: scenario.name,
+          command: `yarn test --filter "${scenario.name}:"`,
+          dir: 'test-scenarios',
+        })),
+        name: scenarios.map(scenario => scenario.name),
+      })
+    );
+  } else {
+    for (let scenario of scenarios) {
+      process.stdout.write(scenario.name + '\n');
+    }
   }
 }
