@@ -18,6 +18,8 @@
     "lodash": "^4.17.20",
     "ember-cli-beta": "npm:ember-cli@beta",
     "typescript-4": "npm:typescript@^4.1.2",
+    "ember-cli-typescript-2": "npm:ember-cli-typescript@^2.0.0-beta.3",
     "ember-cli-typescript-3": "npm:ember-cli-typescript@^3.0.0",
+    "ember-cli-typescript-4": "npm:ember-cli-typescript@^4.0.0-alpha.1"
   }
 }

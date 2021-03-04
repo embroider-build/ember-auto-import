@@ -14,20 +14,12 @@ const DEPENDENCIES = {
     },
     node_modules: {},
   },
-  'a-pure-ts-dependency': {
-    'package.json': '{ "name": "a-pure-ts-dependency", "version": "0.0.1" }',
-    'index.ts': "export default function() { return 'ember-auto-import-a-pure-ts-dependency'; } ",
-    'js-takes-precedence.ts': "export default function() { return 'ember-auto-import-ts-takes-precedence-WRONG'; } ",
-    'js-takes-precedence.js': "export default function() { return 'ember-auto-import-js-takes-precedence'; } ",
-    node_modules: {},
-  },
 };
 
 appScenarios
-  .map('ember-cli-typescript-3', project => {
+  .map('ember-cli-typescript-4', project => {
     project.addDevDependency(Project.fromJSON(DEPENDENCIES, 'a-dependency'));
-    project.addDevDependency(Project.fromJSON(DEPENDENCIES, 'a-pure-ts-dependency'));
-    project.linkDevDependency('ember-cli-typescript', { baseDir: __dirname, resolveName: 'ember-cli-typescript-3' });
+    project.linkDevDependency('ember-cli-typescript', { baseDir: __dirname, resolveName: 'ember-cli-typescript-4' });
     project.linkDevDependency('typescript', { baseDir: __dirname, resolveName: 'typescript-4' });
 
     merge(project.files, {
@@ -36,7 +28,7 @@ appScenarios
           'application.ts': APPLICATION_TS,
         },
         templates: {
-          'application.hbs': APPLICATION_HBS,
+          'application.hbs': '<div data-test-import-result>{{result}}</div>',
         },
         config: {
           'environment.d.ts': ENVIROMENT_D_TS,
@@ -64,34 +56,16 @@ appScenarios
   });
 
 const APPLICATION_TS = `
-  import Controller from '@ember/controller';
-  import { computed } from '@ember/object';
-  import jsDependency from 'a-dependency';
-  import tsDependency from 'a-pure-ts-dependency';
-  import precedenceDependency from 'a-pure-ts-dependency/js-takes-precedence';
+import Controller from '@ember/controller';
+import { computed } from '@ember-decorators/object';
+import aDependency from 'a-dependency';
 
-  export default class extends Controller {
-    @computed()
-    get jsDependency() {
-      return jsDependency();
-    }
-
-    @computed()
-    get tsDependency() {
-      return tsDependency();
-    }
-
-    @computed()
-    get precedenceDependency() {
-      return precedenceDependency();
-    }
-  }`;
-
-const APPLICATION_HBS = `
-  <div data-test-import-js>{{this.jsDependency}}</div>
-  <div data-test-import-ts>{{this.tsDependency}}</div>
-  <div data-test-import-precedence>{{this.precedenceDependency}}</div>
-  `;
+export default class extends Controller {
+  @computed()
+  get result() {
+    return aDependency();
+  }
+}`;
 
 const ENVIROMENT_D_TS = `
   export default config;
@@ -105,20 +79,18 @@ const ENVIROMENT_D_TS = `
   `;
 
 const BASIC_TEST_JS = `
-  import { module, test } from 'qunit';
-  import { visit } from '@ember/test-helpers';
-  import { setupApplicationTest } from 'ember-qunit';
+import { module, test } from 'qunit';
+import { visit } from '@ember/test-helpers';
+import { setupApplicationTest } from 'ember-qunit';
 
-  module('Acceptance | basic', function(hooks) {
-    setupApplicationTest(hooks);
+module('Acceptance | basic', function(hooks) {
+  setupApplicationTest(hooks);
 
-    test('visiting /basic', async function(assert) {
-      await visit('/');
-      assert.equal(document.querySelector('[data-test-import-js]').textContent.trim(), 'ember-auto-import-a-dependency');
-      assert.equal(document.querySelector('[data-test-import-ts]').textContent.trim(), 'ember-auto-import-a-pure-ts-dependency');
-      assert.equal(document.querySelector('[data-test-import-precedence]').textContent.trim(), 'ember-auto-import-js-takes-precedence');
-    });
+  test('visiting /basic', async function(assert) {
+    await visit('/');
+    assert.dom('[data-test-import-result]').hasText('ember-auto-import-a-dependency');
   });
+});
   `;
 
 const TSCONFIG_JSON = `
@@ -144,7 +116,7 @@ const TSCONFIG_JSON = `
       "inlineSources": true,
       "baseUrl": ".",
       "module": "es6",
-      "paths": {
+      paths: {
         "tests/*": ["tests/*"],
         "app/*": ["app/*"],
         "*": ["types/*"]
