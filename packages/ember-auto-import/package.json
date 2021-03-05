@@ -100,7 +100,7 @@
     "ember-try": "^1.2.1",
     "eslint-plugin-node": "^6.0.1",
     "fastboot": "^1.2.0",
-    "fixturify-project": "^2.1.0",
+    "fixturify-project": "ef4/node-fixturify-project#800cfd1bbfe52616be1f447464e84bd6e4883e14",
     "jsdom": "^11.11.0",
     "loader.js": "^4.2.3",
     "lodash-es": "^4.17.10",
