@@ -61,41 +61,6 @@
       "program": "${workspaceFolder}/node_modules/.bin/qunit",
       "cwd": "${workspaceFolder}/packages/ember-auto-import",
       "args": ["js/tests", "--filter", "safe url example: import('//example.com/thing')"]
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Run testApps",
-      "program": "${workspaceFolder}/node_modules/.bin/qunit",
-      "cwd": "${workspaceFolder}/test-scenarios",
-      "args": ["--require", "ts-node/register", "--require", "./scenarios.ts", "./empty-app-test.ts"]
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Runall",
-      "runtimeArgs": ["-r", "ts-node/register"],
-      "cwd": "${workspaceFolder}/test-support",
-      "args": ["./cli.ts", "runall", "--testsGlob", "../test-scenarios/*-test.ts"],
-      "outputCapture": "std"
-    },
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "prepare",
-      "runtimeArgs": ["-r", "ts-node/register"],
-      "cwd": "${workspaceFolder}/test-support",
-      "args": [
-        "./cli.ts",
-        "prepare",
-        "--test",
-        "../test-scenarios/empty-app-test.ts",
-        "--scenarioConfig",
-        "../test-scenarios/scenarios.ts",
-        "--scenarioName",
-        "defaultScenario"
-      ],
-      "outputCapture": "std"
     }
   ]
 }

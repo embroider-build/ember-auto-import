@@ -7,8 +7,6 @@
   },
   "workspaces": [
     "packages/*",
-    "app-template",
-    "addon-template",
     "test-scenarios",
     "test-support",
     "types/*"

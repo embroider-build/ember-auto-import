@@ -5,7 +5,8 @@
     "@types/qunit": "^2.11.1",
     "qunit": "^2.6.1",
     "ts-node": "^9.1.1",
-    "@ef4/test-support": "*"
+    "@ef4/test-support": "*",
+    "@ef4/app-template": "*"
   },
   "scripts": {
     "test": "qunit --require ts-node/register *-test.ts",
