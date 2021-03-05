@@ -34,7 +34,7 @@ jobs:
         run: yarn
       - id: set-matrix
         working-directory: test-scenarios
-        run: echo "::set-output name=matrix::$(yarn test:list --matrix)"
+        run: echo "::set-output name=matrix::$(yarn --silent test:list --matrix)"
 
   new_build:
     needs: discover_matrix
