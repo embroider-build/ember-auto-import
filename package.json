@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "compile": "cd packages/ember-auto-import && npm run compile",
+    "prepare": "cd packages/ember-auto-import && npm run compile",
     "test": "./scripts/test.sh",
     "lint": "cd packages/ember-auto-import && npm run lint"
   },
