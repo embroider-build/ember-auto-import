@@ -14,7 +14,7 @@
     "build": "ember build",
     "lint:js": "eslint ./*.js app blueprints config lib server tests",
     "start": "ember serve",
-    "test": "yarn build"
+    "test": "npm run build"
   },
   "devDependencies": {
     "broccoli-asset-rev": "*",

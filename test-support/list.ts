@@ -29,7 +29,7 @@ export async function printList(params: ListParams) {
       JSON.stringify({
         include: scenarios.map(scenario => ({
           name: scenario.name,
-          command: `yarn test --filter "${scenario.name}:"`,
+          command: `npm run test --filter "${scenario.name}:"`,
           dir: 'test-scenarios',
         })),
         name: scenarios.map(scenario => scenario.name),

@@ -20,7 +20,7 @@ export async function run(params: RunParams): Promise<{ exitCode: number }> {
     scenarioConfig: params.scenarioConfig,
     scenarioName: params.scenarioName,
   });
-  let child = spawn(`yarn`, [params.command], { stdio: ['inherit', 'inherit', 'inherit'], cwd: outdir });
+  let child = spawn(`npm`, ['run', params.command], { stdio: ['inherit', 'inherit', 'inherit'], cwd: outdir });
   return new Promise(resolve => {
     child.on('close', (exitCode: number) => {
       resolve({ exitCode });

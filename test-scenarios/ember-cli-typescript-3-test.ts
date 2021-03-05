@@ -56,8 +56,8 @@ appScenarios
       hooks.before(async () => {
         app = await scenario.prepare();
       });
-      test('yarn test', async function (assert) {
-        let result = await app.execute('yarn test');
+      test('npm run test', async function (assert) {
+        let result = await app.execute('npm run test');
         assert.equal(result.exitCode, 0, result.output);
       });
     });

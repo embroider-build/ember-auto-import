@@ -24,7 +24,7 @@
     "start": "ember serve",
     "test": "ember test --test-port=0",
     "test:node": "qunit js/tests",
-    "prepare": "yarn compile"
+    "prepare": "tsc"
   },
   "dependencies": {
     "@babel/core": "^7.1.6",
