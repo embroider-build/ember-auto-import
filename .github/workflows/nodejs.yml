@@ -28,7 +28,7 @@ jobs:
       - run: npm install
       - id: set-matrix
         working-directory: test-scenarios
-        run: echo "::set-output name=matrix::$(npm run --silent -- test:list --matrix)"
+        run: echo "::set-output name=matrix::$(npm run --silent test:list -- --matrix)"
 
   new_build:
     needs: discover_matrix
