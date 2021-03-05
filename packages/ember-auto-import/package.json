@@ -122,5 +122,8 @@
       "ember-cli-coffeescript",
       "ember-cli-typescript"
     ]
+  },
+  "volta": {
+    "extends": "../../package.json"
   }
 }
