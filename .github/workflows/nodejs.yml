@@ -37,10 +37,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.discover_matrix.outputs.matrix)}}
-      include:
-        - name: eslint
-        - dir: '.'
-        - command: 'for name in `ls packages/*/.eslintrc.js` `ls */.eslintrc.js`; do dirname $name; done  | xargs npx eslint --'
+        include:
+          - name: eslint
+          - dir: '.'
+          - command: 'for name in `ls packages/*/.eslintrc.js` `ls */.eslintrc.js`; do dirname $name; done  | xargs npx eslint --'
 
     steps:
       - uses: actions/checkout@v1
