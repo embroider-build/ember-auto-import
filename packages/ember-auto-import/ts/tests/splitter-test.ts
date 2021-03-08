@@ -8,7 +8,7 @@ import Package from '../package';
 import Analyzer from '../analyzer';
 import Splitter from '../splitter';
 import BundleConfig from '../bundle-config';
-import Project from 'fixturify-project';
+import { Project } from 'fixturify-project';
 import { merge } from 'lodash';
 import { AddonInstance, AppInstance, Project as EmberCLIProject } from '../ember-cli-models';
 

@@ -10,8 +10,8 @@
   },
   "scripts": {
     "test": "qunit --require ts-node/register *-test.ts",
-    "test:list": "../test-support/cli list --files=*-test.ts",
-    "test:output": "../test-support/cli output --files=*-test.ts"
+    "test:list": "../packages/test-support/cli list --files=*-test.ts",
+    "test:output": "../packages/test-support/cli output --files=*-test.ts"
   },
   "license": "MIT",
   "devDependencies": {

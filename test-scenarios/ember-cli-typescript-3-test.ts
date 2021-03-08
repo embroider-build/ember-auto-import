@@ -4,29 +4,31 @@ import { PreparedApp, Project } from '@ef4/test-support';
 import QUnit from 'qunit';
 const { module: Qmodule, test } = QUnit;
 
-const DEPENDENCIES = {
-  'a-dependency': {
-    'package.json': '{ "name": "a-dependency", "version": "0.0.1" }',
-    'index.js': "module.exports = function() { return 'ember-auto-import-a-dependency'; }",
-    flavors: {
-      'chocolate.js': 'export const name = "chocolate";',
-      'vanilla.js': 'export const name = "vanilla";',
-    },
-    node_modules: {},
-  },
-  'a-pure-ts-dependency': {
-    'package.json': '{ "name": "a-pure-ts-dependency", "version": "0.0.1" }',
-    'index.ts': "export default function() { return 'ember-auto-import-a-pure-ts-dependency'; } ",
-    'js-takes-precedence.ts': "export default function() { return 'ember-auto-import-ts-takes-precedence-WRONG'; } ",
-    'js-takes-precedence.js': "export default function() { return 'ember-auto-import-js-takes-precedence'; } ",
-    node_modules: {},
-  },
-};
-
 appScenarios
   .map('ember-cli-typescript-3', project => {
-    project.addDevDependency(Project.fromJSON(DEPENDENCIES, 'a-dependency'));
-    project.addDevDependency(Project.fromJSON(DEPENDENCIES, 'a-pure-ts-dependency'));
+    let aDependency = new Project({
+      files: {
+        'package.json': '{ "name": "a-dependency", "version": "0.0.1" }',
+        'index.js': "module.exports = function() { return 'ember-auto-import-a-dependency'; }",
+        flavors: {
+          'chocolate.js': 'export const name = "chocolate";',
+          'vanilla.js': 'export const name = "vanilla";',
+        },
+      },
+    });
+    project.addDevDependency(aDependency);
+
+    let aPureTSDependency = new Project({
+      files: {
+        'package.json': '{ "name": "a-pure-ts-dependency", "version": "0.0.1" }',
+        'index.ts': "export default function() { return 'ember-auto-import-a-pure-ts-dependency'; } ",
+        'js-takes-precedence.ts':
+          "export default function() { return 'ember-auto-import-ts-takes-precedence-WRONG'; } ",
+        'js-takes-precedence.js': "export default function() { return 'ember-auto-import-js-takes-precedence'; } ",
+      },
+    });
+    project.addDevDependency(aPureTSDependency);
+
     project.linkDevDependency('ember-cli-typescript', { baseDir: __dirname, resolveName: 'ember-cli-typescript-3' });
     project.linkDevDependency('typescript', { baseDir: __dirname, resolveName: 'typescript-4' });
 
