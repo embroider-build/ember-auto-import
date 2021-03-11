@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@ef4/scoped-lib": "*",
-    "@embroider/macros": "^0.36.0",
+    "@embroider/macros": "^0.37.0",
     "another-dependency": "*",
     "a-dependency": "*",
     "a-module-dependency": "*",

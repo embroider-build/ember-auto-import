@@ -1787,10 +1787,10 @@
     walk-sync "^1.1.3"
     wrap-legacy-hbs-plugin-if-needed "^1.0.1"
 
-"@embroider/core@0.36.0":
-  version "0.36.0"
-  resolved "https://registry.yarnpkg.com/@embroider/core/-/core-0.36.0.tgz#fbbd60d29c3fcbe02b4e3e63e6043a43de2b9ce3"
-  integrity sha512-J6esENP+aNt+/r070cF1RCJyCi/Rn1I6uFp37vxyLWwvGDuT0E7wGcaPU29VBkBFqxi4Z1n4F796BaGHv+kX6w==
+"@embroider/core@0.37.0":
+  version "0.37.0"
+  resolved "https://registry.yarnpkg.com/@embroider/core/-/core-0.37.0.tgz#bd7a7d63795794ffcd53d90a65b81e939ccf6cff"
+  integrity sha512-tkXD7qV9GJYb7cGlxLT4PTbPZ+B4vNDXp5oHyEz8EQSuZExN/40Hm90S5KrEC++TpqeVewSIXOz/fA53lkK6RQ==
   dependencies:
     "@babel/core" "^7.12.3"
     "@babel/parser" "^7.12.3"
@@ -1799,7 +1799,7 @@
     "@babel/runtime" "^7.12.5"
     "@babel/traverse" "^7.12.1"
     "@babel/types" "^7.12.1"
-    "@embroider/macros" "0.36.0"
+    "@embroider/macros" "0.37.0"
     assert-never "^1.1.0"
     babel-plugin-syntax-dynamic-import "^6.18.0"
     broccoli-node-api "^1.7.0"
@@ -1841,15 +1841,15 @@
     resolve "^1.8.1"
     semver "^7.3.2"
 
-"@embroider/macros@0.36.0", "@embroider/macros@^0.36.0":
-  version "0.36.0"
-  resolved "https://registry.yarnpkg.com/@embroider/macros/-/macros-0.36.0.tgz#5330f1e6f12112f0f68e34b3e4855dc7dd3c69a5"
-  integrity sha512-w37G4uXG+Wi3K3EHSFBSr/n6kGFXYG8nzZ9ptzDOC7LP3Oh5/MskBnVZW3+JkHXUPEqKsDGlxPxCVpPl1kQyjQ==
+"@embroider/macros@0.37.0", "@embroider/macros@^0.37.0":
+  version "0.37.0"
+  resolved "https://registry.yarnpkg.com/@embroider/macros/-/macros-0.37.0.tgz#221013fc5bc0eaa78f1de98802fc03e588bfe1b1"
+  integrity sha512-VItxn4NzGR5prryXGbPGTuLMd+QPPKvAYZv2357iS+wmz6mTzC5nqXljwDQIOJbAji9giDO+FW2HzXYOcY3teQ==
   dependencies:
     "@babel/core" "^7.12.3"
     "@babel/traverse" "^7.12.1"
     "@babel/types" "^7.12.1"
-    "@embroider/core" "0.36.0"
+    "@embroider/core" "0.37.0"
     assert-never "^1.1.0"
     ember-cli-babel "^7.23.0"
     lodash "^4.17.10"
