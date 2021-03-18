@@ -26,6 +26,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
       - run: npm install
+      - name: eslint
+        run: for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs npx eslint --
       - id: set-matrix
         working-directory: test-scenarios
         run: echo "::set-output name=matrix::$(npm run --silent test:list -- --matrix)"
