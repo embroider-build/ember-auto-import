@@ -1,8 +1,6 @@
-import Project from 'fixturify-project';
-import { dirSync, setGracefulCleanup } from 'tmp';
+import { Project } from 'fixturify-project';
+import { setGracefulCleanup } from 'tmp';
 import { spawn } from 'child_process';
-import { join } from 'path';
-import { renameSync, removeSync } from 'fs-extra';
 
 setGracefulCleanup();
 
@@ -62,21 +60,11 @@ export class Scenario {
       await fn(project);
     }
 
-    let dir: string;
     if (outdir) {
-      // fixturify-project always writes the actual project in a subdir with
-      // the project name. We want the project directly inside outdir. So we
-      // do a little dance with a temporary name.
-      project.writeSync(outdir + '--tmp');
-      renameSync(join(outdir + '--tmp', project.name), outdir);
-      removeSync(outdir + '--tmp');
-      dir = outdir;
-    } else {
-      let parent = dirSync().name;
-      project.writeSync(parent);
-      dir = join(parent, project.name);
+      project.baseDir = outdir;;
     }
-    return new PreparedApp(dir);
+    project.writeSync();
+    return new PreparedApp(project.baseDir);
   }
 }
 

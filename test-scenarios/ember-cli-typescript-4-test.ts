@@ -4,21 +4,19 @@ import { PreparedApp, Project } from '@ef4/test-support';
 import QUnit from 'qunit';
 const { module: Qmodule, test } = QUnit;
 
-const DEPENDENCIES = {
-  'a-dependency': {
-    'package.json': '{ "name": "a-dependency", "version": "0.0.1" }',
-    'index.js': "module.exports = function() { return 'ember-auto-import-a-dependency'; }",
-    flavors: {
-      'chocolate.js': 'export const name = "chocolate";',
-      'vanilla.js': 'export const name = "vanilla";',
-    },
-    node_modules: {},
-  },
-};
-
 appScenarios
   .map('ember-cli-typescript-4', project => {
-    project.addDevDependency(Project.fromJSON(DEPENDENCIES, 'a-dependency'));
+    let aDependency = new Project({
+      files: {
+        'package.json': '{ "name": "a-dependency", "version": "0.0.1" }',
+        'index.js': "module.exports = function() { return 'ember-auto-import-a-dependency'; }",
+        flavors: {
+          'chocolate.js': 'export const name = "chocolate";',
+          'vanilla.js': 'export const name = "vanilla";',
+        },
+      },
+    });
+    project.addDevDependency(aDependency);
     project.linkDevDependency('ember-cli-typescript', { baseDir: __dirname, resolveName: 'ember-cli-typescript-4' });
     project.linkDevDependency('typescript', { baseDir: __dirname, resolveName: 'typescript-4' });
 
