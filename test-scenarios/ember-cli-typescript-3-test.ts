@@ -21,6 +21,9 @@ appScenarios
     let aPureTSDependency = new Project({
       files: {
         'package.json': '{ "name": "a-pure-ts-dependency", "version": "0.0.1" }',
+        // Project has a default index.js file, which we need to delete so it
+        // doesn't take precedence over our index.ts
+        'index.js': null,
         'index.ts': "export default function() { return 'ember-auto-import-a-pure-ts-dependency'; } ",
         'js-takes-precedence.ts':
           "export default function() { return 'ember-auto-import-ts-takes-precedence-WRONG'; } ",

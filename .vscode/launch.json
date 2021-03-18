@@ -61,6 +61,18 @@
       "program": "${workspaceFolder}/node_modules/.bin/qunit",
       "cwd": "${workspaceFolder}/packages/ember-auto-import",
       "args": ["js/tests", "--filter", "safe url example: import('//example.com/thing')"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Run test-scenarios",
+      "program": "${workspaceFolder}/node_modules/.bin/qunit",
+      "cwd": "${workspaceFolder}/test-scenarios",
+      "args": ["--require", "ts-node/register", "*-test.ts", "--filter", "default-empty-app"],
+      "env": {
+        "JOBS": "1"
+      },
+      "outputCapture": "std"
     }
   ]
 }

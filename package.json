@@ -2,13 +2,12 @@
   "private": true,
   "scripts": {
     "prepare": "cd packages/ember-auto-import && npm run compile",
-    "test": "./scripts/test.sh",
+    "test": "TODO",
     "lint": "cd packages/ember-auto-import && npm run lint"
   },
   "workspaces": [
     "packages/*",
     "test-scenarios",
-    "test-support",
     "types/*"
   ],
   "resolutions": {
