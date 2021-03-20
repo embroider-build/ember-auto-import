@@ -1,4 +1,3 @@
-import { join } from 'path';
 import { Scenarios, Project } from '@ef4/test-support';
 import { dirname } from 'path';
 
@@ -10,7 +9,6 @@ export const appScenarios = Scenarios.fromDir(dirname(require.resolve('@ef4/app-
   .add('default', () => {})
   .add('beta', beta);
 
-// TODO this path doesn't exist yet, create a real package analogous to @ef4/app-template
-export const addonScenarios = Scenarios.fromDir(join(__dirname, '..', 'addon-template'))
+export const addonScenarios = Scenarios.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')))
   .add('default', () => {})
   .add('beta', beta);

@@ -16,8 +16,8 @@
     "build": "ember build",
     "lint:hbs": "ember-template-lint .",
     "lint:js": "eslint .",
-    "start": "ember serve",
-    "test": "ember test",
+    "start": "./node_modules/ember-cli/bin/ember serve",
+    "test": "./node_modules/ember-cli/bin/ember test",
     "test:all": "ember try:each"
   },
   "dependencies": {
