@@ -76,7 +76,6 @@ jobs:
   #         - 'cd packages/sample-indirect    && npm run test:custom-csp'
   #         - 'cd packages/sample-merged      && npm run test'
   #         - 'cd packages/sample-babel7      && npm run test'
-  #         - 'cd packages/sample-noparse     && npm run test'
   #         - 'cd packages/ember-auto-import  && npm run test'
   #         - 'cd packages/sample-es-latest   && npm run test'
   #         - 'cd packages/ember-auto-import  && npm run test:node'
