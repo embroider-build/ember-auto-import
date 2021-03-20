@@ -8,7 +8,7 @@
     "@types/fs-extra": "^9.0.7",
     "@types/tmp": "^0.2.0",
     "@types/yargs": "^16.0.0",
-    "fixturify-project": "ef4/node-fixturify-project#348cd2b41f22a0cec2f1ac0e44fa0ffb273861b5",
+    "fixturify-project": "ef4/node-fixturify-project#ce267a90824675d9eb34459df625dcfcceec5491",
     "fs-extra": "^9.1.0",
     "glob": "^7.1.6",
     "tmp": "^0.2.1",

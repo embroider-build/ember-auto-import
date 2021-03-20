@@ -219,7 +219,7 @@ addonScenarios
         app = await scenario.prepare();
       });
       test('yarn test', async function (assert) {
-        let result = await app.execute('yarn test');
+        let result = await app.execute('npm run test');
         assert.equal(result.exitCode, 0, result.output);
       });
     });
