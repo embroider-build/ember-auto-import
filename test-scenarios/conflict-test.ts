@@ -46,7 +46,9 @@ appScenarios
         let result = await app.execute('npm run build');
         assert.notEqual(result.exitCode, 0, result.output);
         assert.ok(
-          /@ef4\/addon-template and @ef4\/app-template are using different versions of inner-lib/.test(result.stderr),
+          /((@ef4\/addon-template|@ef4\/app-template).*){2}.* are using different versions of inner-lib/.test(
+            result.stderr
+          ),
           result.stderr
         );
       });
