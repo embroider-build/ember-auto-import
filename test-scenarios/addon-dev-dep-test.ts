@@ -24,7 +24,7 @@ addonScenarios
       });
       test('ensure build error', async function (assert) {
         let result = await app.execute('npm run build');
-        assert.equal(result.exitCode, 1, result.output);
+        assert.notEqual(result.exitCode, 0, result.output);
         assert.ok(
           /@ef4\/addon-template tried to import \"some-lib\" from addon code, but \"some-lib\" is a devDependency/.test(
             result.stderr

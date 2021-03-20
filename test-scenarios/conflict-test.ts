@@ -44,7 +44,7 @@ appScenarios
       });
       test('ensure build error', async function (assert) {
         let result = await app.execute('npm run build');
-        assert.equal(result.exitCode, 1, result.output);
+        assert.notEqual(result.exitCode, 0, result.output);
         assert.ok(
           /@ef4\/addon-template and @ef4\/app-template are using different versions of inner-lib/.test(result.stderr),
           result.stderr
