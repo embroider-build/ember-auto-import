@@ -79,13 +79,10 @@ jobs:
   #         - 'cd packages/sample-merged      && npm run test'
   #         - 'cd packages/sample-conflict    && npm run test'
   #         - 'cd packages/sample-babel7      && npm run test'
-  #         - 'cd packages/sample-typescript2 && npm run test'
-  #         - 'cd packages/sample-typescript4 && npm run test'
   #         - 'cd packages/sample-noconflict  && npm run test'
   #         - 'cd packages/sample-noparse     && npm run test'
   #         - 'cd packages/ember-auto-import  && npm run test'
   #         - 'cd packages/sample-es-latest   && npm run test'
-  #         - 'cd packages/sample-skip-babel  && npm run test'
   #         - 'cd packages/ember-auto-import  && npm run test:node'
   #       exclude:
   #         - suite: 'cd packages/sample-direct      && npm run test:custom-bundles'
