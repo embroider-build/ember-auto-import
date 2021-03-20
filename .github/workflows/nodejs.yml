@@ -74,7 +74,6 @@ jobs:
   #         - 'cd packages/sample-indirect    && npm run test'
   #         - 'cd packages/sample-indirect    && npm run test:fastboot'
   #         - 'cd packages/sample-indirect    && npm run test:custom-csp'
-  #         - 'cd packages/sample-failure     && npm run test'
   #         - 'cd packages/sample-merged      && npm run test'
   #         - 'cd packages/sample-babel7      && npm run test'
   #         - 'cd packages/sample-noparse     && npm run test'
