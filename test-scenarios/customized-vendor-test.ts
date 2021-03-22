@@ -2,7 +2,7 @@ import { appScenarios } from './scenarios';
 import { PreparedApp, Project } from '@ef4/test-support';
 import QUnit from 'qunit';
 import merge from 'lodash/merge';
-import { join } from 'path';
+import { setupFastboot } from './fastboot-helper';
 const { module: Qmodule, test } = QUnit;
 
 function customVendorTest(project: Project, vendorPath: string) {
@@ -131,30 +131,19 @@ appScenarios
 appScenarios
   .map('customized-vendor-fastboot', project => {
     customVendorTest(project, '/js/vendor.js');
-    project.pkg.scripts!.test = 'qunit fastboot-tests/test.js';
   })
   .forEachScenario(scenario => {
     Qmodule(scenario.name, function (hooks) {
-      let app: PreparedApp;
-      let fastboot: any;
+      let visit: any;
 
       hooks.before(async () => {
-        const FastBoot = require('fastboot');
-
-        app = await scenario.prepare();
-        await app.execute(`node node_modules/ember-cli/bin/ember build`);
-        fastboot = new FastBoot({
-          distPath: join(app.dir, 'dist'),
-          resilient: false,
-        });
+        let app = await scenario.prepare();
+        ({ visit } = await setupFastboot(app));
       });
 
       test('runs in fastboot', async function (assert) {
-        const jsdom = require('jsdom');
-        const { JSDOM } = jsdom;
-        let page = await fastboot.visit('/');
-        let html = await page.html();
-        let document = new JSDOM(html).window.document;
+        let dom = await visit('/');
+        let document = dom.window.document;
         assert.equal(document.querySelector('[data-test-result]').textContent.trim(), 'it worked');
       });
     });
