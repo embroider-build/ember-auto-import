@@ -5,17 +5,11 @@ async function beta(project: Project) {
   project.linkDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-beta' });
 }
 
-const supported = {
-  default: () => {},
-  beta,
-};
-
 export function supportMatrix(scenarios: Scenarios) {
-  let s = scenarios;
-  for (let [name, mutator] of Object.entries(supported)) {
-    s = s.add(name, mutator);
-  }
-  return s;
+  return scenarios.expand({
+    default: () => {},
+    beta,
+  });
 }
 
 export const appScenarios = supportMatrix(

@@ -8,39 +8,86 @@ type ProjectMutator = (project: Project) => void | Promise<void>;
 
 export { Project };
 
+type State =
+  | {
+      type: 'root';
+      root: () => Project | Promise<Project>;
+    }
+  | {
+      type: 'derived';
+      parent: Scenarios;
+      variants: Record<string, ProjectMutator[]>;
+    };
+
 export class Scenarios {
   static fromDir(appPath: string): Scenarios {
-    return new this(() => Project.fromDir(appPath, { linkDeps: true }), []);
+    return new this({
+      type: 'root',
+      root: () => Project.fromDir(appPath, { linkDeps: true }),
+    });
   }
 
   static fromProject(fn: () => Promise<Project> | Project): Scenarios {
-    return new this(fn, []);
+    return new this({
+      type: 'root',
+      root: fn,
+    });
   }
 
-  add(name: string, fn: ProjectMutator): Scenarios {
-    return new Scenarios(this.getBaseScenario, [...this.variants, { name, fns: [fn] }]);
+  expand(variants: Record<string, ProjectMutator>): Scenarios {
+    return new Scenarios({
+      type: 'derived',
+      parent: this,
+      variants: Object.fromEntries(Object.entries(variants).map(([variantName, mutator]) => [variantName, [mutator]])),
+    });
   }
 
   map(name: string, fn: ProjectMutator): Scenarios {
-    return new Scenarios(
-      this.getBaseScenario,
-      this.variants.map(v => ({
-        name: `${v.name}-${name}`,
-        fns: [...v.fns, fn],
-      }))
-    );
-  }
-
-  forEachScenario(fn: (appDefinition: Scenario) => void): void {
-    for (let variant of this.variants) {
-      fn(new Scenario(variant.name, this.getBaseScenario, variant.fns));
+    if (this.state.type === 'root') {
+      return new Scenarios({
+        type: 'derived',
+        parent: this,
+        variants: {
+          [name]: [fn],
+        },
+      });
+    } else {
+      return new Scenarios({
+        type: 'derived',
+        parent: this.state.parent,
+        variants: Object.fromEntries(
+          Object.entries(this.state.variants).map(([variantName, mutators]) => [
+            `${variantName}-${name}`,
+            [...mutators, fn],
+          ])
+        ),
+      });
     }
   }
 
-  private constructor(
-    private getBaseScenario: () => Project | Promise<Project>,
-    private variants: { name: string; fns: ProjectMutator[] }[]
-  ) {}
+  private iterate(
+    fn: (args: { name: string | undefined; root: () => Project | Promise<Project>; mutators: ProjectMutator[] }) => void
+  ): void {
+    if (this.state.type === 'root') {
+      fn({ name: undefined, root: this.state.root, mutators: [] });
+    } else {
+      let state = this.state;
+      this.state.parent.iterate(parent => {
+        for (let [variantName, mutators] of Object.entries(state.variants)) {
+          let combinedName = parent.name ? `${parent.name}-${variantName}` : variantName;
+          fn({ name: combinedName, root: parent.root, mutators: [...parent.mutators, ...mutators] });
+        }
+      });
+    }
+  }
+
+  forEachScenario(fn: (appDefinition: Scenario) => void): void {
+    this.iterate(({ name, root, mutators }) => {
+      fn(new Scenario(name ?? '<root>', root, mutators));
+    });
+  }
+
+  private constructor(private state: State) {}
 }
 
 export const seenScenarios: Scenario[] = [];
@@ -61,7 +108,7 @@ export class Scenario {
     }
 
     if (outdir) {
-      project.baseDir = outdir;;
+      project.baseDir = outdir;
     }
     project.writeSync();
     return new PreparedApp(project.baseDir);
@@ -70,8 +117,15 @@ export class Scenario {
 
 export class PreparedApp {
   constructor(public dir: string) {}
-  async execute(shellCommand: string): Promise<{ exitCode: number; stderr: string; stdout: string; output: string }> {
-    let child = spawn(shellCommand, { stdio: ['inherit', 'pipe', 'pipe'], cwd: this.dir, shell: true });
+  async execute(
+    shellCommand: string,
+    opts?: { env?: Record<string, string> }
+  ): Promise<{ exitCode: number; stderr: string; stdout: string; output: string }> {
+    let env: Record<string, string> | undefined;
+    if (opts?.env) {
+      env = Object.assign({}, process.env, opts.env);
+    }
+    let child = spawn(shellCommand, { stdio: ['inherit', 'pipe', 'pipe'], cwd: this.dir, shell: true, env });
     let stderrBuffer: string[] = [];
     let stdoutBuffer: string[] = [];
     let combinedBuffer: string[] = [];
