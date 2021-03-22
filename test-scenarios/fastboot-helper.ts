@@ -1,8 +1,12 @@
 import { PreparedApp } from '@ef4/test-support';
 import { join } from 'path';
 
-export async function setupFastboot(app: PreparedApp) {
-  await app.execute(`node node_modules/ember-cli/bin/ember build`);
+export async function setupFastboot(app: PreparedApp, environment = 'development') {
+  let result = await app.execute(`node node_modules/ember-cli/bin/ember build --environment=${environment}`);
+  if (result.exitCode !== 0) {
+    throw new Error(`failed to build app for fastboot: ${result.output}`);
+  }
+
   const FastBoot = require('fastboot');
   let fastboot = new FastBoot({
     distPath: join(app.dir, 'dist'),

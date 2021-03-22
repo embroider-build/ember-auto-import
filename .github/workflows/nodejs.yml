@@ -63,10 +63,6 @@ jobs:
   #     matrix:
   #       eai_scenario: [2.18, stable, beta, canary]
   #       suite:
-  #         - 'cd packages/sample-direct      && npm run test'
-  #         - 'cd packages/sample-direct      && npm run test'
-  #         - 'cd packages/sample-direct      && npm run test:fastboot'
-  #         - 'cd packages/sample-direct      && npm run test:prod'
   #         - 'cd packages/sample-direct      && npm run test:custom-csp'
   #         - 'cd packages/sample-indirect    && npm run test'
   #         - 'cd packages/sample-indirect    && npm run test:fastboot'

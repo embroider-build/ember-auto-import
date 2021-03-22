@@ -68,7 +68,7 @@
       "name": "Run test-scenarios",
       "program": "${workspaceFolder}/node_modules/.bin/qunit",
       "cwd": "${workspaceFolder}/test-scenarios",
-      "args": ["--require", "ts-node/register", "*-test.ts", "--filter", "default-empty-app"],
+      "args": ["--require", "ts-node/register", "*-test.ts", "--filter", "default-static-import-fastboot"],
       "env": {
         "JOBS": "1"
       },
