@@ -5,7 +5,9 @@
     "@types/qunit": "^2.11.1",
     "qunit": "^2.6.1",
     "ts-node": "^9.1.1",
-    "@ef4/test-support": "*"
+    "@ef4/test-support": "*",
+    "fastboot": "^1.2.0",
+    "jsdom": "^11.11.0"
   },
   "scripts": {
     "test": "qunit --require ts-node/register *-test.ts",
@@ -23,6 +25,7 @@
     "moment": "^2.22.1",
     "typescript-4": "npm:typescript@^4.1.2",
     "ember-cli-babel6": "npm:ember-cli-babel@^6.6.0",
+    "ember-cli-fastboot": "^1.1.4-beta.1",
     "ember-cli-typescript-2": "npm:ember-cli-typescript@^2.0.0-beta.3",
     "ember-cli-typescript-3": "npm:ember-cli-typescript@^3.0.0",
     "ember-cli-typescript-4": "npm:ember-cli-typescript@^4.0.0-alpha.1"
