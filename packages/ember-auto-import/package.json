@@ -1,6 +1,6 @@
 {
   "name": "ember-auto-import",
-  "version": "1.5.3",
+  "version": "1.10.1",
   "description": "Zero-config import from NPM packages",
   "keywords": [
     "ember-addon",
@@ -20,41 +20,42 @@
     "compile": "tsc",
     "clean": "git clean -x -f",
     "build": "ember build",
-    "lint": "eslint . && tslint --project .",
+    "lint": "eslint .",
     "start": "ember serve",
     "test": "ember test --test-port=0",
     "test:node": "qunit js/tests",
-    "prepare": "yarn compile"
+    "prepare": "tsc"
   },
   "dependencies": {
     "@babel/core": "^7.1.6",
-    "@babel/preset-env": "^7.0.0",
+    "@babel/preset-env": "^7.10.2",
     "@babel/traverse": "^7.1.6",
     "@babel/types": "^7.1.6",
-    "@embroider/core": "^0.4.3",
+    "@embroider/core": "^0.33.0",
     "babel-core": "^6.26.3",
     "babel-loader": "^8.0.6",
     "babel-plugin-syntax-dynamic-import": "^6.18.0",
-    "babel-template": "^6.26.0",
     "babylon": "^6.18.0",
     "broccoli-debug": "^0.6.4",
-    "broccoli-plugin": "^1.3.0",
+    "broccoli-node-api": "^1.7.0",
+    "broccoli-plugin": "^4.0.0",
+    "broccoli-source": "^3.0.0",
     "debug": "^3.1.0",
-    "ember-cli-babel": "^6.6.0",
+    "ember-cli-babel": "^7.0.0",
     "enhanced-resolve": "^4.0.0",
     "fs-extra": "^6.0.1",
-    "fs-tree-diff": "^1.0.0",
+    "fs-tree-diff": "^2.0.0",
     "handlebars": "^4.3.1",
     "js-string-escape": "^1.0.1",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.19",
     "mkdirp": "^0.5.1",
-    "pkg-up": "^2.0.0",
-    "resolve": "^1.7.1",
+    "resolve-package-path": "^3.1.0",
     "rimraf": "^2.6.2",
+    "semver": "^7.3.4",
     "symlink-or-copy": "^1.2.0",
     "typescript-memoize": "^1.0.0-alpha.3",
     "walk-sync": "^0.3.3",
-    "webpack": "~4.28"
+    "webpack": "^4.43.0"
   },
   "devDependencies": {
     "@types/babel-core": "^6.25.5",
@@ -71,16 +72,16 @@
     "@types/lodash": "^4.14.110",
     "@types/node": "^10.7.1",
     "@types/pkg-up": "^2.0.0",
+    "@types/qunit": "^2.11.1",
     "@types/resolve": "^0.0.8",
+    "@types/semver": "^7.3.4",
     "@types/webpack": "^4.4.20",
-    "babel-eslint": "^8.2.5",
     "broccoli": "^3.2.0",
     "broccoli-asset-rev": "^2.4.5",
-    "broccoli-source": "^1.1.0",
+    "broccoli-source": "^3.0.0",
     "ember-ajax": "^3.0.0",
     "ember-cli": "^3.6.0",
     "ember-cli-dependency-checker": "^2.0.0",
-    "ember-cli-eslint": "^4.2.1",
     "ember-cli-fastboot": "^1.1.4-beta.1",
     "ember-cli-htmlbars": "^2.0.1",
     "ember-cli-htmlbars-inline-precompile": "^2.1.0",
@@ -97,20 +98,20 @@
     "ember-source": "~3.1.0",
     "ember-source-channel-url": "^1.0.1",
     "ember-try": "^1.2.1",
-    "eslint-plugin-ember": "^5.0.0",
     "eslint-plugin-node": "^6.0.1",
     "fastboot": "^1.2.0",
+    "fixturify-project": "ef4/node-fixturify-project#ce267a90824675d9eb34459df625dcfcceec5491",
     "jsdom": "^11.11.0",
     "loader.js": "^4.2.3",
     "lodash-es": "^4.17.10",
     "moment": "^2.22.1",
     "quick-temp": "^0.1.8",
     "qunit": "^2.6.1",
-    "tslint": "^5.10.0",
-    "typescript": "^3.1.6"
+    "qunit-assertions-extra": "^0.8.5",
+    "typescript": "^4.1.2"
   },
   "engines": {
-    "node": "6.* || >= 7.*"
+    "node": ">= 10.*"
   },
   "ember-addon": {
     "configPath": "tests/dummy/config",
@@ -121,5 +122,9 @@
       "ember-cli-coffeescript",
       "ember-cli-typescript"
     ]
+  },
+  "volta": {
+    "node": "14.16.0",
+    "npm": "7.6.1"
   }
 }

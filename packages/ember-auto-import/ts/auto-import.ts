@@ -1,17 +1,29 @@
 import Splitter from './splitter';
 import Bundler from './bundler';
 import Analyzer from './analyzer';
+import type { TreeType } from './analyzer';
 import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
 import Append from './broccoli-append';
-import { Tree } from 'broccoli-plugin';
+import { Node } from 'broccoli-node-api';
+import { LeaderChooser } from './leader';
+import { AddonInstance, AppInstance, findTopmostAddon } from './ember-cli-models';
 
 const debugTree = buildDebugCallback('ember-auto-import');
-const protocol = '__ember_auto_import_protocol_v1__';
 
-export default class AutoImport {
-  private primaryPackage: any;
+// This interface must be stable across all versions of ember-auto-import that
+// speak the same leader-election protocol. So don't change this unless you know
+// what you're doing.
+export interface AutoImportSharedAPI {
+  isPrimary(addonInstance: AddonInstance): boolean;
+  analyze(tree: Node, addon: AddonInstance, treeType?: TreeType): Node;
+  included(addonInstance: AddonInstance): void;
+  updateFastBootManifest(manifest: { vendorFiles: string[] }): void;
+}
+
+export default class AutoImport implements AutoImportSharedAPI {
+  private primaryPackage: AddonInstance;
   private packages: Set<Package> = new Set();
   private env: 'development' | 'test' | 'production';
   private consoleWrite: (msg: string) => void;
@@ -19,25 +31,19 @@ export default class AutoImport {
   private bundles: BundleConfig;
   private targets: unknown;
 
-  static lookup(appOrAddon: any): AutoImport {
-    let g = global as any;
-    if (!g[protocol]) {
-      g[protocol] = new this(appOrAddon);
-    }
-    return g[protocol];
+  static register(addon: AddonInstance) {
+    LeaderChooser.for(addon).register(addon, () => new AutoImport(addon));
   }
 
-  constructor(appOrAddon: any) {
-    function findHostContext(appOrAddon: any): any {
-      return appOrAddon.parent.parent
-        ? findHostContext(appOrAddon.parent)
-        : appOrAddon;
-    }
+  static lookup(addon: AddonInstance): AutoImportSharedAPI {
+    return LeaderChooser.for(addon).leader;
+  }
 
-    this.primaryPackage = appOrAddon;
-    let hostContext = findHostContext(appOrAddon);
-    this.packages.add(Package.lookup(hostContext));
-    let host = hostContext.app;
+  constructor(addonInstance: AddonInstance) {
+    this.primaryPackage = addonInstance;
+    let topmostAddon = findTopmostAddon(addonInstance);
+    this.packages.add(Package.lookupParentOf(topmostAddon));
+    let host = topmostAddon.app;
     this.env = host.env;
     this.targets = host.project.targets;
     this.bundles = new BundleConfig(host);
@@ -45,25 +51,22 @@ export default class AutoImport {
       throw new Error('Bug in ember-auto-import: did not discover environment');
     }
 
-    this.consoleWrite = (...args) => appOrAddon.project.ui.write(...args);
+    this.consoleWrite = (...args) => addonInstance.project.ui.write(...args);
   }
 
-  isPrimary(appOrAddon: any) {
-    return this.primaryPackage === appOrAddon;
+  isPrimary(addon: AddonInstance) {
+    return this.primaryPackage === addon;
   }
 
-  analyze(tree: Tree, appOrAddon: any) {
-    let pack = Package.lookup(appOrAddon);
+  analyze(tree: Node, addon: AddonInstance, treeType?: TreeType) {
+    let pack = Package.lookupParentOf(addon);
     this.packages.add(pack);
-    let analyzer = new Analyzer(
-      debugTree(tree, `preprocessor:input-${this.analyzers.size}`),
-      pack
-    );
+    let analyzer = new Analyzer(debugTree(tree, `preprocessor:input-${this.analyzers.size}`), pack, treeType);
     this.analyzers.set(analyzer, pack);
     return analyzer;
   }
 
-  makeBundler(allAppTree: Tree) {
+  private makeBundler(allAppTree: Node) {
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
     let splitter = new Splitter({
@@ -83,7 +86,7 @@ export default class AutoImport {
     });
   }
 
-  addTo(allAppTree: Tree) {
+  addTo(allAppTree: Node) {
     let bundler = debugTree(this.makeBundler(allAppTree), 'output');
 
     let mappings = new Map();
@@ -105,8 +108,8 @@ export default class AutoImport {
     });
   }
 
-  included(addonInstance: any) {
-    let host = addonInstance._findHost();
+  included(addonInstance: AddonInstance) {
+    let host = findTopmostAddon(addonInstance).app;
     this.configureFingerprints(host);
 
     // ember-cli as of 3.4-beta has introduced architectural changes that make
@@ -121,7 +124,7 @@ export default class AutoImport {
     // So we are forced to monkey patch EmberApp. We insert ourselves right at
     // the beginning of addonPostprocessTree.
     let original = host.addonPostprocessTree.bind(host);
-    host.addonPostprocessTree = (which: string, tree: Tree) => {
+    host.addonPostprocessTree = (which: string, tree: Node) => {
       if (which === 'all') {
         tree = this.addTo(tree);
       }
@@ -132,12 +135,12 @@ export default class AutoImport {
   // We need to disable fingerprinting of chunks, because (1) they already
   // have their own webpack-generated hashes and (2) the runtime loader code
   // can't easily be told about broccoli-asset-rev's hashes.
-  private configureFingerprints(host: any) {
+  private configureFingerprints(host: AppInstance) {
     let pattern = 'assets/chunk.*.js';
     if (!host.options.fingerprint) {
       host.options.fingerprint = {};
     }
-    if (!host.options.fingerprint.hasOwnProperty('exclude')) {
+    if (!('exclude' in host.options.fingerprint)) {
       host.options.fingerprint.exclude = [pattern];
     } else {
       host.options.fingerprint.exclude.push(pattern);
@@ -145,8 +148,6 @@ export default class AutoImport {
   }
 
   updateFastBootManifest(manifest: { vendorFiles: string[] }) {
-    manifest.vendorFiles.push(
-      `${this.bundles.lazyChunkPath}/auto-import-fastboot.js`
-    );
+    manifest.vendorFiles.push(`${this.bundles.lazyChunkPath}/auto-import-fastboot.js`);
   }
 }

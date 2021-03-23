@@ -34,3 +34,5 @@ else
   fi
 
 fi
+
+./scripts/link-them.sh

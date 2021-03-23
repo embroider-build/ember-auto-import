@@ -1,13 +1,15 @@
-import Plugin, { Tree } from 'broccoli-plugin';
+import Plugin from 'broccoli-plugin';
+import { Node } from 'broccoli-node-api';
 import makeDebug from 'debug';
 import WebpackBundler from './webpack';
 import Splitter, { BundleDependencies } from './splitter';
 import Package, { reloadDevPackages, Options } from './package';
-import { merge } from 'lodash';
+import { mergeWith } from 'lodash';
 import { join } from 'path';
 import { readFileSync, writeFileSync, emptyDirSync, copySync } from 'fs-extra';
 import BundleConfig from './bundle-config';
 import { Memoize } from 'typescript-memoize';
+import { WatchedDir } from 'broccoli-source';
 
 const debug = makeDebug('ember-auto-import:bundler');
 
@@ -41,24 +43,26 @@ export interface BundlerHook {
 export default class Bundler extends Plugin {
   private lastDeps: Map<string, BundleDependencies> | undefined;
   private cachedBundlerHook: BundlerHook | undefined;
-  private didEnsureDirs = false;
+  private didEnsureDirs: boolean;
+  private options: BundlerPluginOptions;
+  private isWatchingSomeDeps: boolean;
 
-  constructor(allAppTree: Tree, private options: BundlerPluginOptions) {
-    super([allAppTree], {
+  constructor(allAppTree: Node, options: BundlerPluginOptions) {
+    let deps = depsFor(allAppTree, options.packages);
+    super(deps, {
       persistentOutput: true,
       needsCache: true,
     });
+    this.options = options;
+    this.didEnsureDirs = false;
+    this.isWatchingSomeDeps = deps.length > 1;
   }
 
   @Memoize()
   private get rootPackage(): Package {
-    let rootPackage = [...this.options.packages.values()].find(
-      pkg => !pkg.isAddon
-    );
+    let rootPackage = [...this.options.packages.values()].find(pkg => !pkg.isAddon);
     if (!rootPackage) {
-      throw new Error(
-        `bug in ember-auto-import, there should always be a Package representing the app`
-      );
+      throw new Error(`bug in ember-auto-import, there should always be a Package representing the app`);
     }
     return rootPackage;
   }
@@ -82,9 +86,15 @@ export default class Bundler extends Plugin {
 
   get bundlerHook(): BundlerHook {
     if (!this.cachedBundlerHook) {
-      let extraWebpackConfig = merge(
+      let extraWebpackConfig = mergeWith(
         {},
-        ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig)
+        ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig),
+        (objValue: any, srcValue: any) => {
+          // arrays concat
+          if (Array.isArray(objValue)) {
+            return objValue.concat(srcValue);
+          }
+        }
       );
       
       if ([...this.options.packages.values()].find(pkg => pkg.forbidsEval) || this.rootPackage.length === 0) {
@@ -100,7 +110,7 @@ export default class Bundler extends Plugin {
         this.publicAssetURL,
         this.skipBabel,
         this.options.targets,
-        this.cachePath
+        this.cachePath! // cast is OK because we passed needsCache: true to super constructor
       );
     }
     return this.cachedBundlerHook;
@@ -111,7 +121,7 @@ export default class Bundler extends Plugin {
     reloadDevPackages();
     let { splitter } = this.options;
     let bundleDeps = await splitter.deps();
-    if (bundleDeps !== this.lastDeps) {
+    if (bundleDeps !== this.lastDeps || this.isWatchingSomeDeps) {
       let buildResult = await this.bundlerHook.build(bundleDeps);
       this.addEntrypoints(buildResult);
       this.addLazyAssets(buildResult);
@@ -134,10 +144,7 @@ export default class Bundler extends Plugin {
     for (let bundle of this.options.bundles.names) {
       if (entrypoints.has(bundle)) {
         entrypoints.get(bundle)!.forEach(asset => {
-          copySync(
-            join(dir, asset),
-            join(this.outputPath, 'entrypoints', bundle, asset)
-          );
+          copySync(join(dir, asset), join(this.outputPath, 'entrypoints', bundle, asset));
         });
       }
     }
@@ -158,9 +165,19 @@ export default class Bundler extends Plugin {
         }
       })
       .filter(Boolean);
-    writeFileSync(
-      join(this.outputPath, 'lazy', 'auto-import-fastboot.js'),
-      contents.join('\n')
-    );
+    if (this.rootPackage.isFastBootEnabled) {
+      writeFileSync(join(this.outputPath, 'lazy', 'auto-import-fastboot.js'), contents.join('\n'));
+    }
   }
+}
+
+function depsFor(allAppTree: Node, packages: Set<Package>) {
+  let deps = [allAppTree];
+  for (let pkg of packages) {
+    let watched = pkg.watchedDirectories;
+    if (watched) {
+      deps = deps.concat(watched.map(dir => new WatchedDir(dir)));
+    }
+  }
+  return deps;
 }

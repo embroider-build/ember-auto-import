@@ -1,32 +1,56 @@
 name: Node CI
 
-on: [push,pull_request]
+on:
+  push:
+    branches:
+      - master
+      - 'v*' # prior release branches (e.g. `v0.30.x` branch)
+    tags:
+      - 'v*'
+  pull_request:
 
 jobs:
-  build:
-
+  discover_matrix:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        eai_scenario: [2.18, stable, beta, canary]
-
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-    - uses: actions/checkout@v1
-    - name: Use Node.js 8.x
-      uses: actions/setup-node@v1
-      with:
-        node-version: 8.x
-    - name: pick version and install
-      run: ./scripts/change-ember-cli-version.sh
-      env:
-        EAI_SCENARIO: ${{ matrix.eai_scenario }}
-    - name: test
-      run: |
-        yarn lint
-        yarn test
-      env:
-        EAI_SCENARIO: ${{ matrix.eai_scenario }}
+      - uses: actions/checkout@v1
+      - uses: rwjblue/setup-volta@v1
+        with:
+          node-version: '14'
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - run: npm install
+      - name: eslint
+        run: for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs npx eslint --
+      - id: set-matrix
+        working-directory: test-scenarios
+        run: echo "::set-output name=matrix::$(npm run --silent test:list -- --matrix)"
 
-
-
+  build:
+    needs: discover_matrix
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{fromJson(needs.discover_matrix.outputs.matrix)}}
+    steps:
+      - uses: actions/checkout@v1
+      - uses: rwjblue/setup-volta@v1
+        with:
+          node-version: '14'
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - run: npm install
+      - name: test
+        run: ${{ matrix.command }}
+        working-directory: ${{ matrix.dir }}

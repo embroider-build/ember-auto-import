@@ -1,29 +1,74 @@
 # Changelog
 
+### 1.10.1
+
+- BUGFIX: the previous release accidentally leaked code to browsers that was not IE11-safe.
+
+### 1.10.0
+
+- ENHANCEMENT: we are now compatible with the Embroider package spec's handling of `import()`. Template string literals are allowed so long as they point unambiguously to modules within a specific package, or are unambiguously a URL.
+- BUGFIX: the test-support tree detection feature in 1.9.0 didn't actually match ember-cli's naming scheme, by @rwjblue.
+
+### 1.9.0
+
+- ENHANCEMENT: use new API from ember-cli to reliably detect which trees are test-support only, even when addons override the default naming scheme by @rwjblue
+- ENHANCEMENT: switch to resolve-package-path for better shared caching with the rest of ember-cli by @rwjblue
+
+### 1.8.0
+
+- ENHANCEMENT: improved leader election protocol between copies of ember-auto-import that ensures the newest one is always in charge.
+- HOUSEKEEPING: upgrades to typescript and some other deps to get better upstream types
+
+### 1.7.0
+
+- DOCS: improvement to CONTRIBUTING.md by kiwiupover
+- BUGFIX: fix merging of webpack configs by @bendemboski
+- HOUSEKEEPING: upgrade ember-cli-babel by nlfurniss
+- HOUSEKEEPING: upgrade @embroider/core dep by simonihmig
+- HOUSEKEEPING: upgrade webpack
+
+### 1.6.0
+
+- ENHANCEMENT: add .ts extension to the resolver allowing import of TypeScript modules without having to add the .ts extension by @buschtoens
+- DOCS: document `skipBabel` option by @kasunvp
+- DOCS: fix typo in README.md by @jacobq
+- DOCS: add instructions for using dynamic imports in addons by @jrjohnson
+- ENHANCEMENT: only output files for fastboot when ember-cli-fastboot is detected (can also be manually disabled with FASTBOOT_DISABLED=true environment variable) by @houfeng0923
+- HOUSEKEEPING: update CI node version to 12.x by @f1sherman
+- ENHANCEMENT: add [id] to the chunkname by @stukalin
+- BUGFIX: ensure auto-import processes the same extensions as ember-cli-babel by @dfreeman
+- BUGFIX: update minimum version of @babel/preset-env to 7.10.2 by @rwjblue
+
 ### 1.5.3
- - HOUSEKEEPING: upgrading deps that are failing security audits (but there was no actual vulnerability for ember-auto-import users)
- - HOUSEKEEPING: switch CI to GitHub actions
- - BUGFIX: lazily read babel config (helps interoperability with Embroider) by @stefanpenner
+
+- HOUSEKEEPING: upgrading deps that are failing security audits (but there was no actual vulnerability for ember-auto-import users)
+- HOUSEKEEPING: switch CI to GitHub actions
+- BUGFIX: lazily read babel config (helps interoperability with Embroider) by @stefanpenner
 
 ### 1.5.2
- - BUGFIX: since 1.5.0 we were using `@babel/present-env` but not directly depending on it, which would break apps that didn't happen to already have a copy.
+
+- BUGFIX: since 1.5.0 we were using `@babel/present-env` but not directly depending on it, which would break apps that didn't happen to already have a copy.
 
 ### 1.5.1
- - BUGFIX: upgrade handlebars to eliminate a GitHub security advisory. We don't run untrusted templates, so there was no actual security risk introduced by ember-auto-import.
+
+- BUGFIX: upgrade handlebars to eliminate a GitHub security advisory. We don't run untrusted templates, so there was no actual security risk introduced by ember-auto-import.
 
 ### 1.5.0
- - ENHANCEMENT: all dependencies now go through @babel/preset-env by default. This ensures that you never ship code that violates your app's declared `config/targets.js`. There is an explicit `skipBabel` option for when you know for sure a package shouldn't be transpiled.
- - DOCS: node polyfills FAQ by @jenweber
- - DOCS: fixed syntax highlighting by @ctjhoa
+
+- ENHANCEMENT: all dependencies now go through @babel/preset-env by default. This ensures that you never ship code that violates your app's declared `config/targets.js`. There is an explicit `skipBabel` option for when you know for sure a package shouldn't be transpiled.
+- DOCS: node polyfills FAQ by @jenweber
+- DOCS: fixed syntax highlighting by @ctjhoa
 
 ### 1.4.1
- - BUGFIX: remove ";" from concatenated CSS by @bendemboski
+
+- BUGFIX: remove ";" from concatenated CSS by @bendemboski
 
 ## 1.4.0
- - BUGFIX: don't polyfill Node behaviors by default, by @tmquinn. This is known to cause BREAKAGE in apps that accidentally relied on the bug behavior. See https://github.com/ef4/ember-auto-import/blob/a1bc3057c89fa2d4a81dc77f55b9674123072f2a/README.md#i-upgraded-my-ember-auto-import-version-and-now-things-dont-import-what-changed
- - ENHANCEMENT: respect ember-auto-import options on the app even when the app itself doesn't depend directly on ember-auto-import, by @tmquinn.
- - BUGFIX: disable size shaming by default.
- - DOCS: Add info on importing a dependency from app folder, by @Alonski.
+
+- BUGFIX: don't polyfill Node behaviors by default, by @tmquinn. This is known to cause BREAKAGE in apps that accidentally relied on the bug behavior. See https://github.com/ef4/ember-auto-import/blob/a1bc3057c89fa2d4a81dc77f55b9674123072f2a/README.md#i-upgraded-my-ember-auto-import-version-and-now-things-dont-import-what-changed
+- ENHANCEMENT: respect ember-auto-import options on the app even when the app itself doesn't depend directly on ember-auto-import, by @tmquinn.
+- BUGFIX: disable size shaming by default.
+- DOCS: Add info on importing a dependency from app folder, by @Alonski.
 
 ## 1.3.0
 

@@ -1,10 +1,10 @@
 import webpack, { Configuration } from 'webpack';
 import { join, dirname } from 'path';
-import { mergeWith, flatten } from 'lodash';
+import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
-import { BundleDependencies } from './splitter';
+import { BundleDependencies, ResolvedImport, sharedResolverOptions } from './splitter';
 import { BundlerHook, BuildResult } from './bundler';
 import BundleConfig from './bundle-config';
 import { ensureDirSync } from 'fs-extra';
@@ -12,6 +12,9 @@ import { babelFilter } from '@embroider/core';
 import { Options } from './package';
 
 registerHelper('js-string-escape', jsStringEscape);
+registerHelper('join', function (list, connector) {
+  return list.join(connector);
+});
 
 const entryTemplate = compile(`
 if (typeof document !== 'undefined') {
@@ -36,7 +39,11 @@ module.exports = (function(){
   var d = _eai_d;
   var r = _eai_r;
   window.emberAutoImportDynamic = function(specifier) {
-    return r('_eai_dyn_' + specifier);
+    if (arguments.length === 1) {
+      return r('_eai_dyn_' + specifier);
+    } else {
+      return r('_eai_dynt_' + specifier)(Array.prototype.slice.call(arguments, 1))
+    }
   };
   {{#each staticImports as |module|}}
     d('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.entrypoint}}'); });
@@ -44,8 +51,20 @@ module.exports = (function(){
   {{#each dynamicImports as |module|}}
     d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.entrypoint}}'); });
   {{/each}}
+  {{#each dynamicTemplateImports as |module|}}
+    d('_eai_dynt_{{js-string-escape module.key}}', [], function() {
+      return function({{module.args}}) {
+        return import({{{module.template}}});
+      }
+    });
+  {{/each}}
 })();
-`);
+`) as (args: {
+  staticImports: ResolvedImport[];
+  dynamicImports: ResolvedImport[];
+  dynamicTemplateImports: { key: string; args: string; template: string }[];
+  publicAssetURL: string | undefined;
+}) => string;
 
 // this goes in a file by itself so we can tell webpack not to parse it. That
 // allows us to grab the "require" and "define" from our enclosing scope without
@@ -65,12 +84,12 @@ export default class WebpackBundler implements BundlerHook {
   private outputDir: string;
 
   constructor(
-    bundles : BundleConfig,
+    bundles: BundleConfig,
     environment: 'production' | 'development' | 'test',
     extraWebpackConfig: webpack.Configuration | undefined,
     private consoleWrite: (message: string) => void,
     private publicAssetURL: string | undefined,
-    private skipBabel: Required<Options>["skipBabel"],
+    private skipBabel: Required<Options>['skipBabel'],
     private babelTargets: unknown,
     tempArea: string
   ) {
@@ -91,19 +110,27 @@ export default class WebpackBundler implements BundlerHook {
       mode: environment === 'production' ? 'production' : 'development',
       entry,
       performance: {
-        hints: false
+        hints: false,
       },
       output: {
         path: this.outputDir,
-        filename: `chunk.[chunkhash].js`,
-        chunkFilename: `chunk.[chunkhash].js`,
+        // entry chunks need to have stable names, so we can more easily gather
+        // them all up to append to Ember's vendor.js
+        filename: `chunk.[id].js`,
+        chunkFilename: `chunk.[id].[chunkhash].js`,
         libraryTarget: 'var',
-        library: '__ember_auto_import__'
+        library: '__ember_auto_import__',
       },
       optimization: {
         splitChunks: {
-          chunks: 'all'
-        }
+          chunks: 'all',
+          cacheGroups: {
+            // similar to above, entry vendor chunks need to have stable names
+            vendors: {
+              filename: 'chunk.[name].js',
+            } as any, // typings are missing a valid documented option
+          },
+        },
       },
       resolveLoader: {
         alias: {
@@ -111,11 +138,14 @@ export default class WebpackBundler implements BundlerHook {
           // not overriding the default loader resolution rules in case the app also
           // wants to control those.
           'babel-loader-8': require.resolve('babel-loader'),
-        }
+        },
+      },
+      resolve: {
+        ...sharedResolverOptions,
       },
       module: {
-        noParse: (file) => file === join(this.stagingDir, 'l.js'),
-        rules: [this.babelRule()]
+        noParse: file => file === join(this.stagingDir, 'l.js'),
+        rules: [this.babelRule()],
       },
       node: false,
     };
@@ -141,17 +171,21 @@ export default class WebpackBundler implements BundlerHook {
       use: {
         loader: 'babel-loader-8',
         options: {
+          // do not use the host project's own `babel.config.js` file
+          configFile: false,
+          babelrc: false,
+
           presets: [
             [
               require.resolve('@babel/preset-env'),
               {
                 modules: false,
-                targets: this.babelTargets
-              }
-            ]
-          ]
-        }
-      }
+                targets: this.babelTargets,
+              },
+            ],
+          ],
+        },
+      },
     };
   }
 
@@ -169,7 +203,7 @@ export default class WebpackBundler implements BundlerHook {
     let output = {
       entrypoints: new Map(),
       lazyAssets: [] as string[],
-      dir: this.outputDir
+      dir: this.outputDir,
     };
     let nonLazyAssets: Set<string> = new Set();
     for (let id of Object.keys(stats.entrypoints)) {
@@ -191,16 +225,23 @@ export default class WebpackBundler implements BundlerHook {
       entryTemplate({
         staticImports: deps.staticImports,
         dynamicImports: deps.dynamicImports,
-        publicAssetURL: this.publicAssetURL
+        dynamicTemplateImports: deps.dynamicTemplateImports.map(imp => ({
+          key: imp.importedBy[0].cookedQuasis.join('${e}'),
+          args: imp.expressionNameHints.join(','),
+          template:
+            '`' +
+            zip(imp.cookedQuasis, imp.expressionNameHints)
+              .map(([q, e]) => q + (e ? '${' + e + '}' : ''))
+              .join('') +
+            '`',
+        })),
+        publicAssetURL: this.publicAssetURL,
       })
     );
   }
 
   private writeLoaderFile() {
-    writeFileSync(
-      join(this.stagingDir, `l.js`),
-      loader
-    );
+    writeFileSync(join(this.stagingDir, `l.js`), loader);
   }
 
   private async runWebpack(): Promise<Required<webpack.Stats>> {
@@ -226,7 +267,7 @@ export default class WebpackBundler implements BundlerHook {
   }
 }
 
-export function mergeConfig(dest: object, ...srcs: object[]) {
+export function mergeConfig(dest: Configuration, ...srcs: Configuration[]) {
   return mergeWith(dest, ...srcs, combine);
 }
 
@@ -250,7 +291,7 @@ function combine(objValue: any, srcValue: any, key: string) {
 // This function combines any of these with a logical OR.
 function eitherPattern(...patterns: any[]): (resource: string) => boolean {
   let flatPatterns = flatten(patterns);
-  return function(resource) {
+  return function (resource) {
     for (let pattern of flatPatterns) {
       if (pattern instanceof RegExp) {
         if (pattern.test(resource)) {

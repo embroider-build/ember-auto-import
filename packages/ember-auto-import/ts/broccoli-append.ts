@@ -1,11 +1,21 @@
-import Plugin, { Tree } from 'broccoli-plugin';
+import Plugin from 'broccoli-plugin';
+import { Node } from 'broccoli-node-api';
 import { join, extname } from 'path';
 import walkSync, { WalkSyncEntry } from 'walk-sync';
-import { unlinkSync, rmdirSync, mkdirSync, readFileSync, existsSync, writeFileSync, removeSync, readdirSync } from 'fs-extra';
+import {
+  unlinkSync,
+  rmdirSync,
+  mkdirSync,
+  readFileSync,
+  existsSync,
+  writeFileSync,
+  removeSync,
+  readdirSync,
+} from 'fs-extra';
 import FSTree from 'fs-tree-diff';
 import symlinkOrCopy from 'symlink-or-copy';
 import uniqBy from 'lodash/uniqBy';
-import { insertBefore} from './source-map-url';
+import { insertBefore } from './source-map-url';
 
 /*
   This is a fairly specialized broccoli transform that we use to get the output
@@ -35,17 +45,17 @@ export default class Append extends Plugin {
   private reverseMappings: Map<string, string>;
   private passthrough: Map<string, string>;
 
-  constructor(upstreamTree: Tree, appendedTree: Tree, options: AppendOptions) {
+  constructor(upstreamTree: Node, appendedTree: Node, options: AppendOptions) {
     super([upstreamTree, appendedTree], {
       annotation: 'ember-auto-import-analyzer',
-      persistentOutput: true
+      persistentOutput: true,
     });
 
     // mappings maps entry points to maps that map file types to output files.
     // reverseMappings maps output files back to entry points.
     let reverseMappings = new Map();
-    for (let [key, map] of options.mappings.entries( )) {
-      for (let value of map.values( )) {
+    for (let [key, map] of options.mappings.entries()) {
+      for (let value of map.values()) {
         reverseMappings.set(value, key);
       }
     }
@@ -100,7 +110,7 @@ export default class Append extends Plugin {
           break;
         case 'change':
           removeSync(outputPath);
-          // deliberate fallthrough
+        // deliberate fallthrough
         case 'create':
           if (this.reverseMappings.has(relativePath)) {
             // this is where we see the upstream original file being created or
@@ -135,7 +145,7 @@ export default class Append extends Plugin {
 
     let previous = this.previousUpstreamTree;
     let next = (this.previousUpstreamTree = FSTree.fromEntries(input));
-    return previous.calculatePatch(next) as [ string, string, AugmentedWalkSyncEntry ][];
+    return previous.calculatePatch(next) as [string, string, AugmentedWalkSyncEntry][];
   }
 
   private appendedPatchset() {
@@ -150,7 +160,8 @@ export default class Append extends Plugin {
           o.originalRelativePath = e.relativePath;
           return o;
         }
-      }).filter(e => e && e.relativePath !== './') as AugmentedWalkSyncEntry[];
+      })
+      .filter(e => e && e.relativePath !== './') as AugmentedWalkSyncEntry[];
 
     let previous = this.previousAppendedTree;
     let next = (this.previousAppendedTree = FSTree.fromEntries(input));
@@ -173,13 +184,16 @@ export default class Append extends Plugin {
       return;
     }
 
-    const separator = (ext === '.js') ? ';\n' : '\n';
+    const separator = ext === '.js' ? ';\n' : '\n';
 
-    let appendedContent = readdirSync(sourceDir).map(name => {
-      if (name.endsWith(ext)) {
-        return readFileSync(join(sourceDir, name), 'utf8');
-      }
-    }).filter(Boolean).join(separator);
+    let appendedContent = readdirSync(sourceDir)
+      .map(name => {
+        if (name.endsWith(ext)) {
+          return readFileSync(join(sourceDir, name), 'utf8');
+        }
+      })
+      .filter(Boolean)
+      .join(separator);
     let upstreamContent = readFileSync(upstreamPath, 'utf8');
     if (appendedContent.length > 0) {
       upstreamContent = insertBefore(upstreamContent, separator + appendedContent);
@@ -218,7 +232,7 @@ function findByPrefix<T>(path: string, map: Map<string, T>) {
     if (map.has(candidate)) {
       return {
         prefix: candidate,
-        mapsTo: map.get(candidate)!
+        mapsTo: map.get(candidate)!,
       };
     }
   }
