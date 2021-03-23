@@ -61,12 +61,14 @@ appScenarios
         <!DOCTYPE html>
         <html>
           <head>
-            {{content-for "head"}} {{content-for "test-head"}}
+            {{content-for "head"}}
+            {{content-for "test-head"}}
             <link rel="stylesheet" href="/assets/vendor.css" />
             <link rel="stylesheet" href="/assets/@ef4/app-template.css" />
             <link rel="stylesheet" href="/assets/test-support.css" />
             <meta http-equiv="Content-Security-Policy" content="default-src 'self';"></meta>
-            {{content-for "head-footer"}} {{content-for "test-head-footer"}}
+            {{content-for "head-footer"}}
+            {{content-for "test-head-footer"}}
           </head>
           <body>
             {{content-for "body"}}
