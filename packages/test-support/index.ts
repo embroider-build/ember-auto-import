@@ -42,6 +42,26 @@ export class Scenarios {
     });
   }
 
+  skip(variantName: string): Scenarios {
+    if (this.state.type === 'root') {
+      throw new Error(`no variant named ${variantName} available to skip on root scenario`);
+    }
+    if (!this.state.variants[variantName]) {
+      throw new Error(
+        `no variant named ${variantName} available to skip. Found variants: ${Object.keys(this.state.variants).join(
+          ', '
+        )}`
+      );
+    }
+    let variants = Object.assign({}, this.state.variants);
+    delete variants[variantName];
+    return new Scenarios({
+      type: 'derived',
+      parent: this.state.parent,
+      variants,
+    });
+  }
+
   map(name: string, fn: ProjectMutator): Scenarios {
     if (this.state.type === 'root') {
       return new Scenarios({

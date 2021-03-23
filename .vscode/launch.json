@@ -73,6 +73,19 @@
         "JOBS": "1"
       },
       "outputCapture": "std"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Build a pre-emitted test-scenario",
+      "program": "${workspaceFolder}/node_modules/ember-cli/bin/ember",
+      "cwd": "${workspaceFolder}/test-scenarios/output",
+      "args": ["build"],
+      "env": {
+        "JOBS": "1"
+      },
+      "outputCapture": "std",
+      "nodeVersionHint": 10
     }
   ]
 }
