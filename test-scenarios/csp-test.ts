@@ -69,13 +69,15 @@ appScenarios
             {{content-for "head-footer"}} {{content-for "test-head-footer"}}
           </head>
           <body>
-            {{content-for "body"}} {{content-for "test-body"}}
+            {{content-for "body"}}
+            {{content-for "test-body"}}
             <script src="/testem.js" integrity=""></script>
             <script src="/assets/vendor.js"></script>
             <script src="/assets/test-support.js"></script>
             <script src="/assets/@ef4/app-template.js"></script>
             <script src="/assets/tests.js"></script>
-            {{content-for "body-footer"}} {{content-for "test-body-footer"}}
+            {{content-for "body-footer"}}
+            {{content-for "test-body-footer"}}
           </body>
         </html>
       `,

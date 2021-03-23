@@ -67,7 +67,8 @@ function customVendorTest(project: Project, vendorPath: string) {
             <link rel="stylesheet" href="/assets/vendor.css" />
             <link rel="stylesheet" href="/assets/@ef4/app-template.css" />
             <link rel="stylesheet" href="/assets/test-support.css" />
-            {{content-for "head-footer"}} {{content-for "test-head-footer"}}
+            {{content-for "head-footer"}}
+            {{content-for "test-head-footer"}}
           </head>
           <body>
             {{content-for "body"}} {{content-for "test-body"}}
@@ -76,7 +77,8 @@ function customVendorTest(project: Project, vendorPath: string) {
             <script src="/assets/test-support.js"></script>
             <script src="/assets/@ef4/app-template.js"></script>
             <script src="/assets/tests.js"></script>
-            {{content-for "body-footer"}} {{content-for "test-body-footer"}}
+            {{content-for "body-footer"}}
+            {{content-for "test-body-footer"}}
           </body>
         </html>
       `,
