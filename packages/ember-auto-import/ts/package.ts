@@ -1,10 +1,11 @@
-import resolve from 'resolve';
-import { join } from 'path';
+import resolvePackagePath from 'resolve-package-path';
+import { join, dirname } from 'path';
 import { readFileSync } from 'fs';
 import { Memoize } from 'typescript-memoize';
 import { Configuration } from 'webpack';
+import { AddonInstance, isDeepAddonInstance, Project } from './ember-cli-models';
 
-const cache: WeakMap<any, Package> = new WeakMap();
+const cache: WeakMap<AddonInstance, Package> = new WeakMap();
 let pkgGeneration = 0;
 
 export function reloadDevPackages() {
@@ -17,53 +18,84 @@ export interface Options {
   webpack?: Configuration;
   publicAssetURL?: string;
   forbidEval?: boolean;
-  skipBabel?: { package: string, semverRange?: string }[];
+  skipBabel?: { package: string; semverRange?: string }[];
+  watchDependencies?: (string | string[])[];
 }
+
+interface DepResolution {
+  type: 'package';
+  path: string;
+  packageName: string;
+  packagePath: string;
+  local: string;
+}
+
+interface LocalResolution {
+  type: 'local';
+  local: string;
+}
+
+interface URLResolution {
+  type: 'url';
+  url: string;
+}
+
+interface ImpreciseResolution {
+  type: 'imprecise';
+}
+
+type Resolution = DepResolution | LocalResolution | URLResolution | ImpreciseResolution;
 
 export default class Package {
   public name: string;
   public root: string;
   public isAddon: boolean;
   private _options: any;
-  private _parent: any;
+  private _parent: Project | AddonInstance;
   private _hasBabelDetails = false;
   private _babelMajorVersion?: number;
   private _babelOptions: any;
   private _emberCLIBabelExtensions?: string[];
   private autoImportOptions: Options | undefined;
-  private isAddonCache = new Map<string, boolean>();
   private isDeveloping: boolean;
   private pkgGeneration: number;
   private pkgCache: any;
 
-  static lookup(appOrAddon: any): Package {
-    if (!cache.has(appOrAddon)) {
-      cache.set(appOrAddon, new this(appOrAddon));
+  static lookupParentOf(child: AddonInstance): Package {
+    if (!cache.has(child)) {
+      cache.set(child, new this(child));
     }
-    return cache.get(appOrAddon)!;
+    return cache.get(child)!;
   }
 
-  constructor(appOrAddon: any) {
-    this.name = appOrAddon.parent.pkg.name;
-    this.root = appOrAddon.parent.root;
-    this.isAddon = appOrAddon.parent !== appOrAddon.project;
-    this.isDeveloping = !this.isAddon || this.root === appOrAddon.project.root;
+  constructor(child: AddonInstance) {
+    this.name = child.parent.pkg.name;
+    this.root = child.parent.root;
 
-    // This is the per-package options from ember-cli
-    this._options = this.isAddon
-      ? appOrAddon.parent.options
-      : appOrAddon.app.options;
-    this._parent = appOrAddon.parent;
+    if (isDeepAddonInstance(child)) {
+      this.isAddon = true;
+      this.isDeveloping = this.root === child.project.root;
+      // This is the per-package options from ember-cli
+      this._options = child.parent.options;
+    } else {
+      this.isAddon = false;
+      this.isDeveloping = true;
+      this._options = child.app.options;
+    }
+
+    this._parent = child.parent;
 
     // Stash our own config options
     this.autoImportOptions = this._options.autoImport;
 
-    this.pkgCache = appOrAddon.parent.pkg;
+    this.pkgCache = child.parent.pkg;
     this.pkgGeneration = pkgGeneration;
   }
 
   _ensureBabelDetails() {
-    if (this._hasBabelDetails) { return; }
+    if (this._hasBabelDetails) {
+      return;
+    }
     let { babelOptions, extensions, version } = this.buildBabelOptions(this._parent, this._options);
 
     this._emberCLIBabelExtensions = extensions;
@@ -84,19 +116,17 @@ export default class Package {
 
   @Memoize()
   get isFastBootEnabled() {
-    return process.env.FASTBOOT_DISABLED !== 'true'
-    && !!this._parent.addons.find(
-      (addon: any) => addon.name === 'ember-cli-fastboot'
+    return (
+      process.env.FASTBOOT_DISABLED !== 'true' &&
+      !!this._parent.addons.find(addon => addon.name === 'ember-cli-fastboot')
     );
   }
 
-  private buildBabelOptions(instance: any, options: any) {
+  private buildBabelOptions(instance: Project | AddonInstance, options: any) {
     // Generate the same babel options that the package (meaning app or addon)
     // is using. We will use these so we can configure our parser to
     // match.
-    let babelAddon = instance.addons.find(
-      (addon: any) => addon.name === 'ember-cli-babel'
-    );
+    let babelAddon = instance.addons.find(addon => addon.name === 'ember-cli-babel') as any;
     let babelOptions = babelAddon.buildBabelOptions(options);
     let extensions = babelOptions.filterExtensions || ['js'];
 
@@ -105,24 +135,17 @@ export default class Package {
     delete babelOptions.throwUnlessParallelizable;
     delete babelOptions.filterExtensions;
     if (babelOptions.plugins) {
-      babelOptions.plugins = babelOptions.plugins.filter(
-        (p: any) => !p._parallelBabel
-      );
+      babelOptions.plugins = babelOptions.plugins.filter((p: any) => !p._parallelBabel);
     }
     let version = parseInt(babelAddon.pkg.version.split('.')[0], 10);
     return { babelOptions, extensions, version };
   }
 
   get pkg() {
-    if (
-      !this.pkgCache ||
-      (this.isDeveloping && pkgGeneration !== this.pkgGeneration)
-    ) {
+    if (!this.pkgCache || (this.isDeveloping && pkgGeneration !== this.pkgGeneration)) {
       // avoiding `require` here because we don't want to go through the
       // require cache.
-      this.pkgCache = JSON.parse(
-        readFileSync(join(this.root, 'package.json'), 'utf-8')
-      );
+      this.pkgCache = JSON.parse(readFileSync(join(this.root, 'package.json'), 'utf-8'));
       this.pkgGeneration = pkgGeneration;
     }
     return this.pkgCache;
@@ -134,7 +157,7 @@ export default class Package {
     return `${this.name}/${this.isAddon ? 'addon' : 'app'}`;
   }
 
-  hasDependency(name: string): boolean {
+  private hasDependency(name: string): boolean {
     let pkg = this.pkg;
     return (
       (pkg.dependencies && Boolean(pkg.dependencies[name])) ||
@@ -146,9 +169,11 @@ export default class Package {
   getDependencyVersion(name: string): string | undefined {
     if (this.hasDependency(name)) {
       let pkg = this.pkg;
-      return pkg.dependencies && pkg.dependencies[name] ||
-        pkg.devDependencies && pkg.devDependencies[name] ||
-        pkg.peerDependencies && pkg.peerDependencies[name];
+      return (
+        (pkg.dependencies && pkg.dependencies[name]) ||
+        (pkg.devDependencies && pkg.devDependencies[name]) ||
+        (pkg.peerDependencies && pkg.peerDependencies[name])
+      );
     }
     return undefined;
   }
@@ -161,32 +186,91 @@ export default class Package {
     );
   }
 
-  isEmberAddonDependency(name: string): boolean {
-    if (!this.isAddonCache.has(name)) {
-      let packageJSON = require(resolve.sync(`${name}/package.json`, {
-        basedir: this.root
-      }));
-      let keywords = packageJSON.keywords;
-      this.isAddonCache.set(name, keywords && keywords.includes('ember-addon'));
+  static categorize(importedPath: string, partial = false) {
+    if (/^(\w+:)?\/\//.test(importedPath) || importedPath.startsWith('data:')) {
+      return 'url';
     }
-    return this.isAddonCache.get(name) || false;
+
+    if (importedPath[0] === '.' || importedPath[0] === '/') {
+      return 'local';
+    }
+
+    if (partial && !isPrecise(importedPath)) {
+      return 'imprecise';
+    }
+    return 'dep';
   }
 
-  assertAllowedDependency(name: string) {
+  resolve(importedPath: string): DepResolution | LocalResolution | URLResolution;
+  resolve(importedPath: string, partial: true): DepResolution | LocalResolution | URLResolution | ImpreciseResolution;
+  resolve(importedPath: string, partial = false): Resolution | undefined {
+    switch (Package.categorize(importedPath, partial)) {
+      case 'url':
+        return { type: 'url', url: importedPath };
+      case 'local':
+        return {
+          type: 'local',
+          local: importedPath,
+        };
+      case 'imprecise':
+        if (partial) {
+          return {
+            type: 'imprecise',
+          };
+        }
+        break;
+    }
+
+    let path = this.aliasFor(importedPath);
+    let [first, ...rest] = path.split('/');
+    let packageName;
+    if (first[0] === '@') {
+      packageName = `${first}/${rest.shift()}`;
+    } else {
+      packageName = first;
+    }
+
+    if (this.excludesDependency(packageName)) {
+      // This package has been explicitly excluded.
+      return;
+    }
+
+    if (!this.hasDependency(packageName)) {
+      return;
+    }
+
+    let packagePath = resolvePackagePath(packageName, this.root);
+    if (packagePath === null) {
+      throw new Error(
+        `${this.name} tried to import "${packageName}" but the package was not resolvable from ${this.root}`
+      );
+    }
+
+    if (isEmberAddonDependency(packagePath)) {
+      // ember addon are not auto imported
+      return;
+    }
+    this.assertAllowedDependency(packageName);
+    return {
+      type: 'package',
+      path,
+      packageName,
+      local: rest.join('/'),
+      packagePath,
+    };
+  }
+
+  private assertAllowedDependency(name: string) {
     if (this.isAddon && !this.hasNonDevDependency(name)) {
       throw new Error(
-        `${
-          this.name
-        } tried to import "${name}" from addon code, but "${name}" is a devDependency. You may need to move it into dependencies.`
+        `${this.name} tried to import "${name}" from addon code, but "${name}" is a devDependency. You may need to move it into dependencies.`
       );
     }
   }
 
-  excludesDependency(name: string): boolean {
+  private excludesDependency(name: string): boolean {
     return Boolean(
-      this.autoImportOptions &&
-      this.autoImportOptions.exclude &&
-      this.autoImportOptions.exclude.includes(name)
+      this.autoImportOptions && this.autoImportOptions.exclude && this.autoImportOptions.exclude.includes(name)
     );
   }
 
@@ -194,17 +278,19 @@ export default class Package {
     return this.autoImportOptions && this.autoImportOptions.webpack;
   }
 
-  get skipBabel(): Options["skipBabel"] {
+  get skipBabel(): Options['skipBabel'] {
     return this.autoImportOptions && this.autoImportOptions.skipBabel;
   }
 
-  aliasFor(name: string): string {
-    return (
-      (this.autoImportOptions &&
-        this.autoImportOptions.alias &&
-        this.autoImportOptions.alias[name]) ||
-      name
-    );
+  private aliasFor(name: string): string {
+    let alias = this.autoImportOptions?.alias;
+    if (!alias) return name;
+    if (alias[name]) return alias[name];
+
+    let prefix = Object.keys(alias).find(p => name.startsWith(`${p}/`));
+    if (prefix) return alias[prefix] + name.slice(prefix.length);
+
+    return name;
   }
 
   get fileExtensions(): string[] {
@@ -227,8 +313,58 @@ export default class Package {
   get forbidsEval(): boolean {
     // only apps (not addons) are allowed to set this, because it's motivated by
     // the apps own Content Security Policy.
-    return Boolean(
-      !this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval
-    );
+    return Boolean(!this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval);
   }
+
+  get watchedDirectories(): string[] | undefined {
+    // only apps (not addons) are allowed to set this
+    if (!this.isAddon && this.autoImportOptions?.watchDependencies) {
+      return this.autoImportOptions.watchDependencies
+        .map(nameOrNames => {
+          let names: string[];
+          if (typeof nameOrNames === 'string') {
+            names = [nameOrNames];
+          } else {
+            names = nameOrNames;
+          }
+          let cursor = this.root;
+          for (let name of names) {
+            let path = resolvePackagePath(name, cursor);
+            if (!path) {
+              return undefined;
+            }
+            cursor = dirname(path);
+          }
+          return cursor;
+        })
+        .filter(Boolean) as string[];
+    }
+  }
+}
+
+const isAddonCache = new Map<string, boolean>();
+function isEmberAddonDependency(pathToPackageJSON: string): boolean {
+  let cached = isAddonCache.get(pathToPackageJSON);
+  if (cached === undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    let packageJSON = require(pathToPackageJSON);
+    let answer = packageJSON.keywords?.includes('ember-addon') || false;
+    isAddonCache.set(pathToPackageJSON, answer);
+    return answer;
+  } else {
+    return cached;
+  }
+}
+
+function count(str: string, letter: string): number {
+  return [...str].reduce((a, b) => a + (b === letter ? 1 : 0), 0);
+}
+
+function isPrecise(leadingQuasi: string): boolean {
+  if (leadingQuasi.startsWith('.') || leadingQuasi.startsWith('/')) {
+    return true;
+  }
+  let slashes = count(leadingQuasi, '/');
+  let minSlashes = leadingQuasi.startsWith('@') ? 2 : 1;
+  return slashes >= minSlashes;
 }

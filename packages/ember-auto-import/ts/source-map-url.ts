@@ -9,17 +9,21 @@
 
 const innerRegex = /[#@] sourceMappingURL=([^\s'"]*)/;
 const regex = RegExp(
-    "(?:" +
-      "/\\*" +
-      "(?:\\s*\r?\n(?://)?)?" +
-      "(?:" + innerRegex.source + ")" +
-      "\\s*" +
-      "\\*/" +
-      "|" +
-      "//(?:" + innerRegex.source + ")" +
-    ")" +
-    "\\s*$"
-  );
+  '(?:' +
+    '/\\*' +
+    '(?:\\s*\r?\n(?://)?)?' +
+    '(?:' +
+    innerRegex.source +
+    ')' +
+    '\\s*' +
+    '\\*/' +
+    '|' +
+    '//(?:' +
+    innerRegex.source +
+    ')' +
+    ')' +
+    '\\s*$'
+);
 
 export function insertBefore(code: string, string: string) {
   let match = code.match(regex);

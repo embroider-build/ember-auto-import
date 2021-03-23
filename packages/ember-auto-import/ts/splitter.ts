@@ -1,36 +1,51 @@
 import makeDebug from 'debug';
-import Analyzer, { Import } from './analyzer';
+import Analyzer, { Import, LiteralImport, TemplateImport } from './analyzer';
 import Package from './package';
 import { shallowEqual } from './util';
-import { flatten, partition, values } from 'lodash';
-import {
-  NodeJsInputFileSystem,
-  CachedInputFileSystem,
-  ResolverFactory
-} from 'enhanced-resolve';
+import { flatten, partition } from 'lodash';
+import { NodeJsInputFileSystem, CachedInputFileSystem, ResolverFactory } from 'enhanced-resolve';
+import { findUpPackagePath } from 'resolve-package-path';
 import pkgUp from 'pkg-up';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import BundleConfig from './bundle-config';
 import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
 import semver from 'semver';
+import { readJSONSync } from 'fs-extra';
 
 const debug = makeDebug('ember-auto-import:splitter');
+
+// these are here because we do our own resolving of entrypoints, so we
+// configure enhanced-resolve directly. But in the case of template literal
+// imports, we only resolve down to the right directory and leave the file
+// discovery up to webpack, so webpack needs to also know the options we're
+// using.
+export const sharedResolverOptions = {
+  extensions: ['.js', '.ts', '.json'],
+  mainFields: ['browser', 'module', 'main'],
+};
+
 const resolver = ResolverFactory.createResolver({
   // upstream types seem to be broken here
-  fileSystem: new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000) as unknown as AbstractInputFileSystem,
-  extensions: ['.js', '.ts', '.json'],
-  mainFields: ['browser', 'module', 'main']
+  fileSystem: (new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000) as unknown) as AbstractInputFileSystem,
+  ...sharedResolverOptions,
 });
 
 export interface ResolvedImport {
   specifier: string;
   entrypoint: string;
-  importedBy: Import[];
+  importedBy: LiteralImport[];
+}
+
+export interface ResolvedTemplateImport {
+  cookedQuasis: string[];
+  expressionNameHints: string[];
+  importedBy: TemplateImport[];
 }
 
 export interface BundleDependencies {
   staticImports: ResolvedImport[];
   dynamicImports: ResolvedImport[];
+  dynamicTemplateImports: ResolvedTemplateImport[];
 }
 
 export interface SplitterOptions {
@@ -56,9 +71,7 @@ export default class Splitter {
   }
 
   private importsChanged(): boolean {
-    let imports = [...this.options.analyzers.keys()].map(
-      analyzer => analyzer.imports
-    );
+    let imports = [...this.options.analyzers.keys()].map(analyzer => analyzer.imports);
     if (!this.lastImports || !shallowEqual(this.lastImports, imports)) {
       this.lastImports = imports;
       return true;
@@ -67,64 +80,108 @@ export default class Splitter {
   }
 
   private async computeTargets(analyzers: Map<Analyzer, Package>) {
-    let specifiers: Map<string, ResolvedImport> = new Map();
-    let imports = flatten(
-      [...analyzers.keys()].map(analyzer => analyzer.imports)
-    );
+    let targets: Map<string, ResolvedImport> = new Map();
+    let templateTargets: Map<string, ResolvedTemplateImport> = new Map();
+    let imports = flatten([...analyzers.keys()].map(analyzer => analyzer.imports));
     await Promise.all(
       imports.map(async imp => {
-        if (imp.specifier[0] === '.' || imp.specifier[0] === '/') {
-          // we're only trying to identify imports of external NPM
-          // packages, so relative imports are never relevant.
-          return;
-        }
-
-        let aliasedSpecifier = imp.package.aliasFor(imp.specifier);
-        let parts = aliasedSpecifier.split('/');
-        let packageName;
-        if (aliasedSpecifier[0] === '@') {
-          packageName = `${parts[0]}/${parts[1]}`;
+        if ('specifier' in imp) {
+          await this.handleLiteralImport(imp, targets);
         } else {
-          packageName = parts[0];
-        }
-
-        if (imp.package.excludesDependency(packageName)) {
-          // This package has been explicitly excluded.
-          return;
-        }
-
-        if (
-          !imp.package.hasDependency(packageName) ||
-          imp.package.isEmberAddonDependency(packageName)
-        ) {
-          return;
-        }
-        imp.package.assertAllowedDependency(packageName);
-
-        let entrypoint = await resolveEntrypoint(aliasedSpecifier, imp.package);
-        let seenAlready = specifiers.get(imp.specifier);
-        if (seenAlready) {
-          await this.assertSafeVersion(seenAlready, imp, entrypoint);
-          seenAlready.importedBy.push(imp);
-        } else {
-          specifiers.set(imp.specifier, {
-            specifier: imp.specifier,
-            entrypoint,
-            importedBy: [imp]
-          });
+          await this.handleTemplateImport(imp, templateTargets);
         }
       })
     );
-    return specifiers;
+    return { targets, templateTargets };
+  }
+
+  private async handleLiteralImport(imp: LiteralImport, targets: Map<string, ResolvedImport>) {
+    let target = imp.package.resolve(imp.specifier);
+    if (!target) {
+      return;
+    }
+
+    if (target.type === 'url') {
+      // people can statically import from URLs if they want to, that's clearly
+      // nothing to do with us (though in practice the rest of ember-cli will
+      // generally be sad about this)
+      return;
+    }
+
+    if (target.type === 'local') {
+      // we're only trying to identify imports of external NPM
+      // packages, so relative imports are never relevant.
+      if (imp.isDynamic) {
+        throw new Error(
+          `ember-auto-import does not support dynamic relative imports. "${imp.specifier}" is relative. To make this work, you need to upgrade to Embroider.`
+        );
+      }
+      return;
+    }
+
+    let entrypoint = await resolveEntrypoint(target.path, imp.package);
+    let seenAlready = targets.get(imp.specifier);
+    if (seenAlready) {
+      await this.assertSafeVersion(seenAlready.entrypoint, seenAlready.importedBy[0], imp, entrypoint);
+      seenAlready.importedBy.push(imp);
+    } else {
+      targets.set(imp.specifier, {
+        specifier: imp.specifier,
+        entrypoint,
+        importedBy: [imp],
+      });
+    }
+  }
+
+  private async handleTemplateImport(imp: TemplateImport, targets: Map<string, ResolvedTemplateImport>) {
+    let [leadingQuasi, ...rest] = imp.cookedQuasis;
+
+    let target = imp.package.resolve(leadingQuasi, true);
+    if (!target) {
+      throw new Error(`ember-auto-import is unable to handle ${leadingQuasi}`);
+    }
+
+    if (target.type === 'local') {
+      throw new Error(
+        `ember-auto-import does not support dynamic relative imports. "${leadingQuasi}" is relative. To make this work, you need to upgrade to Embroider.`
+      );
+    }
+
+    if (target.type === 'imprecise') {
+      throw new Error(`Dynamic imports must target unambiguous package names. ${leadingQuasi} is ambiguous`);
+    }
+
+    if (target.type === 'url') {
+      return;
+    }
+
+    // this just makes the key look pleasantly like the original template
+    // string, there's nothing magical about "e" here, it just means "an
+    // expression goes here and we don't care which one".c
+    let specifierKey = imp.cookedQuasis.join('${e}');
+
+    let entrypoint = join(target.packagePath.slice(0, -1 * 'package.json'.length), target.local);
+    let seenAlready = targets.get(specifierKey);
+    if (seenAlready) {
+      await this.assertSafeVersion(seenAlready.cookedQuasis[0], seenAlready.importedBy[0], imp, entrypoint);
+      seenAlready.importedBy.push(imp);
+    } else {
+      targets.set(specifierKey, {
+        cookedQuasis: [entrypoint, ...rest],
+        expressionNameHints: imp.expressionNameHints.map((hint, index) => hint || `arg${index}`),
+        importedBy: [imp],
+      });
+    }
   }
 
   private async versionOfPackage(entrypoint: string) {
     if (this.packageVersions.has(entrypoint)) {
       return this.packageVersions.get(entrypoint);
     }
-    let pkgPath = await pkgUp(dirname(entrypoint));
+    let pkgPath = findUpPackagePath(dirname(entrypoint));
     let version = null;
     if (pkgPath) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       let pkg = require(pkgPath);
       version = pkg.version;
     }
@@ -141,7 +198,7 @@ export default class Splitter {
     let pkgPath = await pkgUp(dirname(entrypoint));
     let name = null;
     if (pkgPath) {
-      let pkg = require(pkgPath);
+      let pkg = readJSONSync(pkgPath);
       name = pkg.name;
     }
     if (name) {
@@ -149,22 +206,17 @@ export default class Splitter {
     }
     return name;
   }
-
-  private async assertSafeVersion(
-    have: ResolvedImport,
-    nextImport: Import,
-    entrypoint: string
-  ) {
-    if (have.entrypoint === entrypoint) {
+  private async assertSafeVersion(haveEntrypoint: string, prevImport: Import, nextImport: Import, entrypoint: string) {
+    if (haveEntrypoint === entrypoint) {
       // both import statements are resolving to the exact same entrypoint --
       // this is the normal and happy case
       return;
     }
 
     let [haveVersion, nextVersion, haveName] = await Promise.all([
-      this.versionOfPackage(have.entrypoint),
+      this.versionOfPackage(haveEntrypoint),
       this.versionOfPackage(entrypoint),
-      this.nameOfPackage(have.entrypoint)
+      this.nameOfPackage(haveEntrypoint),
     ]);
 
     if (haveName && haveVersion) {
@@ -178,30 +230,27 @@ export default class Splitter {
     let haveExactVersion = haveVersion === nextVersion;
     if (!haveExactVersion) {
       throw new Error(
-        `${nextImport.package.name} and ${
-          have.importedBy[0].package.name
-        } are using different versions of ${
-          have.specifier
-        } (${nextVersion} located at ${entrypoint} vs ${haveVersion} located at ${
-          have.entrypoint
-        })`
+        `${nextImport.package.name} and ${prevImport.package.name} are using different versions of ${
+          'specifier' in prevImport ? prevImport.specifier : prevImport.cookedQuasis[0]
+        } (${nextVersion} located at ${entrypoint} vs ${haveVersion} located at ${haveEntrypoint})`
       );
     }
   }
 
-  private async computeDeps(analyzers: SplitterOptions["analyzers"]): Promise<Map<string, BundleDependencies>> {
+  private async computeDeps(analyzers: SplitterOptions['analyzers']): Promise<Map<string, BundleDependencies>> {
     let targets = await this.computeTargets(analyzers);
     let deps: Map<string, BundleDependencies> = new Map();
 
     this.options.bundles.names.forEach(bundleName => {
-      deps.set(bundleName, { staticImports: [], dynamicImports: [] });
+      deps.set(bundleName, {
+        staticImports: [],
+        dynamicImports: [],
+        dynamicTemplateImports: [],
+      });
     });
 
-    for (let target of targets.values()) {
-      let [dynamicUses, staticUses] = partition(
-        target.importedBy,
-        imp => imp.isDynamic
-      );
+    for (let target of targets.targets.values()) {
+      let [dynamicUses, staticUses] = partition(target.importedBy, imp => imp.isDynamic);
       if (staticUses.length > 0) {
         let bundleName = this.chooseBundle(staticUses);
         deps.get(bundleName)!.staticImports.push(target);
@@ -210,6 +259,11 @@ export default class Splitter {
         let bundleName = this.chooseBundle(dynamicUses);
         deps.get(bundleName)!.dynamicImports.push(target);
       }
+    }
+
+    for (let target of targets.templateTargets.values()) {
+      let bundleName = this.chooseBundle(target.importedBy);
+      deps.get(bundleName)!.dynamicTemplateImports.push(target);
     }
 
     this.sortDependencies(deps);
@@ -224,9 +278,9 @@ export default class Splitter {
   }
 
   private sortBundle(bundle: BundleDependencies) {
-    for (const imports of values(bundle)) {
-      imports.sort((a, b) => a.specifier.localeCompare(b.specifier));
-    }
+    bundle.staticImports.sort((a, b) => a.specifier.localeCompare(b.specifier));
+    bundle.dynamicImports.sort((a, b) => a.specifier.localeCompare(b.specifier));
+    bundle.dynamicTemplateImports.sort((a, b) => a.cookedQuasis[0].localeCompare(b.cookedQuasis[0]));
   }
 
   // given that a module is imported by the given list of paths, which
@@ -234,20 +288,22 @@ export default class Splitter {
   private chooseBundle(importedBy: Import[]) {
     let usedInBundles = {} as { [bundleName: string]: boolean };
     importedBy.forEach(usage => {
-      usedInBundles[this.bundleForPath(usage)] = true;
+      usedInBundles[this.bundleFor(usage)] = true;
     });
     return this.options.bundles.names.find(bundle => usedInBundles[bundle])!;
   }
 
-  private bundleForPath(usage: Import) {
-    let bundleName = this.options.bundles.bundleForPath(usage.path);
+  private bundleFor(usage: Import) {
+    let bundleName =
+      usage.treeType === undefined || typeof this.options.bundles.bundleForTreeType !== 'function'
+        ? this.options.bundles.bundleForPath(usage.path)
+        : this.options.bundles.bundleForTreeType(usage.treeType);
+
     if (this.options.bundles.names.indexOf(bundleName) === -1) {
       throw new Error(
         `bundleForPath("${
           usage.path
-        }") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.names.join(
-          ','
-        )}`
+        }") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.names.join(',')}`
       );
     }
     debug('bundleForPath("%s")=%s', usage.path, bundleName);
@@ -275,7 +331,7 @@ class LazyPrintDeps {
     return {
       specifier: imp.specifier,
       entrypoint: imp.entrypoint,
-      importedBy: imp.importedBy.map(this.describeImport.bind(this))
+      importedBy: imp.importedBy.map(this.describeImport.bind(this)),
     };
   }
 
@@ -283,19 +339,24 @@ class LazyPrintDeps {
     return {
       package: imp.package.name,
       path: imp.path,
-      isDynamic: imp.isDynamic
+    };
+  }
+
+  private describeTemplateImport(imp: ResolvedTemplateImport) {
+    return {
+      cookedQuasis: imp.cookedQuasis,
+      expressionNameHints: imp.expressionNameHints,
+      importedBy: imp.importedBy.map(this.describeImport.bind(this)),
     };
   }
 
   toString() {
     let output = {} as { [bundle: string]: any };
-    for (let [
-      bundle,
-      { staticImports, dynamicImports }
-    ] of this.deps.entries()) {
+    for (let [bundle, { staticImports, dynamicImports, dynamicTemplateImports }] of this.deps.entries()) {
       output[bundle] = {
         static: staticImports.map(this.describeResolvedImport.bind(this)),
-        dynamic: dynamicImports.map(this.describeResolvedImport.bind(this))
+        dynamic: dynamicImports.map(this.describeResolvedImport.bind(this)),
+        dynamicTemplate: dynamicTemplateImports.map(this.describeTemplateImport.bind(this)),
       };
     }
     return JSON.stringify(output, null, 2);

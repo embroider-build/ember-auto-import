@@ -1,1 +1,0 @@
-export { default } from 'sample-intermediate-addon/components/from-intermediate';
