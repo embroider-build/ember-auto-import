@@ -30,4 +30,4 @@ Use these commands in the `./test-scenarios` directory.
 - `npm test:list` list the names of all scenarios.
 
 - `npm run test -- --filter $SCENARIO_NAME` run one scenario by name
-- `npm run test:output --scenario $SCENARIO_NAME` writes out the scenario as a real on-disk app that you can inspect, run, and debug.
+- `npm run test:output -- --scenario $SCENARIO_NAME` writes out the scenario as a real on-disk app that you can inspect, run, and debug.
