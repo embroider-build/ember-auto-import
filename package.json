@@ -1,9 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "prepare": "cd packages/ember-auto-import && npm run compile",
-    "test": "TODO",
-    "lint": "cd packages/ember-auto-import && npm run lint"
+    "test": "cd test-scenarios && npm run test",
+    "watch": "cd packages/ember-auto-import && npm run compile --watch"
   },
   "workspaces": [
     "packages/*",

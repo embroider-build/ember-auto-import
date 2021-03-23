@@ -12,6 +12,7 @@ addonScenarios
       addon: {
         'index.js': `
           import someLib from 'some-lib';
+          window.someLib = someLib;
         `,
       },
     });

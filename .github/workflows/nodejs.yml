@@ -32,7 +32,7 @@ jobs:
         working-directory: test-scenarios
         run: echo "::set-output name=matrix::$(npm run --silent test:list -- --matrix)"
 
-  new_build:
+  build:
     needs: discover_matrix
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
@@ -54,15 +54,3 @@ jobs:
       - name: test
         run: ${{ matrix.command }}
         working-directory: ${{ matrix.dir }}
-
-  # build:
-  #   runs-on: ubuntu-latest
-
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       eai_scenario: [2.18, stable, beta, canary]
-  #       suite:
-  #         - 'cd packages/sample-indirect    && npm run test'
-  #         - 'cd packages/sample-indirect    && npm run test:fastboot'
-  #         - 'cd packages/sample-indirect    && npm run test:custom-csp'
