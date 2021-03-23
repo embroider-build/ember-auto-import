@@ -5,7 +5,7 @@
 
 import { dirname } from 'path';
 import { AppInstance } from './ember-cli-models';
-const testsPattern = new RegExp(`^/?[^/]+/(tests|test-support)/`);
+const testsPattern = new RegExp(`^(@[^/]+)?/?[^/]+/(tests|test-support)/`);
 
 import type { TreeType } from './analyzer';
 

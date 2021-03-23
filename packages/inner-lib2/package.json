@@ -1,7 +1,0 @@
-{
-  "name": "inner-lib2",
-  "version": "0.0.1",
-  "engines": {
-    "node": ">= 6"
-  }
-}
