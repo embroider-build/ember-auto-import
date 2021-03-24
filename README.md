@@ -124,6 +124,7 @@ let app = new EmberApp(defaults, {
 Supported Options
 
 - `alias`: _object_, Map from package names to substitute packages that will be used instead.
+- `aliasMode`: _"exact" or "prefix", defaults to "exact"_. By default, aliasing only match exactly. Switching to "prefix" makes them work like they do in webpack's `resolve.alias`, so they do a prefix match. "exact" is the default for backward-compatibility, "prefix" will become the default in a future major release.
 - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
 - `forbidEval`: _boolean_, defaults to false. We use `eval` in development by default (because that is the fastest way to provide sourcemaps). If you need to comply with a strict Content Security Policy (CSP), you can set `forbidEval: true`. You will still get sourcemaps, they will just use a slower implementation.
 - `publicAssetURL`: where to load additional dynamic javascript files from. You usually don't need to set this -- the default works for most apps. However, if you're using `<script defer>` or another method of asynchronously loading your vendor.js script you will need to set this to the URL where your asset directory is served (typically `/assets`).
@@ -163,19 +164,18 @@ Using ember-auto-import inside an addon is almost exactly the same as inside an 
   ```
 - if your addon uses [Dynamic Import](#dynamic-import), it is [required](https://github.com/babel/ember-cli-babel#options) that you
   register the babel plugin in your `index.js` instead of `ember-cli-build.js`:
-  ```js 
-  // index.js 
-  module.exports = { 
-    options: { 
-      babel: { 
-        plugins: [ require.resolve('ember-auto-import/babel-plugin') ] 
-      } 
-    } 
+  ```js
+  // index.js
+  module.exports = {
+    options: {
+      babel: {
+        plugins: [require.resolve('ember-auto-import/babel-plugin')],
+      },
+    },
   };
   ```
 
-FAQ
----
+## FAQ
 
 ### `global is undefined` or `can't find module "path"` or `can't find module "fs"`
 

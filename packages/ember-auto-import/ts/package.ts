@@ -15,6 +15,7 @@ export function reloadDevPackages() {
 export interface Options {
   exclude?: string[];
   alias?: { [fromName: string]: string };
+  aliasMode?: 'exact' | 'prefix';
   webpack?: Configuration;
   publicAssetURL?: string;
   forbidEval?: boolean;
@@ -275,8 +276,10 @@ export default class Package {
     if (!alias) return name;
     if (alias[name]) return alias[name];
 
-    let prefix = Object.keys(alias).find(p => name.startsWith(`${p}/`));
-    if (prefix) return alias[prefix] + name.slice(prefix.length);
+    if (this.autoImportOptions?.aliasMode === 'prefix') {
+      let prefix = Object.keys(alias).find(p => name.startsWith(`${p}/`));
+      if (prefix) return alias[prefix] + name.slice(prefix.length);
+    }
 
     return name;
   }
