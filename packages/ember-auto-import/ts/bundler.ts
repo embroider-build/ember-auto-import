@@ -35,7 +35,6 @@ export interface BundlerHook {
 export default class Bundler extends Plugin {
   private lastDeps: Map<string, BundleDependencies> | undefined;
   private cachedBundlerHook: BundlerHook | undefined;
-  private didEnsureDirs: boolean;
   private options: BundlerPluginOptions;
   private isWatchingSomeDeps: boolean;
 
@@ -46,7 +45,6 @@ export default class Bundler extends Plugin {
       needsCache: true,
     });
     this.options = options;
-    this.didEnsureDirs = false;
     this.isWatchingSomeDeps = deps.length > 1;
   }
 
@@ -107,27 +105,23 @@ export default class Bundler extends Plugin {
   }
 
   async build() {
-    this.ensureDirs();
     reloadDevPackages();
     let { splitter } = this.options;
     let bundleDeps = await splitter.deps();
     if (bundleDeps !== this.lastDeps || this.isWatchingSomeDeps) {
       let buildResult = await this.bundlerHook.build(bundleDeps);
+      this.emptyDirs();
       this.addEntrypoints(buildResult);
       this.addLazyAssets(buildResult);
       this.lastDeps = bundleDeps;
     }
   }
 
-  private ensureDirs() {
-    if (this.didEnsureDirs) {
-      return;
-    }
+  private emptyDirs() {
     emptyDirSync(join(this.outputPath, 'lazy'));
     for (let bundle of this.options.bundles.names) {
       emptyDirSync(join(this.outputPath, 'entrypoints', bundle));
     }
-    this.didEnsureDirs = true;
   }
 
   private addEntrypoints({ entrypoints, dir }: BuildResult) {

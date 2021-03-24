@@ -77,8 +77,8 @@ appScenarios
 
             module('Unit | common chunk', function () {
               test('can use two dynamic imports that share a common chunk', async function(assert) {
-                assert.equal(await useLeft(), 'The message is left');
-                assert.equal(await useRight(), 'The message is right');
+                assert.equal(await useLeft(), 'the message is left');
+                assert.equal(await useRight(), 'the message is right');
               });
             });
           `,
