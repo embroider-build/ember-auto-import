@@ -32,6 +32,7 @@ appScenarios
     });
     project.addDevDependency(aPureTSDependency);
 
+    project.linkDevDependency('ember-auto-import', { baseDir: __dirname });
     project.linkDevDependency('ember-cli-typescript', { baseDir: __dirname, resolveName: 'ember-cli-typescript-3' });
     project.linkDevDependency('typescript', { baseDir: __dirname, resolveName: 'typescript-4' });
 
