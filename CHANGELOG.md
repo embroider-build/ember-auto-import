@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.11.1
+
+- BUGFIX: as part of the `watchDependencies` feature we changed webpack splitChunksPlugin config in a way that broke in apps with common lazy chunks.
+
 ### 1.11.0
 
 - HOUSEKEEPING: major test infrastructure refactor by @ef4 & @mattmcmanus
