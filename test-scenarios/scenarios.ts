@@ -16,24 +16,24 @@ import { dirname, delimiter } from 'path';
 })();
 
 async function lts(project: Project) {
-  project.linkDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-2.18' });
+  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-2.18' });
   project.pkg.volta = {
     node: '10.24.0',
   };
 }
 
 async function release(project: Project) {
-  project.linkDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-latest' });
+  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-latest' });
 }
 
 async function beta(project: Project) {
-  project.linkDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-beta' });
+  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-beta' });
 }
 
 // canary is not aliased in our package.json, because NPM doesn't support
 // aliasing of non-registry deps
 async function canary(project: Project) {
-  project.linkDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli' });
+  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli' });
 }
 
 export function supportMatrix(scenarios: Scenarios) {

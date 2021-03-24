@@ -11,6 +11,18 @@ function makeAddon() {
   addon.linkDependency('ember-auto-import', { baseDir: __dirname });
   addon.pkg.name = 'sample-addon';
   merge(addon.files, {
+    'index.js': `
+      'use strict';
+
+      module.exports = {
+        name: require('./package').name,
+        options: {
+          babel: {
+            plugins: [ require.resolve('ember-auto-import/babel-plugin') ]
+          }
+        }
+      };
+    `,
     app: {
       components: {
         'from-sample-addon.js': `
@@ -19,6 +31,12 @@ function makeAddon() {
       },
     },
     addon: {
+      'index.js': `
+        export async function useExtra() {
+          let { extra } = await import('some-lib/extra');
+          return extra();
+        }
+      `,
       components: {
         'from-sample-addon.js': `
         import Component from '@ember/component';
@@ -52,10 +70,15 @@ function makeAddon() {
   addon.addDependency('some-lib', {
     files: {
       'index.js': `
-    export function makeMessage() {
-      return "This is the message";
-    }
-  `,
+        export function makeMessage() {
+          return "This is the message";
+        }
+      `,
+      'extra.js': `
+        export function extra() {
+          return "This is from the extra module that we lazily load";
+        }
+      `,
     },
   });
 
@@ -143,6 +166,19 @@ appScenarios
                   'yes',
                   'expected inner-lib2 to be present'
                 );
+              });
+            });
+          `,
+        },
+        unit: {
+          'addon-dynamic-import-test.js': `
+            import { module, test } from 'qunit';
+            import { useExtra } from 'sample-addon';
+
+            module('Unit | addon-dynamic-import', function () {
+              test('addon can load a dependency dynamically', async function(assert) {
+                let result = await useExtra();
+                assert.equal(result, "This is from the extra module that we lazily load");
               });
             });
           `,
