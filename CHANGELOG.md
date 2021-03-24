@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.11.2
+
+- BUGFIX: the new prefix matching implementation of `alias` turned out to be a breaking change, so we're rolling it back in order to make it opt-in.
+
 ### 1.11.1
 
 - BUGFIX: as part of the `watchDependencies` feature we changed webpack splitChunksPlugin config in a way that broke in apps with common lazy chunks.
