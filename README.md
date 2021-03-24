@@ -163,9 +163,18 @@ Using ember-auto-import inside an addon is almost exactly the same as inside an 
   ```
 - if your addon uses [Dynamic Import](#dynamic-import), it is [required](https://github.com/babel/ember-cli-babel#options) that you
   register the babel plugin in your `index.js` instead of `ember-cli-build.js`:
-  `js // index.js module.exports = { options: { babel: { plugins: [ require.resolve('ember-auto-import/babel-plugin') ] } } }; `
-  FAQ
+  ```js 
+  // index.js 
+  module.exports = { 
+    options: { 
+      babel: { 
+        plugins: [ require.resolve('ember-auto-import/babel-plugin') ] 
+      } 
+    } 
+  };
+  ```
 
+FAQ
 ---
 
 ### `global is undefined` or `can't find module "path"` or `can't find module "fs"`
