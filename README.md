@@ -124,6 +124,7 @@ let app = new EmberApp(defaults, {
 Supported Options
 
 - `alias`: _object_, Map from package names to substitute packages that will be used instead.
+- `aliasMode`: _"exact" or "webpack", defaults to "exact"_. By default, aliasing only match exactly. Switching to "webpack" makes them work like they do in webpack's `resolve.alias`, so they do prefix matching. "exact" is the default for backward-compatibility, "webpack" will become the default in a future major release.
 - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
 - `forbidEval`: _boolean_, defaults to false. We use `eval` in development by default (because that is the fastest way to provide sourcemaps). If you need to comply with a strict Content Security Policy (CSP), you can set `forbidEval: true`. You will still get sourcemaps, they will just use a slower implementation.
 - `publicAssetURL`: where to load additional dynamic javascript files from. You usually don't need to set this -- the default works for most apps. However, if you're using `<script defer>` or another method of asynchronously loading your vendor.js script you will need to set this to the URL where your asset directory is served (typically `/assets`).

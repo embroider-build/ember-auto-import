@@ -15,6 +15,7 @@ export function reloadDevPackages() {
 export interface Options {
   exclude?: string[];
   alias?: { [fromName: string]: string };
+  aliasMode?: 'exact' | 'webpack';
   webpack?: Configuration;
   publicAssetURL?: string;
   forbidEval?: boolean;
@@ -271,7 +272,17 @@ export default class Package {
   }
 
   private aliasFor(name: string): string {
-    return (this.autoImportOptions && this.autoImportOptions.alias && this.autoImportOptions.alias[name]) || name;
+    let alias = this.autoImportOptions?.alias;
+    if (!alias) return name;
+    if (alias[name]) return alias[name];
+
+    if (this.autoImportOptions?.aliasMode === 'webpack') {
+      // TODO: implement complete webpack rules including trailing "$"
+      let prefix = Object.keys(alias).find(p => name.startsWith(`${p}/`));
+      if (prefix) return alias[prefix] + name.slice(prefix.length);
+    }
+
+    return name;
   }
 
   get fileExtensions(): string[] {

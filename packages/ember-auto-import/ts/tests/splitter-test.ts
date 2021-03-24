@@ -4,7 +4,7 @@ import broccoli, { Builder } from 'broccoli';
 import { UnwatchedDir } from 'broccoli-source';
 import { outputFileSync } from 'fs-extra';
 import { join } from 'path';
-import Package from '../package';
+import Package, { Options } from '../package';
 import Analyzer from '../analyzer';
 import Splitter from '../splitter';
 import BundleConfig from '../bundle-config';
@@ -19,6 +19,7 @@ Qmodule('splitter', function (hooks) {
   let project: Project;
   let pack: Package;
   let splitter: Splitter;
+  let setup: (options?: Options) => void;
 
   hooks.beforeEach(function (this: any) {
     project = new Project('my-app');
@@ -36,14 +37,36 @@ Qmodule('splitter', function (hooks) {
         'index.js': '',
       },
     });
-    project.writeSync();
-    pack = new Package(stubAddonInstance(project.baseDir));
-    let analyzer = new Analyzer(new UnwatchedDir(project.baseDir), pack);
-    splitter = new Splitter({
-      bundles: new BundleConfig('thing' as any),
-      analyzers: new Map([[analyzer, pack]]),
+
+    project.addDevDependency('my-original-package', {
+      files: {
+        'index.js': `export default function() {}`,
+      },
     });
-    builder = new broccoli.Builder(analyzer);
+
+    project.addDevDependency('prefix-aliasing-example', {
+      files: {
+        'outside.js': `export default function() {}`,
+        dist: {
+          'inside.js': `export default function() {}`,
+          'index.js': `export default function() {}`,
+        },
+      },
+    });
+
+    project.writeSync();
+
+    setup = function (options: Options = {}) {
+      pack = new Package(stubAddonInstance(project.baseDir, options));
+      let analyzer = new Analyzer(new UnwatchedDir(project.baseDir), pack);
+      splitter = new Splitter({
+        bundles: new BundleConfig('thing' as any),
+        analyzers: new Map([[analyzer, pack]]),
+      });
+      builder = new broccoli.Builder(analyzer);
+    };
+
+    setup();
   });
 
   hooks.afterEach(function (this: any) {
@@ -209,9 +232,132 @@ Qmodule('splitter', function (hooks) {
       );
     }
   });
+
+  test('exact alias remaps package name', async function (assert) {
+    setup({
+      alias: {
+        'my-aliased-package': 'my-original-package',
+      },
+    });
+
+    let src = `import x from 'my-aliased-package';`;
+    outputFileSync(join(project.baseDir, 'sample.js'), src);
+    await builder.build();
+    let deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.staticImports[0].entrypoint,
+      join(project.baseDir, 'node_modules', 'my-original-package', 'index.js')
+    );
+  });
+
+  test('exact alias matches an inner file', async function (assert) {
+    setup({
+      alias: {
+        'prefix-aliasing-example': 'prefix-aliasing-example/dist/index.js',
+      },
+    });
+
+    let src = `import x from 'prefix-aliasing-example';`;
+    outputFileSync(join(project.baseDir, 'sample.js'), src);
+    await builder.build();
+    let deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.staticImports[0].entrypoint,
+      join(project.baseDir, 'node_modules', 'prefix-aliasing-example', 'dist', 'index.js')
+    );
+  });
+
+  test('non-exact alias does not match', async function (assert) {
+    setup({
+      alias: {
+        'prefix-aliasing-example': 'prefix-aliasing-example/dist/index.js',
+      },
+    });
+
+    let src = `import x from 'prefix-aliasing-example/outside';`;
+    outputFileSync(join(project.baseDir, 'sample.js'), src);
+    await builder.build();
+    let deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.staticImports[0].entrypoint,
+      join(project.baseDir, 'node_modules', 'prefix-aliasing-example', 'outside.js')
+    );
+  });
+
+  test('webpack alias matches interior paths', async function (assert) {
+    setup({
+      aliasMode: 'webpack',
+      alias: {
+        'prefix-aliasing-example': 'prefix-aliasing-example/dist',
+      },
+    });
+
+    let src = `import x from 'prefix-aliasing-example/inside';`;
+    outputFileSync(join(project.baseDir, 'sample.js'), src);
+    await builder.build();
+    let deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.staticImports[0].entrypoint,
+      join(project.baseDir, 'node_modules', 'prefix-aliasing-example', 'dist', 'inside.js')
+    );
+  });
+
+  test('webpack alias matches index', async function (assert) {
+    setup({
+      aliasMode: 'webpack',
+      alias: {
+        'prefix-aliasing-example': 'prefix-aliasing-example/dist',
+      },
+    });
+
+    let src = `import x from 'prefix-aliasing-example';`;
+    outputFileSync(join(project.baseDir, 'sample.js'), src);
+    await builder.build();
+    let deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.staticImports[0].entrypoint,
+      join(project.baseDir, 'node_modules', 'prefix-aliasing-example', 'dist', 'index.js')
+    );
+  });
+
+  test('webpack alias exact match hits', async function (assert) {
+    setup({
+      aliasMode: 'webpack',
+      alias: {
+        'prefix-aliasing-example$': 'prefix-aliasing-example/dist',
+      },
+    });
+
+    let src = `import x from 'prefix-aliasing-example';`;
+    outputFileSync(join(project.baseDir, 'sample.js'), src);
+    await builder.build();
+    let deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.staticImports[0].entrypoint,
+      join(project.baseDir, 'node_modules', 'prefix-aliasing-example', 'dist', 'index.js')
+    );
+  });
+
+  test('webpack alias exact match misses non-exact import', async function (assert) {
+    setup({
+      aliasMode: 'webpack',
+      alias: {
+        'prefix-aliasing-example$': 'prefix-aliasing-example/dist',
+      },
+    });
+
+    let src = `import x from 'prefix-aliasing-example/outside';`;
+    outputFileSync(join(project.baseDir, 'sample.js'), src);
+    await builder.build();
+    let deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.staticImports[0].entrypoint,
+      join(project.baseDir, 'node_modules', 'prefix-aliasing-example', 'outside.js')
+    );
+  });
 });
 
-function stubAddonInstance(baseDir: string): AddonInstance {
+function stubAddonInstance(baseDir: string, autoImport: Options): AddonInstance {
   let project: EmberCLIProject = {
     root: baseDir,
     targets: {},
@@ -232,7 +378,9 @@ function stubAddonInstance(baseDir: string): AddonInstance {
   let app: AppInstance = {
     env: 'development',
     project,
-    options: {},
+    options: {
+      autoImport,
+    },
     addonPostprocessTree: {} as any,
   };
   return {
