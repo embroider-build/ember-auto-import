@@ -271,14 +271,7 @@ export default class Package {
   }
 
   private aliasFor(name: string): string {
-    let alias = this.autoImportOptions?.alias;
-    if (!alias) return name;
-    if (alias[name]) return alias[name];
-
-    let prefix = Object.keys(alias).find(p => name.startsWith(`${p}/`));
-    if (prefix) return alias[prefix] + name.slice(prefix.length);
-
-    return name;
+    return (this.autoImportOptions && this.autoImportOptions.alias && this.autoImportOptions.alias[name]) || name;
   }
 
   get fileExtensions(): string[] {

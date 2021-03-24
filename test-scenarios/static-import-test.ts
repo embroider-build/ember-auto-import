@@ -35,7 +35,6 @@ function staticImportTest(project: Project) {
             import moment from 'moment';
             import { computed } from '@ember/object';
             import myAliased from 'my-aliased-package';
-            import aliasedDeeperNamed from 'my-aliased-package/deeper/named';
             import fromScoped from '@ef4/scoped-lib';
 
             export default Component.extend({
@@ -45,10 +44,6 @@ function staticImportTest(project: Project) {
 
               aliasedResult: computed(function () {
                 return myAliased();
-              }),
-
-              prefixAliasedResult: computed(function () {
-                return aliasedDeeperNamed();
               }),
 
               fromScoped: computed(function () {
@@ -76,7 +71,6 @@ function staticImportTest(project: Project) {
               <div class="hello-world">{{formattedDate}}</div>
               <div class="lodash">{{#if lodashPresent}}yes{{else}}no{{/if}}</div>
               <div class="aliased">{{aliasedResult}}</div>
-              <div class="prefix-aliased">{{prefixAliasedResult}}</div>
               <div class="scoped">{{fromScoped}}</div>
             `,
         },
@@ -102,11 +96,6 @@ function staticImportTest(project: Project) {
                 test('using an aliased module', async function (assert) {
                   await render(hbs('{{hello-world}}'));
                   assert.equal(document.querySelector('.aliased').textContent.trim(), 'original-package');
-                });
-
-                test('using a prefix match aliased module', async function (assert) {
-                  await render(hbs('{{hello-world}}'));
-                  assert.equal(document.querySelector('.prefix-aliased').textContent.trim(), 'deeper/named');
                 });
 
                 test('using a scoped module', async function (assert) {
@@ -148,9 +137,6 @@ function staticImportTest(project: Project) {
           module.exports = function() {
             return 'original-package';
           }`,
-      deeper: {
-        'named.js': `module.exports = function() { return "deeper/named" };`,
-      },
     },
   });
 
