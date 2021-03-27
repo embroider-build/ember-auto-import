@@ -1,6 +1,6 @@
 import merge from 'lodash/merge';
 import { addonScenarios } from './scenarios';
-import { PreparedApp } from '@ef4/test-support';
+import { PreparedApp } from 'scenario-tester';
 import QUnit from 'qunit';
 const { module: Qmodule, test } = QUnit;
 const backtick = '`';

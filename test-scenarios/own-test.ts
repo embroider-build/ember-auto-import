@@ -1,5 +1,5 @@
 import { supportMatrix } from './scenarios';
-import { PreparedApp, Scenarios } from '@ef4/test-support';
+import { PreparedApp, Scenarios } from 'scenario-tester';
 import QUnit from 'qunit';
 import { dirname } from 'path';
 const { module: Qmodule, test } = QUnit;

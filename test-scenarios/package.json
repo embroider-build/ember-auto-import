@@ -5,14 +5,14 @@
     "@types/qunit": "^2.11.1",
     "qunit": "^2.6.1",
     "ts-node": "^9.1.1",
-    "@ef4/test-support": "*",
+    "scenario-tester": "0.2.0",
     "fastboot": "^1.2.0",
     "jsdom": "^11.11.0"
   },
   "scripts": {
     "test": "qunit --require ts-node/register *-test.ts",
-    "test:list": "../packages/test-support/cli list --files=*-test.ts",
-    "test:output": "../packages/test-support/cli output --files=*-test.ts"
+    "test:list": "scenario-tester list --require ts-node/register --files=*-test.ts",
+    "test:output": "scenario-tester output --require ts-node/register --files=*-test.ts"
   },
   "license": "MIT",
   "devDependencies": {

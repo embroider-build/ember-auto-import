@@ -1,4 +1,4 @@
-import { Scenarios, Project } from '@ef4/test-support';
+import { Scenarios, Project } from 'scenario-tester';
 import { dirname, delimiter } from 'path';
 
 // https://github.com/volta-cli/volta/issues/702
