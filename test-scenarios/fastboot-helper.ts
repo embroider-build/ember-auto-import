@@ -1,4 +1,4 @@
-import { PreparedApp } from '@ef4/test-support';
+import { PreparedApp } from 'scenario-tester';
 import { join } from 'path';
 
 export async function setupFastboot(app: PreparedApp, environment = 'development') {

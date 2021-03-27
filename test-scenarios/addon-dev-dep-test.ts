@@ -1,5 +1,5 @@
 import { addonScenarios } from './scenarios';
-import { PreparedApp } from '@ef4/test-support';
+import { PreparedApp } from 'scenario-tester';
 import QUnit from 'qunit';
 import merge from 'lodash/merge';
 const { module: Qmodule, test } = QUnit;
