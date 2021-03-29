@@ -5,7 +5,12 @@ import { Memoize } from 'typescript-memoize';
 import { Configuration } from 'webpack';
 import { AddonInstance, isDeepAddonInstance, Project } from './ember-cli-models';
 
-const cache: WeakMap<AddonInstance, Package> = new WeakMap();
+// from child addon instance to their parent package
+const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
+
+// from an addon instance or project to its package
+const packageCache: WeakMap<AddonInstance | Project, Package> = new WeakMap();
+
 let pkgGeneration = 0;
 
 export function reloadDevPackages() {
@@ -62,10 +67,15 @@ export default class Package {
   private pkgCache: any;
 
   static lookupParentOf(child: AddonInstance): Package {
-    if (!cache.has(child)) {
-      cache.set(child, new this(child));
+    if (!parentCache.has(child)) {
+      let pkg = packageCache.get(child.parent);
+      if (!pkg) {
+        pkg = new this(child);
+        packageCache.set(child.parent, pkg);
+      }
+      parentCache.set(child, pkg);
     }
-    return cache.get(child)!;
+    return parentCache.get(child)!;
   }
 
   constructor(child: AddonInstance) {
