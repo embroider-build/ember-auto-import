@@ -28,6 +28,7 @@
     "ember-cli-typescript-2": "npm:ember-cli-typescript@^2.0.0-beta.3",
     "ember-cli-typescript-3": "npm:ember-cli-typescript@^3.0.0",
     "ember-cli-typescript-4": "npm:ember-cli-typescript@^4.0.0-alpha.1",
+    "js-string-escape": "^1.0.1",
     "lodash": "^4.17.20",
     "lodash-es": "^4.17.10",
     "moment": "^2.22.1",

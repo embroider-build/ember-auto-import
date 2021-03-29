@@ -14,6 +14,7 @@ appScenarios
             return 'ember_auto_import_sample_lib';
           }
         `,
+        'data.txt': `This is some sample data`,
       },
     });
 
@@ -87,8 +88,40 @@ appScenarios
 
     project.addDevDependency(addon);
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project
+      .addDevDependency('custom-loader', {
+        files: {
+          'index.js': `
+        let escape = require('js-string-escape');
+        module.exports = function(src) {
+          return "export const value = 'custom-loader-worked: " + escape(src) + "';";
+        }
+      `,
+        },
+      })
+      .linkDependency('js-string-escape', { baseDir: __dirname });
 
     merge(project.files, {
+      'ember-cli-build.js': `
+        const EmberApp = require('ember-cli/lib/broccoli/ember-app');
+        module.exports = function (defaults) {
+          let app = new EmberApp(defaults, {
+            autoImport: {
+              webpack: {
+                module: {
+                  rules: [
+                    {
+                      test: /data\.txt$/,
+                      use: ["custom-loader"]
+                    },
+                  ],
+                },
+              }
+            }
+          });
+          return app.toTree();
+        };
+      `,
       app: {
         controllers: {
           'index.js': `
@@ -147,6 +180,15 @@ appScenarios
           `,
         },
         unit: {
+          'loader-test.js': `
+            import { module, test } from 'qunit';
+            import { value } from 'inner-lib/data.txt';
+            module('Unit | loader-test', function() {
+              test('the app can use a custom webpack loader', async function(assert) {
+                assert.equal(value, "custom-loader-worked: This is some sample data");
+              });
+            });
+          `,
           'dedup-test.js': `
             import { module, test } from 'qunit';
 
