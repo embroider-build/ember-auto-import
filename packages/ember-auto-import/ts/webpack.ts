@@ -45,6 +45,10 @@ module.exports = (function(){
       return r('_eai_dynt_' + specifier)(Array.prototype.slice.call(arguments, 1))
     }
   };
+  window.emberAutoImportSync = function(specifier) {
+    {{! this is only used for synchronous importSync() using a template string }}
+    return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
+  };
   {{#each staticImports as |module|}}
     d('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.entrypoint}}'); });
   {{/each}}
@@ -52,7 +56,7 @@ module.exports = (function(){
     d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.entrypoint}}'); });
   {{/each}}
   {{#each staticTemplateImports as |module|}}
-    d('_eai_dynt_{{js-string-escape module.key}}', [], function() {
+    d('_eai_sync_{{js-string-escape module.key}}', [], function() {
       return function({{module.args}}) {
         return require({{{module.template}}});
       }

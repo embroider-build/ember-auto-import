@@ -32,7 +32,7 @@ export default Component.extend({
   }),
 
   templateDependency: computed('which', function () {
-    const { name } = importSync(`another-dependency/flavors/${this.get('which') || 'vanilla'}`);
+    const { name } = importSync(`a-dependency/flavors/${this.get('which') || 'vanilla'}`);
     return name;
   }),
 });

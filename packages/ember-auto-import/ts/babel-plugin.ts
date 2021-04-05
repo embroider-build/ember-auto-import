@@ -45,7 +45,7 @@ function emberAutoImport() {
               throw new Error('You cannot use importSync() with a URL.');
             }
             path.replaceWith(
-              callExpression(identifier('emberAutoImportDynamic'), [
+              callExpression(identifier('emberAutoImportSync'), [
                 stringLiteral(arg.quasis.map(q => q.value.cooked).join('${e}')),
                 ...arg.expressions,
               ])
