@@ -1,5 +1,22 @@
 # Changelog
 
+### 1.11.2
+
+- BUGFIX: the new prefix matching implementation of `alias` turned out to be a breaking change, so we're rolling it back in order to make it opt-in.
+
+### 1.11.1
+
+- BUGFIX: as part of the `watchDependencies` feature we changed webpack splitChunksPlugin config in a way that broke in apps with common lazy chunks.
+
+### 1.11.0
+
+- HOUSEKEEPING: major test infrastructure refactor by @ef4 & @mattmcmanus
+- COMPAT: ensure babel compilation ignores a babel.config.js by @rwjblue
+- ENHANCEMENT: introduce `watchDependencies` option
+- ENHANCEMENT: allow unambiguous data URIs
+- ENHANCEMENT: make `alias` option support prefix matching by @buschtoens
+- BUGFIX: update test-support regex to work with scoped packages by @paddyobrien
+
 ### 1.10.1
 
 - BUGFIX: the previous release accidentally leaked code to browsers that was not IE11-safe.

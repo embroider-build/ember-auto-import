@@ -1,0 +1,42 @@
+{
+  "name": "@ef4/test-scenarios",
+  "version": "0.0.0",
+  "dependencies": {
+    "@types/qunit": "^2.11.1",
+    "qunit": "^2.6.1",
+    "ts-node": "^9.1.1",
+    "scenario-tester": "0.2.0",
+    "fastboot": "^1.2.0",
+    "jsdom": "^11.11.0"
+  },
+  "scripts": {
+    "test": "qunit --require ts-node/register *-test.ts",
+    "test:list": "scenario-tester list --require ts-node/register --files=*-test.ts",
+    "test:output": "scenario-tester output --require ts-node/register --files=*-test.ts"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@ef4/addon-template": "*",
+    "@ef4/app-template": "*",
+    "@embroider/macros": "^0.39.1",
+    "ember-auto-import": "1.11.2",
+    "ember-cli-2.18": "npm:ember-cli@~2.18.0",
+    "ember-cli-babel6": "npm:ember-cli-babel@^6.6.0",
+    "ember-cli-latest": "npm:ember-cli@latest",
+    "ember-cli-beta": "npm:ember-cli@beta",
+    "ember-cli": "git+https://github.com/ember-cli/ember-cli#master",
+    "ember-cli-fastboot": "^1.1.4-beta.1",
+    "ember-cli-typescript-2": "npm:ember-cli-typescript@^2.0.0-beta.3",
+    "ember-cli-typescript-3": "npm:ember-cli-typescript@^3.0.0",
+    "ember-cli-typescript-4": "npm:ember-cli-typescript@^4.0.0-alpha.1",
+    "js-string-escape": "^1.0.1",
+    "lodash": "^4.17.20",
+    "lodash-es": "^4.17.10",
+    "moment": "^2.22.1",
+    "typescript-4": "npm:typescript@^4.1.2"
+  },
+  "volta": {
+    "node": "14.16.0",
+    "npm": "7.6.1"
+  }
+}

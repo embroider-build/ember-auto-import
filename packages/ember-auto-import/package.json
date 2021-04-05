@@ -1,6 +1,6 @@
 {
   "name": "ember-auto-import",
-  "version": "1.10.1",
+  "version": "1.11.2",
   "description": "Zero-config import from NPM packages",
   "keywords": [
     "ember-addon",
@@ -24,7 +24,7 @@
     "start": "ember serve",
     "test": "ember test --test-port=0",
     "test:node": "qunit js/tests",
-    "prepare": "yarn compile"
+    "prepare": "tsc"
   },
   "dependencies": {
     "@babel/core": "^7.1.6",
@@ -100,7 +100,7 @@
     "ember-try": "^1.2.1",
     "eslint-plugin-node": "^6.0.1",
     "fastboot": "^1.2.0",
-    "fixturify-project": "^2.1.0",
+    "fixturify-project": "ef4/node-fixturify-project#ce267a90824675d9eb34459df625dcfcceec5491",
     "jsdom": "^11.11.0",
     "loader.js": "^4.2.3",
     "lodash-es": "^4.17.10",
@@ -122,5 +122,9 @@
       "ember-cli-coffeescript",
       "ember-cli-typescript"
     ]
+  },
+  "volta": {
+    "node": "14.16.0",
+    "npm": "7.6.1"
   }
 }
