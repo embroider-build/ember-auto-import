@@ -9,6 +9,7 @@ import { join } from 'path';
 import { readFileSync, writeFileSync, emptyDirSync, copySync } from 'fs-extra';
 import BundleConfig from './bundle-config';
 import { Memoize } from 'typescript-memoize';
+import { WatchedDir } from 'broccoli-source';
 
 const debug = makeDebug('ember-auto-import:bundler');
 
@@ -39,13 +40,17 @@ export interface BundlerHook {
 export default class Bundler extends Plugin {
   private lastDeps: Map<string, BundleDependencies> | undefined;
   private cachedBundlerHook: BundlerHook | undefined;
-  private didEnsureDirs = false;
+  private options: BundlerPluginOptions;
+  private isWatchingSomeDeps: boolean;
 
-  constructor(allAppTree: Node, private options: BundlerPluginOptions) {
-    super([allAppTree], {
+  constructor(allAppTree: Node, options: BundlerPluginOptions) {
+    let deps = depsFor(allAppTree, options.packages);
+    super(deps, {
       persistentOutput: true,
       needsCache: true,
     });
+    this.options = options;
+    this.isWatchingSomeDeps = deps.length > 1;
   }
 
   @Memoize()
@@ -105,27 +110,23 @@ export default class Bundler extends Plugin {
   }
 
   async build() {
-    this.ensureDirs();
     reloadDevPackages();
     let { splitter } = this.options;
     let bundleDeps = await splitter.deps();
-    if (bundleDeps !== this.lastDeps) {
+    if (bundleDeps !== this.lastDeps || this.isWatchingSomeDeps) {
       let buildResult = await this.bundlerHook.build(bundleDeps);
+      this.emptyDirs();
       this.addEntrypoints(buildResult);
       this.addLazyAssets(buildResult);
       this.lastDeps = bundleDeps;
     }
   }
 
-  private ensureDirs() {
-    if (this.didEnsureDirs) {
-      return;
-    }
+  private emptyDirs() {
     emptyDirSync(join(this.outputPath, 'lazy'));
     for (let bundle of this.options.bundles.names) {
       emptyDirSync(join(this.outputPath, 'entrypoints', bundle));
     }
-    this.didEnsureDirs = true;
   }
 
   private addEntrypoints({ entrypoints, dir }: BuildResult) {
@@ -157,4 +158,15 @@ export default class Bundler extends Plugin {
       writeFileSync(join(this.outputPath, 'lazy', 'auto-import-fastboot.js'), contents.join('\n'));
     }
   }
+}
+
+function depsFor(allAppTree: Node, packages: Set<Package>) {
+  let deps = [allAppTree];
+  for (let pkg of packages) {
+    let watched = pkg.watchedDirectories;
+    if (watched) {
+      deps = deps.concat(watched.map(dir => new WatchedDir(dir)));
+    }
+  }
+  return deps;
 }

@@ -164,6 +164,10 @@ export default class WebpackBundler implements BundlerHook {
       use: {
         loader: 'babel-loader-8',
         options: {
+          // do not use the host project's own `babel.config.js` file
+          configFile: false,
+          babelrc: false,
+
           presets: [
             [
               require.resolve('@babel/preset-env'),

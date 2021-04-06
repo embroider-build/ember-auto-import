@@ -1,72 +1,56 @@
 name: Node CI
 
-on: [push,pull_request]
+on:
+  push:
+    branches:
+      - master
+      - 'v*' # prior release branches (e.g. `v0.30.x` branch)
+    tags:
+      - 'v*'
+  pull_request:
 
 jobs:
-  build:
+  discover_matrix:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v1
+      - uses: rwjblue/setup-volta@v1
+        with:
+          node-version: '14'
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - run: npm install
+      - name: eslint
+        run: for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs npx eslint --
+      - id: set-matrix
+        working-directory: test-scenarios
+        run: echo "::set-output name=matrix::$(npm run --silent test:list -- --matrix 'npm run test -- --filter %s')"
 
+  build:
+    needs: discover_matrix
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        eai_scenario: [2.18, stable, beta, canary]
-        suite:
-          - 'cd packages/sample-direct      && yarn test'
-          - 'cd packages/sample-direct      && yarn test'
-          - 'cd packages/sample-direct      && yarn test:fastboot'
-          - 'cd packages/sample-direct      && yarn test:prod'
-          - 'cd packages/sample-direct      && yarn test:custom-bundles'
-          - 'cd packages/sample-direct      && yarn test:custom-bundles-top'
-          - 'cd packages/sample-direct      && yarn test:custom-bundles-fastboot'
-          - 'cd packages/sample-direct      && yarn test:custom-csp'
-          - 'cd packages/sample-indirect    && yarn test'
-          - 'cd packages/sample-indirect    && yarn test:fastboot'
-          - 'cd packages/sample-indirect    && yarn test:custom-csp'
-          - 'cd packages/sample-addon       && yarn test'
-          - 'cd packages/sample-failure     && yarn test'
-          - 'cd packages/sample-merged      && yarn test'
-          - 'cd packages/sample-conflict    && yarn test'
-          - 'cd packages/sample-babel7      && yarn test'
-          - 'cd packages/sample-typescript  && yarn test'
-          - 'cd packages/sample-typescript2 && yarn test'
-          - 'cd packages/sample-typescript4 && yarn test'
-          - 'cd packages/sample-noconflict  && yarn test'
-          - 'cd packages/sample-noparse     && yarn test'
-          - 'cd packages/ember-auto-import  && yarn test'
-          - 'cd packages/sample-es-latest   && yarn test'
-          - 'cd packages/sample-skip-babel  && yarn test'
-          - 'cd packages/ember-auto-import  && yarn test:node'
-        exclude:
-          - suite: 'cd packages/sample-direct      && yarn test:custom-bundles'
-            eai_scenario: 2.18
-          - suite: 'cd packages/sample-direct      && yarn test:custom-bundles-top'
-            eai_scenario: 2.18
-          - suite: 'cd packages/sample-direct      && yarn test:custom-bundles-fastboot'
-            eai_scenario: 2.18
-        include:
-          - suite: 'for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs yarn eslint'
-            eai_scenario: ""
-
+      matrix: ${{fromJson(needs.discover_matrix.outputs.matrix)}}
     steps:
-    - uses: actions/checkout@v1
-    - name: Use Node.js 12.x
-      uses: actions/setup-node@v1
-      with:
-        node-version: 12.x
-    - name: Get yarn cache directory path
-      id: yarn-cache-dir-path
-      run: echo "::set-output name=dir::$(yarn cache dir)"
-    - uses: actions/cache@v2
-      id: yarn-cache
-      with:
-        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-yarn-
-    - name: pick version and install
-      run: ./scripts/change-ember-cli-version.sh
-      env:
-        EAI_SCENARIO: ${{ matrix.eai_scenario }}
-    - name: test
-      run: ${{ matrix.suite }}
-
+      - uses: actions/checkout@v1
+      - uses: rwjblue/setup-volta@v1
+        with:
+          node-version: '14'
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - run: npm install
+      - name: test
+        run: ${{ matrix.command }}
+        working-directory: test-scenarios

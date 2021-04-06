@@ -1,11 +1,16 @@
 import resolvePackagePath from 'resolve-package-path';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { readFileSync } from 'fs';
 import { Memoize } from 'typescript-memoize';
 import { Configuration } from 'webpack';
 import { AddonInstance, isDeepAddonInstance, Project } from './ember-cli-models';
 
-const cache: WeakMap<AddonInstance, Package> = new WeakMap();
+// from child addon instance to their parent package
+const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
+
+// from an addon instance or project to its package
+const packageCache: WeakMap<AddonInstance | Project, Package> = new WeakMap();
+
 let pkgGeneration = 0;
 
 export function reloadDevPackages() {
@@ -19,6 +24,7 @@ export interface Options {
   publicAssetURL?: string;
   forbidEval?: boolean;
   skipBabel?: { package: string; semverRange?: string }[];
+  watchDependencies?: (string | string[])[];
 }
 
 interface DepResolution {
@@ -61,10 +67,15 @@ export default class Package {
   private pkgCache: any;
 
   static lookupParentOf(child: AddonInstance): Package {
-    if (!cache.has(child)) {
-      cache.set(child, new this(child));
+    if (!parentCache.has(child)) {
+      let pkg = packageCache.get(child.parent);
+      if (!pkg) {
+        pkg = new this(child);
+        packageCache.set(child.parent, pkg);
+      }
+      parentCache.set(child, pkg);
     }
-    return cache.get(child)!;
+    return parentCache.get(child)!;
   }
 
   constructor(child: AddonInstance) {
@@ -174,7 +185,7 @@ export default class Package {
   }
 
   static categorize(importedPath: string, partial = false) {
-    if (/^(\w+:)?\/\//.test(importedPath)) {
+    if (/^(\w+:)?\/\//.test(importedPath) || importedPath.startsWith('data:')) {
       return 'url';
     }
 
@@ -193,10 +204,7 @@ export default class Package {
   resolve(importedPath: string, partial = false): Resolution | undefined {
     switch (Package.categorize(importedPath, partial)) {
       case 'url':
-        // unambiguous URLs with a scheme are allowed but ignored by us
-        if (/^(\w+:)?\/\//.test(importedPath)) {
-          return { type: 'url', url: importedPath };
-        }
+        return { type: 'url', url: importedPath };
       case 'local':
         return {
           type: 'local',
@@ -273,14 +281,7 @@ export default class Package {
   }
 
   private aliasFor(name: string): string {
-    let alias = this.autoImportOptions?.alias;
-    if (!alias) return name;
-    if (alias[name]) return alias[name];
-
-    let prefix = Object.keys(alias).find(p => name.startsWith(`${p}/`));
-    if (prefix) return alias[prefix] + name.slice(prefix.length);
-
-    return name;
+    return (this.autoImportOptions && this.autoImportOptions.alias && this.autoImportOptions.alias[name]) || name;
   }
 
   get fileExtensions(): string[] {
@@ -304,6 +305,31 @@ export default class Package {
     // only apps (not addons) are allowed to set this, because it's motivated by
     // the apps own Content Security Policy.
     return Boolean(!this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval);
+  }
+
+  get watchedDirectories(): string[] | undefined {
+    // only apps (not addons) are allowed to set this
+    if (!this.isAddon && this.autoImportOptions?.watchDependencies) {
+      return this.autoImportOptions.watchDependencies
+        .map(nameOrNames => {
+          let names: string[];
+          if (typeof nameOrNames === 'string') {
+            names = [nameOrNames];
+          } else {
+            names = nameOrNames;
+          }
+          let cursor = this.root;
+          for (let name of names) {
+            let path = resolvePackagePath(name, cursor);
+            if (!path) {
+              return undefined;
+            }
+            cursor = dirname(path);
+          }
+          return cursor;
+        })
+        .filter(Boolean) as string[];
+    }
   }
 }
 

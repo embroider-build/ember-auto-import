@@ -8,7 +8,7 @@ import Package from '../package';
 import Analyzer from '../analyzer';
 import Splitter from '../splitter';
 import BundleConfig from '../bundle-config';
-import Project from 'fixturify-project';
+import { Project } from 'fixturify-project';
 import { merge } from 'lodash';
 import { AddonInstance, AppInstance, Project as EmberCLIProject } from '../ember-cli-models';
 
@@ -135,6 +135,8 @@ Qmodule('splitter', function (hooks) {
     'import(`http://${which}/rest`)',
     'import(`https://${which}/rest`)',
     'import(`//${which}/rest`)',
+    'import(`data:application/javascript;base64,ZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24oKSB7IHJldHVybiAxIH0=`)',
+    'import(`data:application/javascript;base64,${code}`)',
   ];
   for (let src of safeURLExamples) {
     test(`safe url example: ${src}`, async function (assert) {
