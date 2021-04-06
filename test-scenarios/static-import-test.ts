@@ -55,7 +55,9 @@ function staticImportTest(project: Project) {
               // (which we will check via a fastboot test below)
               lodashPresent: computed(function () {
                 try {
-                  window.require('lodash-es');
+                  // hiding from webpack
+                  let r = "r" + "equire";
+                  window[r]('lodash-es');
                   return true;
                 } catch (err) {
                   return false;
