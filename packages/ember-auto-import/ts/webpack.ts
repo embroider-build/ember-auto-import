@@ -192,20 +192,30 @@ export default class WebpackBundler implements BundlerHook {
   }
 
   private summarizeStats(_stats: Required<webpack.Stats>): BuildResult {
-    // @ts-ignore (until https://github.com/webpack/webpack/pull/12079 is merged)
-    let stats = _stats.toJson() as Required<webpack.Stats.ToJsonOutput>;
+    let { entrypoints, assets } = _stats.toJson();
+
+    // webpack's types are written rather loosely, implying that these two
+    // properties may not be present. They really always are, as far as I can
+    // tell, but we need to check here anyway to satisfy the type checker.
+    if (!entrypoints) {
+      throw new Error(`unexpected webpack output: no entrypoints`);
+    }
+    if (!assets) {
+      throw new Error(`unexpected webpack output: no assets`);
+    }
+
     let output = {
       entrypoints: new Map(),
       lazyAssets: [] as string[],
       dir: this.outputDir,
     };
     let nonLazyAssets: Set<string> = new Set();
-    for (let id of Object.keys(stats.entrypoints)) {
-      let entrypoint = stats.entrypoints[id];
+    for (let id of Object.keys(entrypoints!)) {
+      let entrypoint = entrypoints![id];
       output.entrypoints.set(id, entrypoint.assets);
-      entrypoint.assets.forEach((asset: string) => nonLazyAssets.add(asset));
+      entrypoint.assets!.forEach(asset => nonLazyAssets.add(asset.name));
     }
-    for (let asset of stats.assets) {
+    for (let asset of assets!) {
       if (!nonLazyAssets.has(asset.name)) {
         output.lazyAssets.push(asset.name);
       }
