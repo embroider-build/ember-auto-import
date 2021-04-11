@@ -133,7 +133,9 @@ appScenarios
             export default Controller.extend({
               hasLib2: computed(function () {
                 try {
-                  window.require('some-lib2');
+                  // hiding from webpack
+                  let r = "r" + "equire";
+                  window[r]('some-lib2');
                   return true;
                 } catch (err) {
                   return false;

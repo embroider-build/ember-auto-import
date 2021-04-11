@@ -30,7 +30,7 @@ jobs:
         run: for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs npx eslint --
       - id: set-matrix
         working-directory: test-scenarios
-        run: echo "::set-output name=matrix::$(npm run --silent test:list -- --matrix 'npm run test -- --filter %s')"
+        run: echo "::set-output name=matrix::$(npm run --silent test:list -- --matrix 'npm run test -- --filter %s:')"
 
   build:
     needs: discover_matrix
