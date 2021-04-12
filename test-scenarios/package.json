@@ -20,7 +20,6 @@
     "@ef4/app-template": "*",
     "ember-auto-import": "1.11.2",
     "ember-cli-2.18": "npm:ember-cli@~2.18.0",
-    "ember-cli-babel6": "npm:ember-cli-babel@^6.6.0",
     "ember-cli-latest": "npm:ember-cli@latest",
     "ember-cli-beta": "npm:ember-cli@beta",
     "ember-cli": "git+https://github.com/ember-cli/ember-cli#master",

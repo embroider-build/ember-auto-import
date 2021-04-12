@@ -90,9 +90,6 @@ export default class Analyzer extends Plugin {
       return;
     }
     switch (this.pack.babelMajorVersion) {
-      case 6:
-        this.parse = await babel6Parser(this.pack.babelOptions);
-        break;
       case 7:
         this.parse = await babel7Parser(this.pack.babelOptions);
         break;
@@ -253,25 +250,6 @@ export default class Analyzer extends Plugin {
     });
     return imports;
   }
-}
-
-async function babel6Parser(babelOptions: unknown): Promise<(source: string) => File> {
-  let core = import('babel-core');
-  let babylon = import('babylon');
-
-  // missing upstream types (or we are using private API, because babel 6 didn't
-  // have a good way to construct a parser directly from the general babel
-  // options)
-  const { Pipeline, File } = (await core) as any;
-  const { parse } = await babylon;
-
-  let p = new Pipeline();
-  let f = new File(babelOptions, p);
-  let options = f.parserOpts;
-
-  return function (source) {
-    return (parse(source, options) as unknown) as File;
-  };
 }
 
 async function babel7Parser(babelOptions: TransformOptions): Promise<(source: string) => File> {
