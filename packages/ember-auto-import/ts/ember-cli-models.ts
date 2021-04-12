@@ -4,7 +4,12 @@ export interface Project {
   ui: {
     write(...args: any[]): void;
   };
-  pkg: { name: string; version: string };
+  pkg: {
+    name: string;
+    version: string;
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
   root: string;
   addons: AddonInstance[];
 }

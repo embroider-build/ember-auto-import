@@ -99,6 +99,9 @@ appScenarios
     project.addDevDependency(makeAddon());
     project.linkDependency('ember-cli-fastboot', { baseDir: __dirname });
 
+    // top-level auto-import is mandatory
+    project.linkDependency('ember-auto-import', { baseDir: __dirname });
+
     merge(project.files, {
       app: {
         'router.js': `

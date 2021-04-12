@@ -108,6 +108,9 @@ appScenarios
   .map('doubly-indirect', project => {
     project.addDevDependency(makeIntermediateAddon());
 
+    // top-level auto-import is mandatory
+    project.linkDependency('ember-auto-import', { baseDir: __dirname });
+
     merge(project.files, {
       app: {
         templates: {
