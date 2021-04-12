@@ -91,6 +91,9 @@ export class LeaderChooser {
     } else {
       let { dependencies, devDependencies } = addon.project.pkg;
       let range = dependencies?.['ember-auto-import'] ?? devDependencies?.['ember-auto-import'];
+      if (!range && addon.project.pkg.name === 'ember-auto-import') {
+        range = addon.project.pkg.version;
+      }
       if (!range) {
         throw new Error(`ember-auto-import cannot find itself in the app's package.json`);
       }
