@@ -45,10 +45,12 @@ export function supportMatrix(scenarios: Scenarios) {
   });
 }
 
-export const appScenarios = supportMatrix(
-  Scenarios.fromDir(dirname(require.resolve('@ef4/app-template/package.json')))
-);
+export function baseApp() {
+  return Project.fromDir(dirname(require.resolve('@ef4/app-template/package.json')), { linkDeps: true });
+}
+export const appScenarios = supportMatrix(Scenarios.fromProject(baseApp));
 
-export const addonScenarios = supportMatrix(
-  Scenarios.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')))
-);
+export function baseAddon() {
+  return Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), { linkDeps: true });
+}
+export const addonScenarios = supportMatrix(Scenarios.fromProject(baseAddon));

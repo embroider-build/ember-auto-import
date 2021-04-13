@@ -58,17 +58,19 @@ export class LeaderChooser {
       chooser = new this();
       map.set(project, chooser);
 
-      let v2Chooser = g[protocolV2]?.get(project);
-      if (v2Chooser) {
-        // we need to take over the v2 election that has already started. It's
-        // OK to throw away all the state in v2Chooser because none of the v2
-        // copies are eligible to win anyway.
-        //
-        // This does mean that our LeaderChooser's public API needs to remain
-        // stable into the future so that v2 copies who see it here will not
-        // break.
-        g[protocolV2]!.set(project, chooser);
+      // we need to preempty any subsequent v2 leader choosers and take over any
+      // already-started v2 elections. If there's already a v2 leader, it's OK
+      // to throw away all the state in it because none of the v2 copies are
+      // eligible to win anyway.
+      //
+      // This does mean that our LeaderChooser's public API needs to remain
+      // stable into the future so that v2 copies who see it here will not
+      // break.
+      let map2 = g[protocolV2];
+      if (!map2) {
+        map2 = g[protocolV2] = new WeakMap();
       }
+      map2.set(project, chooser);
     }
     return chooser;
   }
@@ -105,9 +107,10 @@ export class LeaderChooser {
     if (!this.locked) {
       if (!this.appCandidate) {
         throw new Error(
-          `To use these addons, your app needs ember-auto-import >= 2.0: ${this.addonCandidates
+          `To use these addons, your app needs ember-auto-import >= 2: ${this.addonCandidates
             .map(c => c.parentName)
-            .join(', ')}.`
+            .sort()
+            .join(', ')}`
         );
       }
       let eligible = [this.appCandidate, ...this.addonCandidates].filter(c =>

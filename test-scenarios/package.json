@@ -19,6 +19,8 @@
     "@ef4/addon-template": "*",
     "@ef4/app-template": "*",
     "ember-auto-import": "2.0.0-alpha.0",
+    "leader-v1": "npm:ember-auto-import@1.7",
+    "leader-v2": "npm:ember-auto-import@1.11",
     "ember-cli-2.18": "npm:ember-cli@~2.18.0",
     "ember-cli-latest": "npm:ember-cli@latest",
     "ember-cli-beta": "npm:ember-cli@beta",
