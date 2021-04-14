@@ -58,7 +58,7 @@ export class LeaderChooser {
       chooser = new this();
       map.set(project, chooser);
 
-      // we need to preempty any subsequent v2 leader choosers and take over any
+      // we need to preempt any subsequent v2 leader choosers and take over any
       // already-started v2 elections. If there's already a v2 leader, it's OK
       // to throw away all the state in it because none of the v2 copies are
       // eligible to win anyway.
