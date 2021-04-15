@@ -47,7 +47,7 @@ Today entry chunks are appended to vendor.js (and vendor.css if you manually add
 
 ### Mandatory top-level auto-import
 
-When used by an addon, ember-auto-import 2.0 will assert that the top-level app package has ember-auto-import >= 2.0. Therefore, addons that upgrade to ember-auto-import 2.0 should do their own semver major releases.
+When used by an addon, ember-auto-import 2.0 will assert that the top-level app package has ember-auto-import >= 2.0. Therefore, addons that upgrade to ember-auto-import 2.0 should do their own semver major releases, and document that they now require ember-auto-import 2.0 in the app. This implies that semver major releases are needed recursively up the dependency chain if an addon is using an addon that upgrades to ember-auto-import 2.0.
 
 There are too many top-level concerns governed by auto-import to continue to sneak it in via addons, without giving the app any control over the version range. Also, ember-auto-import is effectively a polyfill for Embroider, which will become the default for new apps in ember-cli 3.27. So apps should be moving toward working with ember-auto-import if they haven't already.
 
