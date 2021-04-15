@@ -2,7 +2,7 @@
 
 ## Quick Summary
 
-- apps that are have custom webpack config will need to check that their config is compatible with webpack 5
+- apps that have custom webpack config will need to check that their config is compatible with webpack 5
 - apps that were adding css handling (like `css-loader`, `style-loader`, and `MiniCSSExtraPlugin`) to the webpack config must remove those, because they're now included by default for compatibility with the embroider v2 package spec.
 - apps should confirm that their deployment strategy includes all files produced under `dist` (not just the traditional expected ones like `dist/assets/your-app.js` and `dist/assets/vendor.js`)
 - addons that upgrade to ember-auto-import >= 2 will only work in apps that have ember-auto-import >= 2, so they should do their own semver major releases when they upgrade
@@ -12,6 +12,8 @@
 ### Webpack 5
 
 ember-auto-import 2.0 upgrades from webpack 4 to 5. This is a potentially breaking change for any package that directly adds to webpack config. Most apps will not experience any breakage, because most common webpack 4 configs still work in webpack 5.
+
+One of the changes in webpack 5 is the removal of automatic node polyfills, but ember-auto-import _already_ imposed that policy by default on all Ember apps, so this only affects you if you have customized it. If you did customize the `node` option to `webpack` however, you will [probably need to make adjustments](https://gist.github.com/ef4/d2cf5672a93cf241fd47c020b9b3066a).
 
 ### Embroider v2 Addon Format support
 
@@ -24,9 +26,9 @@ This is potentially breaking because it adds more stuff to the webpack config th
 
 ### Drop babel 6
 
-ember-auto-import 1.0 ships a complete copy of babel 6 in order to parse any apps or addons that are using babel 6 (because we need to be able to install their syntax plugins in order to parse their code without errors).
+ember-auto-import 1.0 ships a complete copy of babel 6 in order to parse any apps or addons that are using babel 6 (because we need to be able to install their syntax plugins in order to parse their code without errors). That support is removed, the minimum supported babel is 7.
 
-You can still have addons using babel 6, but those addons can't use ember-auto-import 2.0.
+It's still OK to depend on an addon that uses babel 6, but that addon cannot use ember-auto-import.
 
 ### Inject entry chunks directly in index.html
 
@@ -38,7 +40,7 @@ Today entry chunks are appended to vendor.js (and vendor.css if you manually add
 
 When used by an addon, ember-auto-import 2.0 will assert that the top-level app package has ember-auto-import >= 2.0. Therefore, addons that upgrade to ember-auto-import 2.0 should do their own semver major releases.
 
-There are too many top-level concerns governed by auto-import to continue to sneak it in via addons, without giving the app having any control over the version range. Also, ember-auto-import is effectively a polyfill for Embroider, which will become the default for new apps in ember-cli 3.27. So apps should be moving toward working with ember-auto-import if they haven't already.
+There are too many top-level concerns governed by auto-import to continue to sneak it in via addons, without giving the app any control over the version range. Also, ember-auto-import is effectively a polyfill for Embroider, which will become the default for new apps in ember-cli 3.27. So apps should be moving toward working with ember-auto-import if they haven't already.
 
 We will still perform leader election, but only copies that are semver-compatible with the app will be eligible to lead. This allows addons to rely on new features in minor releases of ember-auto-import.
 
