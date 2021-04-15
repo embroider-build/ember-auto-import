@@ -3,17 +3,26 @@
 ## Quick Summary
 
 - apps that have custom webpack config will need to check that their config is compatible with webpack 5
+- apps must add webpack to their own dependencies (`yarn add --dev webpack@5` or `npm install --save-dev webpack@5`)
 - apps that were adding css handling (like `css-loader`, `style-loader`, and `MiniCSSExtraPlugin`) to the webpack config must remove those, because they're now included by default for compatibility with the embroider v2 package spec.
 - apps should confirm that their deployment strategy includes all files produced under `dist` (not just the traditional expected ones like `dist/assets/your-app.js` and `dist/assets/vendor.js`)
 - addons that upgrade to ember-auto-import >= 2 will only work in apps that have ember-auto-import >= 2, so they should do their own semver major releases when they upgrade
 
 # Details
 
-### Webpack 5
+### Webpack 5 Upgrade
 
 ember-auto-import 2.0 upgrades from webpack 4 to 5. This is a potentially breaking change for any package that directly adds to webpack config. Most apps will not experience any breakage, because most common webpack 4 configs still work in webpack 5.
 
 One of the changes in webpack 5 is the removal of automatic node polyfills, but ember-auto-import _already_ imposed that policy by default on all Ember apps, so this only affects you if you have customized it. If you did customize the `node` option to `webpack` however, you will [probably need to make adjustments](https://gist.github.com/ef4/d2cf5672a93cf241fd47c020b9b3066a).
+
+## Apps responsible for installing webpack
+
+Apps are required to depend on webpack. This gives the app control over the exact webpack version in use, and it makes it possible for the app to import directly from webpack for access to features like `DefinePlugin` that it may want to put into the webpack config.
+
+Addons that use ember-auto-import 2.0 should *not* put webpack into `dependencies` (the apps version will be used instead). They will need it in `devDependencies` in order to build their own dummy app.
+
+ember-auto-import will not list webpack in `peerDependencies`, because the ember-auto-import package does double duty -- it needs webpack when used by an app, but does *not* need webpack when used by an addon, and we don't want addons to accidentally install webpack. 
 
 ### Embroider v2 Addon Format support
 
