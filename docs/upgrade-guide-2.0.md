@@ -20,7 +20,7 @@ One of the changes in webpack 5 is the removal of automatic node polyfills, but 
 
 Apps are required to depend on webpack. This gives the app control over the exact webpack version in use, and it makes it possible for the app to import directly from webpack for access to features like `DefinePlugin` that it may want to put into the webpack config.
 
-Addons that use ember-auto-import 2.0 should *not* put webpack into `dependencies` (the apps version will be used instead). They will need it in `devDependencies` in order to build their own dummy app.
+Addons that use ember-auto-import 2.0 should *not* put webpack into `dependencies` (the app's version will be used instead). They will need it in `devDependencies` in order to build their own dummy app.
 
 ember-auto-import will not list webpack in `peerDependencies`, because the ember-auto-import package does double duty -- it needs webpack when used by an app, but does *not* need webpack when used by an addon, and we don't want addons to accidentally install webpack. 
 
