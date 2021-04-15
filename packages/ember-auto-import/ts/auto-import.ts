@@ -8,7 +8,7 @@ import BundleConfig from './bundle-config';
 import Append from './broccoli-append';
 import { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
-import { AddonInstance, AppInstance, findTopmostAddon } from './ember-cli-models';
+import { AddonInstance, AppInstance, findTopmostAddon, ShallowAddonInstance } from './ember-cli-models';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -20,10 +20,10 @@ export interface AutoImportSharedAPI {
   analyze(tree: Node, addon: AddonInstance, treeType?: TreeType): Node;
   included(addonInstance: AddonInstance): void;
   updateFastBootManifest(manifest: { vendorFiles: string[] }): void;
+  addTo(tree: Node): Node;
 }
 
 export default class AutoImport implements AutoImportSharedAPI {
-  private primaryPackage: AddonInstance;
   private packages: Set<Package> = new Set();
   private env: 'development' | 'test' | 'production';
   private consoleWrite: (msg: string) => void;
@@ -40,7 +40,6 @@ export default class AutoImport implements AutoImportSharedAPI {
   }
 
   constructor(addonInstance: AddonInstance) {
-    this.primaryPackage = addonInstance;
     let topmostAddon = findTopmostAddon(addonInstance);
     this.packages.add(Package.lookupParentOf(topmostAddon));
     let host = topmostAddon.app;
@@ -54,8 +53,11 @@ export default class AutoImport implements AutoImportSharedAPI {
     this.consoleWrite = (...args) => addonInstance.project.ui.write(...args);
   }
 
-  isPrimary(addon: AddonInstance) {
-    return this.primaryPackage === addon;
+  // we don't actually call this ourselves anymore, but earlier versions of
+  // ember-auto-import will still call it on us. For them the answer is always
+  // false.
+  isPrimary(_addon: AddonInstance) {
+    return false;
   }
 
   analyze(tree: Node, addon: AddonInstance, treeType?: TreeType) {
@@ -86,7 +88,7 @@ export default class AutoImport implements AutoImportSharedAPI {
     });
   }
 
-  addTo(allAppTree: Node) {
+  addTo(allAppTree: Node): Node {
     let bundler = debugTree(this.makeBundler(allAppTree), 'output');
 
     let mappings = new Map();
@@ -108,28 +110,8 @@ export default class AutoImport implements AutoImportSharedAPI {
     });
   }
 
-  included(addonInstance: AddonInstance) {
-    let host = findTopmostAddon(addonInstance).app;
-    this.configureFingerprints(host);
-
-    // ember-cli as of 3.4-beta has introduced architectural changes that make
-    // it impossible for us to nicely emit the built dependencies via our own
-    // vendor and public trees, because it now considers those as *inputs* to
-    // the trees that we analyze, causing a circle, even though there is no
-    // real circular data dependency.
-    //
-    // We also cannot use postprocessTree('all'), because that only works in
-    // first-level addons.
-    //
-    // So we are forced to monkey patch EmberApp. We insert ourselves right at
-    // the beginning of addonPostprocessTree.
-    let original = host.addonPostprocessTree.bind(host);
-    host.addonPostprocessTree = (which: string, tree: Node) => {
-      if (which === 'all') {
-        tree = this.addTo(tree);
-      }
-      return original(which, tree);
-    };
+  included(addonInstance: ShallowAddonInstance) {
+    this.configureFingerprints(addonInstance.app);
   }
 
   // We need to disable fingerprinting of chunks, because (1) they already

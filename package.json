@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "test": "cd test-scenarios && npm run test",
-    "watch": "cd packages/ember-auto-import && npm run compile --watch",
+    "watch": "cd packages/ember-auto-import && npm run compile -- --watch",
     "prepare": "cd packages/ember-auto-import && npm run compile"
   },
   "workspaces": [
