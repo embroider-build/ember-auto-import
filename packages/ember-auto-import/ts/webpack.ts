@@ -8,7 +8,7 @@ import { BundleDependencies, ResolvedImport, sharedResolverOptions } from './spl
 import { BundlerHook, BuildResult } from './bundler';
 import BundleConfig from './bundle-config';
 import { ensureDirSync } from 'fs-extra';
-import { babelFilter } from '@embroider/core';
+import { babelFilter } from '@embroider/shared-internals';
 import { Options } from './package';
 
 registerHelper('js-string-escape', jsStringEscape);
@@ -158,7 +158,7 @@ export default class WebpackBundler implements BundlerHook {
         // to leave directly for webpack).
         //
         // And we otherwise defer to the `skipBabel` setting as implemented by
-        // `@embroider/core`.
+        // `@embroider/shared-internals`.
         return dirname(filename) !== stagingDir && shouldTranspile(filename);
       },
       use: {
