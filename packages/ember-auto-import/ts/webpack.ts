@@ -204,16 +204,22 @@ export default class WebpackBundler implements BundlerHook {
       throw new Error(`unexpected webpack output: no assets`);
     }
 
-    let output = {
+    let output: BuildResult = {
       entrypoints: new Map(),
       lazyAssets: [] as string[],
       dir: this.outputDir,
     };
     let nonLazyAssets: Set<string> = new Set();
     for (let id of Object.keys(entrypoints!)) {
-      let entrypoint = entrypoints![id];
-      output.entrypoints.set(id, entrypoint.assets);
-      entrypoint.assets!.forEach(asset => nonLazyAssets.add(asset.name));
+      let { assets: entrypointAssets } = entrypoints![id];
+      if (!entrypointAssets) {
+        throw new Error(`unexpected webpack output: no entrypoint.assets`);
+      }
+      output.entrypoints.set(
+        id,
+        entrypointAssets.map(a => a.name)
+      );
+      entrypointAssets.forEach(asset => nonLazyAssets.add(asset.name));
     }
     for (let asset of assets!) {
       if (!nonLazyAssets.has(asset.name)) {
