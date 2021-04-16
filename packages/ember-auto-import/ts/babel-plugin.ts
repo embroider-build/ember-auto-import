@@ -28,6 +28,31 @@ function emberAutoImport() {
           }
         }
       },
+      CallExpression(path: NodePath<CallExpression>) {
+        let callee = path.get('callee');
+
+        if (callee.isIdentifier() && callee.referencesImport('@embroider/macros', 'importSync')) {
+          let arg = path.node.arguments[0];
+          if (arg.type === 'StringLiteral') {
+            let cat = Package.categorize(arg.value);
+            if (cat === 'url') {
+              throw new Error('You cannot use importSync() with a URL.');
+            }
+            callee.replaceWith(identifier('require'));
+          } else if (arg.type === 'TemplateLiteral') {
+            let cat = Package.categorize(arg.quasis[0].value.cooked!, true);
+            if (cat === 'url') {
+              throw new Error('You cannot use importSync() with a URL.');
+            }
+            path.replaceWith(
+              callExpression(identifier('emberAutoImportSync'), [
+                stringLiteral(arg.quasis.map(q => q.value.cooked).join('${e}')),
+                ...(arg.expressions as Expression[]),
+              ])
+            );
+          }
+        }
+      },
     },
   };
 }
