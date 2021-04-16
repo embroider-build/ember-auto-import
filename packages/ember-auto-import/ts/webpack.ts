@@ -168,6 +168,13 @@ export default class WebpackBundler implements BundlerHook {
           configFile: false,
           babelrc: false,
 
+          // leaving this unset can generate an unhelpful warning from babel on
+          // large files like 'Note: The code generator has deoptimised the
+          // styling of... as it exceeds the max of 500KB."
+          generatorOpts: {
+            compact: true,
+          },
+
           presets: [
             [
               require.resolve('@babel/preset-env'),
