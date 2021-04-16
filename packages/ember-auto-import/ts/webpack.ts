@@ -8,7 +8,7 @@ import { BundleDependencies, ResolvedImport, ResolvedTemplateImport, sharedResol
 import { BundlerHook, BuildResult } from './bundler';
 import BundleConfig from './bundle-config';
 import { ensureDirSync } from 'fs-extra';
-import { babelFilter } from '@embroider/core';
+import { babelFilter } from '@embroider/shared-internals';
 import { Options } from './package';
 
 registerHelper('js-string-escape', jsStringEscape);
@@ -126,6 +126,7 @@ export default class WebpackBundler implements BundlerHook {
       },
       output: {
         path: this.outputDir,
+        publicPath: '',
         filename: `chunk.[id].[chunkhash].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,
         libraryTarget: 'var',
@@ -148,7 +149,7 @@ export default class WebpackBundler implements BundlerHook {
         ...sharedResolverOptions,
       },
       module: {
-        noParse: file => file === join(this.stagingDir, 'l.js'),
+        noParse: (file: string) => file === join(this.stagingDir, 'l.js'),
         rules: [this.babelRule()],
       },
       node: false,
@@ -159,7 +160,7 @@ export default class WebpackBundler implements BundlerHook {
     this.webpack = webpack(config);
   }
 
-  private babelRule(): webpack.Rule {
+  private babelRule(): webpack.RuleSetRule {
     let shouldTranspile = babelFilter(this.skipBabel);
     let stagingDir = this.stagingDir;
     return {
@@ -169,7 +170,7 @@ export default class WebpackBundler implements BundlerHook {
         // to leave directly for webpack).
         //
         // And we otherwise defer to the `skipBabel` setting as implemented by
-        // `@embroider/core`.
+        // `@embroider/shared-internals`.
         return dirname(filename) !== stagingDir && shouldTranspile(filename);
       },
       use: {
@@ -203,19 +204,30 @@ export default class WebpackBundler implements BundlerHook {
   }
 
   private summarizeStats(_stats: Required<webpack.Stats>): BuildResult {
-    let stats = _stats.toJson() as Required<webpack.Stats.ToJsonOutput>;
+    let { entrypoints, assets } = _stats.toJson();
+
+    // webpack's types are written rather loosely, implying that these two
+    // properties may not be present. They really always are, as far as I can
+    // tell, but we need to check here anyway to satisfy the type checker.
+    if (!entrypoints) {
+      throw new Error(`unexpected webpack output: no entrypoints`);
+    }
+    if (!assets) {
+      throw new Error(`unexpected webpack output: no assets`);
+    }
+
     let output = {
       entrypoints: new Map(),
       lazyAssets: [] as string[],
       dir: this.outputDir,
     };
     let nonLazyAssets: Set<string> = new Set();
-    for (let id of Object.keys(stats.entrypoints)) {
-      let entrypoint = stats.entrypoints[id];
+    for (let id of Object.keys(entrypoints!)) {
+      let entrypoint = entrypoints![id];
       output.entrypoints.set(id, entrypoint.assets);
-      entrypoint.assets.forEach((asset: string) => nonLazyAssets.add(asset));
+      entrypoint.assets!.forEach(asset => nonLazyAssets.add(asset.name));
     }
-    for (let asset of stats.assets) {
+    for (let asset of assets!) {
       if (!nonLazyAssets.has(asset.name)) {
         output.lazyAssets.push(asset.name);
       }
@@ -254,18 +266,19 @@ export default class WebpackBundler implements BundlerHook {
   private async runWebpack(): Promise<Required<webpack.Stats>> {
     return new Promise((resolve, reject) => {
       this.webpack.run((err, stats) => {
+        const statsString = stats ? stats.toString() : '';
         if (err) {
-          this.consoleWrite(stats.toString());
+          this.consoleWrite(statsString);
           reject(err);
           return;
         }
-        if (stats.hasErrors()) {
-          this.consoleWrite(stats.toString());
+        if (stats?.hasErrors()) {
+          this.consoleWrite(statsString);
           reject(new Error('webpack returned errors to ember-auto-import'));
           return;
         }
-        if (stats.hasWarnings() || process.env.AUTO_IMPORT_VERBOSE) {
-          this.consoleWrite(stats.toString());
+        if (stats?.hasWarnings() || process.env.AUTO_IMPORT_VERBOSE) {
+          this.consoleWrite(statsString);
         }
         // this cast is justified because we already checked hasErrors above
         resolve(stats as Required<webpack.Stats>);

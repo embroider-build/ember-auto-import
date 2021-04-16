@@ -84,8 +84,7 @@
       "env": {
         "JOBS": "1"
       },
-      "outputCapture": "std",
-      "nodeVersionHint": 10
+      "outputCapture": "std"
     }
   ]
 }

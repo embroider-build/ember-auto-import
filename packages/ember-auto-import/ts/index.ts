@@ -2,6 +2,7 @@ import AutoImport from './auto-import';
 import { Node } from 'broccoli-node-api';
 // @ts-ignore
 import pkg from '../package';
+import { isDeepAddonInstance } from './ember-cli-models';
 
 module.exports = {
   name: pkg.name,
@@ -38,7 +39,7 @@ module.exports = {
   included(...args: unknown[]) {
     let autoImport = AutoImport.lookup(this);
     this._super.included.apply(this, ...args);
-    if (autoImport.isPrimary(this)) {
+    if (!isDeepAddonInstance(this)) {
       autoImport.included(this);
     }
   },

@@ -22,8 +22,13 @@ export interface BundlerPluginOptions {
   targets: unknown;
 }
 
+export interface BundleAsset {
+  name: string;
+  size: number;
+}
+
 export interface BuildResult {
-  entrypoints: Map<string, string[]>;
+  entrypoints: Map<string, BundleAsset[]>;
   lazyAssets: string[];
   dir: string;
 }
@@ -128,7 +133,7 @@ export default class Bundler extends Plugin {
     for (let bundle of this.options.bundles.names) {
       if (entrypoints.has(bundle)) {
         entrypoints.get(bundle)!.forEach(asset => {
-          copySync(join(dir, asset), join(this.outputPath, 'entrypoints', bundle, asset));
+          copySync(join(dir, asset.name), join(this.outputPath, 'entrypoints', bundle, asset.name));
         });
       }
     }

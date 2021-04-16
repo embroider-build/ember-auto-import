@@ -27,7 +27,7 @@ Qmodule('analyzer', function (hooks) {
           plugins: [require.resolve('../../babel-plugin')],
         };
       },
-      babelMajorVersion: 6,
+      babelMajorVersion: 7,
       fileExtensions: ['js'],
     } as Package;
     analyzer = new Analyzer(new UnwatchedDir(upstream), pack);
