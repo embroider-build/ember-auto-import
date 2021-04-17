@@ -137,17 +137,26 @@ export default class Package {
     // is using. We will use these so we can configure our parser to
     // match.
     let babelAddon = instance.addons.find(addon => addon.name === 'ember-cli-babel') as any;
-    let babelOptions = babelAddon.buildBabelOptions(options);
-    let extensions = babelOptions.filterExtensions || ['js'];
+    let version = parseInt(babelAddon.pkg.version.split('.')[0], 10);
+    let babelOptions, extensions;
 
-    // https://github.com/babel/ember-cli-babel/issues/227
-    delete babelOptions.annotation;
-    delete babelOptions.throwUnlessParallelizable;
-    delete babelOptions.filterExtensions;
+    if (typeof babelAddon.getSupportedExtensions === 'function') {
+      babelOptions = babelAddon.buildBabelOptions('babel', options);
+      extensions = babelAddon.getSupportedExtensions();
+    } else {
+      babelOptions = babelAddon.buildBabelOptions(options);
+      extensions = babelOptions.filterExtensions || ['js'];
+
+      // https://github.com/babel/ember-cli-babel/issues/227
+      delete babelOptions.annotation;
+      delete babelOptions.throwUnlessParallelizable;
+      delete babelOptions.filterExtensions;
+    }
+
     if (babelOptions.plugins) {
       babelOptions.plugins = babelOptions.plugins.filter((p: any) => !p._parallelBabel);
     }
-    let version = parseInt(babelAddon.pkg.version.split('.')[0], 10);
+
     return { babelOptions, extensions, version };
   }
 

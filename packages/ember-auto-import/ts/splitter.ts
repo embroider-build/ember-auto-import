@@ -41,6 +41,7 @@ export interface ResolvedTemplateImport {
 
 export interface BundleDependencies {
   staticImports: ResolvedImport[];
+  staticTemplateImports: ResolvedTemplateImport[];
   dynamicImports: ResolvedImport[];
   dynamicTemplateImports: ResolvedTemplateImport[];
 }
@@ -212,6 +213,7 @@ export default class Splitter {
     this.options.bundles.names.forEach(bundleName => {
       deps.set(bundleName, {
         staticImports: [],
+        staticTemplateImports: [],
         dynamicImports: [],
         dynamicTemplateImports: [],
       });
@@ -230,8 +232,15 @@ export default class Splitter {
     }
 
     for (let target of targets.templateTargets.values()) {
-      let bundleName = this.chooseBundle(target.importedBy);
-      deps.get(bundleName)!.dynamicTemplateImports.push(target);
+      let [dynamicUses, staticUses] = partition(target.importedBy, imp => imp.isDynamic);
+      if (staticUses.length > 0) {
+        let bundleName = this.chooseBundle(staticUses);
+        deps.get(bundleName)!.staticTemplateImports.push(target);
+      }
+      if (dynamicUses.length > 0) {
+        let bundleName = this.chooseBundle(dynamicUses);
+        deps.get(bundleName)!.dynamicTemplateImports.push(target);
+      }
     }
 
     this.sortDependencies(deps);
