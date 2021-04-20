@@ -1,14 +1,19 @@
 import Splitter from './splitter';
-import Bundler from './bundler';
+import { Bundler, debugBundler } from './bundler';
 import Analyzer from './analyzer';
 import type { TreeType } from './analyzer';
 import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
-import Append from './broccoli-append';
 import { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
 import { AddonInstance, AppInstance, findTopmostAddon, ShallowAddonInstance } from './ember-cli-models';
+import WebpackBundler from './webpack';
+import { Memoize } from 'typescript-memoize';
+import { WatchedDir } from 'broccoli-source';
+import { Inserter } from './inserter';
+import mergeTrees from 'broccoli-merge-trees';
+import Funnel from 'broccoli-funnel';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -68,7 +73,7 @@ export default class AutoImport implements AutoImportSharedAPI {
     return analyzer;
   }
 
-  private makeBundler(allAppTree: Node) {
+  private makeBundler(allAppTree: Node): Bundler {
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
     let splitter = new Splitter({
@@ -78,36 +83,36 @@ export default class AutoImport implements AutoImportSharedAPI {
 
     // The Bundler asks the splitter for deps it should include and
     // is responsible for packaging those deps up.
-    return new Bundler(allAppTree, {
+    return new WebpackBundler(depsFor(allAppTree, this.packages), {
       splitter,
       environment: this.env,
       packages: this.packages,
       consoleWrite: this.consoleWrite,
       bundles: this.bundles,
       targets: this.targets,
+      publicAssetURL: this.publicAssetURL,
     });
   }
 
-  addTo(allAppTree: Node): Node {
-    let bundler = debugTree(this.makeBundler(allAppTree), 'output');
-
-    let mappings = new Map();
-    for (let name of this.bundles.names) {
-      let byType = new Map();
-      mappings.set(`entrypoints/${name}`, byType);
-      for (let type of this.bundles.types) {
-        let target = this.bundles.bundleEntrypoint(name, type);
-        byType.set(type, target);
-      }
+  @Memoize()
+  private get rootPackage(): Package {
+    let rootPackage = [...this.packages.values()].find(pkg => !pkg.isAddon);
+    if (!rootPackage) {
+      throw new Error(`bug in ember-auto-import, there should always be a Package representing the app`);
     }
+    return rootPackage;
+  }
 
-    let passthrough = new Map();
-    passthrough.set('lazy', this.bundles.lazyChunkPath);
+  private get publicAssetURL(): string | undefined {
+    // Only the app (not an addon) can customize the public asset URL, because
+    // it's an app concern.
+    return this.rootPackage.publicAssetURL;
+  }
 
-    return new Append(allAppTree, bundler, {
-      mappings,
-      passthrough,
-    });
+  addTo(allAppTree: Node): Node {
+    let bundler = debugBundler(this.makeBundler(allAppTree), 'output');
+    let inserter = new Inserter(allAppTree, bundler, this.bundles);
+    return mergeTrees([allAppTree, new Funnel(bundler, { destDir: 'assets' }), inserter], { overwrite: true });
   }
 
   included(addonInstance: ShallowAddonInstance) {
@@ -132,4 +137,15 @@ export default class AutoImport implements AutoImportSharedAPI {
   updateFastBootManifest(manifest: { vendorFiles: string[] }) {
     manifest.vendorFiles.push(`${this.bundles.lazyChunkPath}/auto-import-fastboot.js`);
   }
+}
+
+function depsFor(allAppTree: Node, packages: Set<Package>) {
+  let deps = [allAppTree];
+  for (let pkg of packages) {
+    let watched = pkg.watchedDirectories;
+    if (watched) {
+      deps = deps.concat(watched.map(dir => new WatchedDir(dir)));
+    }
+  }
+  return deps;
 }

@@ -25,12 +25,18 @@ export default class BundleConfig {
     return Object.freeze(['app', 'tests']);
   }
 
+  assertValidBundleName(name: string): asserts name is BundleName {
+    if (!this.names.includes(name as BundleName)) {
+      throw new Error(`bug: ${name} is not a known bundle name`);
+    }
+  }
+
   get types(): ReadonlyArray<BundleType> {
     return Object.freeze(['js', 'css']);
   }
 
   // Which final JS file the given bundle's dependencies should go into.
-  bundleEntrypoint(name: BundleName, type: BundleType): string | undefined {
+  bundleEntrypoint(name: BundleName, type: BundleType): string {
     switch (name) {
       case 'tests':
         switch (type) {
@@ -85,5 +91,9 @@ export default class BundleConfig {
 
   get lazyChunkPath() {
     return dirname(this.bundleEntrypoint(this.names[0], 'js')!);
+  }
+
+  htmlEntrypoints() {
+    return [this.emberApp.options.outputPaths.app.html, 'tests/index.html'];
   }
 }
