@@ -148,7 +148,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         hints: false,
       },
       output: {
-        path: this.outputPath,
+        path: join(this.outputPath, 'assets'),
         publicPath: '',
         filename: `chunk.[id].[chunkhash].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,

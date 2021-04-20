@@ -13,7 +13,6 @@ import { Memoize } from 'typescript-memoize';
 import { WatchedDir } from 'broccoli-source';
 import { Inserter } from './inserter';
 import mergeTrees from 'broccoli-merge-trees';
-import Funnel from 'broccoli-funnel';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -112,7 +111,7 @@ export default class AutoImport implements AutoImportSharedAPI {
   addTo(allAppTree: Node): Node {
     let bundler = debugBundler(this.makeBundler(allAppTree), 'output');
     let inserter = new Inserter(allAppTree, bundler, this.bundles);
-    return mergeTrees([allAppTree, new Funnel(bundler, { destDir: 'assets' }), inserter], { overwrite: true });
+    return mergeTrees([allAppTree, bundler, inserter], { overwrite: true });
   }
 
   included(addonInstance: ShallowAddonInstance) {
