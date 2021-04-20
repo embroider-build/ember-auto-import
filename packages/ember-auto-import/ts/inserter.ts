@@ -40,7 +40,7 @@ export class Inserter extends Plugin {
                   let rootURL = src.replace(url, '');
                   stringInserter.insert(
                     element.sourceCodeLocation.endOffset,
-                    chunks.map(chunk => `\n<script src="${rootURL}assets/${chunk}"></script>`).join('')
+                    chunks.map(chunk => `\n<script src="${rootURL}${chunk}"></script>`).join('')
                   );
                 }
               }
@@ -58,7 +58,7 @@ export class Inserter extends Plugin {
                     let rootURL = href.replace(url, '');
                     stringInserter.insert(
                       element.sourceCodeLocation.endOffset,
-                      chunks.map(chunk => `\n<link rel="stylesheet" href="${rootURL}assets/${chunk}"/>`).join('')
+                      chunks.map(chunk => `\n<link rel="stylesheet" href="${rootURL}${chunk}"/>`).join('')
                     );
                   }
                 }

@@ -278,13 +278,13 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
       output.entrypoints.set(
         id,
-        entrypointAssets.map(a => a.name)
+        entrypointAssets.map(a => 'assets/' + a.name)
       );
       entrypointAssets.forEach(asset => nonLazyAssets.add(asset.name));
     }
     for (let asset of assets!) {
       if (!nonLazyAssets.has(asset.name)) {
-        output.lazyAssets.push(asset.name);
+        output.lazyAssets.push('assets/' + asset.name);
       }
     }
     return output;
