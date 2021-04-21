@@ -10,7 +10,7 @@ import Splitter from '../splitter';
 import BundleConfig from '../bundle-config';
 import { Project } from 'fixturify-project';
 import { merge } from 'lodash';
-import { AddonInstance, AppInstance, Project as EmberCLIProject } from '../ember-cli-models';
+import { AddonInstance, AppInstance, Project as EmberCLIProject } from '@embroider/shared-internals';
 
 const { module: Qmodule, test } = QUnit;
 
@@ -288,6 +288,9 @@ function stubAddonInstance(baseDir: string): AddonInstance {
         },
       } as any,
     ],
+    name() {
+      return 'my-project';
+    },
   };
   let app: AppInstance = {
     env: 'development',
@@ -304,5 +307,12 @@ function stubAddonInstance(baseDir: string): AddonInstance {
     root: '/fake',
     options: {},
     addons: [],
+    treeGenerator() {
+      throw new Error('unimplemnented');
+    },
+    _super: undefined,
+    _findHost() {
+      throw new Error('unimplemented');
+    },
   };
 }

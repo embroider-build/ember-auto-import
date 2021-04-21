@@ -3,7 +3,9 @@ import { join, dirname } from 'path';
 import { readFileSync } from 'fs';
 import { Memoize } from 'typescript-memoize';
 import { Configuration } from 'webpack';
-import { AddonInstance, isDeepAddonInstance, Project } from './ember-cli-models';
+import { AddonInstance, isDeepAddonInstance, Project } from '@embroider/shared-internals';
+import semver from 'semver';
+import type { TransformOptions } from '@babel/core';
 
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
@@ -253,7 +255,7 @@ export default class Package {
       );
     }
 
-    if (isEmberAddonDependency(packagePath)) {
+    if (isV1EmberAddonDependency(packagePath)) {
       // ember addon are not auto imported
       return;
     }
@@ -340,15 +342,86 @@ export default class Package {
         .filter(Boolean) as string[];
     }
   }
+
+  cleanBabelConfig(): TransformOptions {
+    if (this.isAddon) {
+      throw new Error(`Only the app can generate auto-import's babel config`);
+    }
+    // cast here is safe because we just checked isAddon is false
+    let parent = this._parent as Project;
+
+    let emberSource = parent.addons.find(addon => addon.name === 'ember-source');
+    if (!emberSource) {
+      throw new Error(`failed to find ember-source in addons of ${this.name}`);
+    }
+    let ensureModuleApiPolyfill = semver.satisfies(emberSource.pkg.version, '<3.27.0', { includePrerelease: true });
+    let templateCompilerPath: string = (emberSource as any).absolutePaths.templateCompiler;
+
+    let plugins = [
+      [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
+      [require.resolve('@babel/plugin-proposal-class-properties'), { loose: true }],
+      [
+        require.resolve('babel-plugin-htmlbars-inline-precompile'),
+        {
+          ensureModuleApiPolyfill,
+          templateCompilerPath,
+          modules: {
+            'ember-cli-htmlbars': 'hbs',
+            '@ember/template-compilation': {
+              export: 'precompileTemplate',
+              disableTemplateLiteral: true,
+              shouldParseScope: true,
+              isProduction: process.env.EMBER_ENV === 'production',
+            },
+          },
+        },
+      ],
+    ];
+
+    if (ensureModuleApiPolyfill) {
+      plugins.push([require.resolve('babel-plugin-ember-modules-api-polyfill')]);
+    }
+
+    return {
+      // do not use the host project's own `babel.config.js` file. Only a strict
+      // subset of features are allowed in the third-party code we're
+      // transpiling.
+      //
+      // - every package gets babel preset-env unless skipBabel is configured
+      //   for them.
+      // - because we process v2 ember packages, we enable inline hbs (with no
+      //   custom transforms) and modules-api-polyfill
+      configFile: false,
+      babelrc: false,
+
+      // leaving this unset can generate an unhelpful warning from babel on
+      // large files like 'Note: The code generator has deoptimised the
+      // styling of... as it exceeds the max of 500KB."
+      generatorOpts: {
+        compact: true,
+      },
+
+      plugins,
+      presets: [
+        [
+          require.resolve('@babel/preset-env'),
+          {
+            modules: false,
+            targets: parent.targets,
+          },
+        ],
+      ],
+    };
+  }
 }
 
 const isAddonCache = new Map<string, boolean>();
-function isEmberAddonDependency(pathToPackageJSON: string): boolean {
+function isV1EmberAddonDependency(pathToPackageJSON: string): boolean {
   let cached = isAddonCache.get(pathToPackageJSON);
   if (cached === undefined) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     let packageJSON = require(pathToPackageJSON);
-    let answer = packageJSON.keywords?.includes('ember-addon') || false;
+    let answer = packageJSON.keywords?.includes('ember-addon') && (packageJSON['ember-addon']?.version ?? 1) < 2;
     isAddonCache.set(pathToPackageJSON, answer);
     return answer;
   } else {

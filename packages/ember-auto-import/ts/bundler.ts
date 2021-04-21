@@ -4,6 +4,7 @@ import type Package from './package';
 import type BundleConfig from './bundle-config';
 import type { BundleName } from './bundle-config';
 import { buildDebugCallback } from 'broccoli-debug';
+import type { TransformOptions } from '@babel/core';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -13,7 +14,7 @@ export interface BundlerOptions {
   splitter: Splitter;
   packages: Set<Package>;
   bundles: BundleConfig;
-  targets: unknown;
+  babelConfig: TransformOptions;
   publicAssetURL: string | undefined;
 }
 

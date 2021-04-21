@@ -2,7 +2,7 @@ import AutoImport from './auto-import';
 import { Node } from 'broccoli-node-api';
 // @ts-ignore
 import pkg from '../package';
-import { isDeepAddonInstance } from './ember-cli-models';
+import { isDeepAddonInstance } from '@embroider/shared-internals';
 
 module.exports = {
   name: pkg.name,

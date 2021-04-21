@@ -1,7 +1,7 @@
 import QUnit from 'qunit';
 import 'qunit-assertions-extra';
 import type AutoImport from '../auto-import';
-import { AddonInstance } from '../ember-cli-models';
+import { AddonInstance } from '@embroider/shared-internals';
 import { LeaderChooser } from '../leader';
 
 const { module: Qmodule, test } = QUnit;

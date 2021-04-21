@@ -8,8 +8,10 @@ import { BundleDependencies, ResolvedImport, ResolvedTemplateImport, sharedResol
 import { BuildResult, Bundler, BundlerOptions } from './bundler';
 import { InputNode } from 'broccoli-node-api';
 import Plugin from 'broccoli-plugin';
-import { babelFilter } from '@embroider/shared-internals';
+import { babelFilter, packageName } from '@embroider/shared-internals';
 import { Options } from './package';
+import { PackageCache } from '@embroider/shared-internals';
+import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 
 const debug = makeDebug('ember-auto-import:webpack');
@@ -166,6 +168,8 @@ export default class WebpackBundler extends Plugin implements Bundler {
           // not overriding the default loader resolution rules in case the app also
           // wants to control those.
           'babel-loader-8': require.resolve('babel-loader'),
+          'eai-style-loader': require.resolve('style-loader'),
+          'eai-css-loader': require.resolve('css-loader'),
         },
       },
       resolve: {
@@ -173,9 +177,16 @@ export default class WebpackBundler extends Plugin implements Bundler {
       },
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.js'),
-        rules: [this.babelRule(stagingDir)],
+        rules: [
+          this.babelRule(stagingDir),
+          {
+            test: /\.css$/i,
+            use: ['eai-style-loader', 'eai-css-loader'],
+          },
+        ],
       },
       node: false,
+      externals: this.externalsHandler,
     };
 
     mergeConfig(config, ...[...this.opts.packages].map(pkg => pkg.webpackConfig));
@@ -213,29 +224,53 @@ export default class WebpackBundler extends Plugin implements Bundler {
       },
       use: {
         loader: 'babel-loader-8',
-        options: {
-          // do not use the host project's own `babel.config.js` file
-          configFile: false,
-          babelrc: false,
-
-          // leaving this unset can generate an unhelpful warning from babel on
-          // large files like 'Note: The code generator has deoptimised the
-          // styling of... as it exceeds the max of 500KB."
-          generatorOpts: {
-            compact: true,
-          },
-
-          presets: [
-            [
-              require.resolve('@babel/preset-env'),
-              {
-                modules: false,
-                targets: this.opts.targets,
-              },
-            ],
-          ],
-        },
+        options: this.opts.babelConfig,
       },
+    };
+  }
+
+  @Memoize()
+  private get externalsHandler(): Configuration['externals'] {
+    let packageCache = new PackageCache();
+    return function (params, callback) {
+      let { context, request } = params;
+      if (!context || !request) {
+        return callback();
+      }
+
+      if (request.startsWith('!')) {
+        return callback();
+      }
+      let name = packageName(request);
+      if (!name) {
+        // we're only interested in handling inter-package resolutions
+        return callback();
+      }
+      let pkg = packageCache.ownerOfFile(context);
+      if (!pkg?.isV2Addon()) {
+        // we're only interested in imports that appear inside v2 addons
+        return callback();
+      }
+
+      try {
+        let found = packageCache.resolve(name, pkg);
+        if (!found.isEmberPackage() || found.isV2Addon()) {
+          // if we're importing a non-ember package or a v2 addon, we don't
+          // externalize. Those are all "normal" looking packages that should be
+          // resolvable statically.
+          return callback();
+        } else {
+          // the package exists but it is a v1 ember addon, so it's not
+          // resolvable at build time, so we externalize it.
+          return callback(undefined, 'commonjs ' + request);
+        }
+      } catch (err) {
+        if (err.code !== 'MODULE_NOT_FOUND') {
+          throw err;
+        }
+        // real package doesn't exist, so externalize it
+        return callback(undefined, 'commonjs ' + request);
+      }
     };
   }
 
