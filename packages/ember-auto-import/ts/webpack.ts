@@ -105,7 +105,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   constructor(priorTrees: InputNode[], private opts: BundlerOptions) {
     super(priorTrees, {
-      persistentOutput: false,
+      persistentOutput: true,
       needsCache: true,
       annotation: 'ember-auto-import-webpack',
     });

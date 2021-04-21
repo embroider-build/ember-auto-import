@@ -19,7 +19,10 @@ function staticImportTest(project: Project) {
             autoImport: {
               alias: {
                 'my-aliased-package': 'original-package'
-              }
+              },
+              watchDependencies: [
+               'original-package'
+              ]
             }
           });
           return app.toTree();

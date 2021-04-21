@@ -9,7 +9,7 @@ import { dirname, delimiter } from 'path';
   if (!voltaHome) return;
   let paths = process.env['PATH']!.split(delimiter);
   while (/\.volta/.test(paths[0])) {
-    paths.shift;
+    paths.shift();
   }
   paths.unshift(`${voltaHome}/bin`);
   process.env['PATH'] = paths.join(delimiter);

@@ -43,13 +43,6 @@ module.exports = {
     }
   },
 
-  updateFastBootManifest(manifest: { vendorFiles: string[] }) {
-    if (!isDeepAddonInstance(this)) {
-      AutoImport.lookup(this).updateFastBootManifest(manifest);
-    }
-    return manifest;
-  },
-
   // this only runs on top-level addons, so we don't need our own
   // !isDeepAddonInstance check here.
   postprocessTree(which: string, tree: Node): Node {

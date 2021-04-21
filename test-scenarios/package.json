@@ -6,7 +6,6 @@
     "qunit": "^2.6.1",
     "ts-node": "^9.1.1",
     "scenario-tester": "0.2.0",
-    "fastboot": "^1.2.0",
     "jsdom": "^11.11.0"
   },
   "scripts": {

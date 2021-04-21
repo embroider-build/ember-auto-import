@@ -13,7 +13,6 @@ import { Memoize } from 'typescript-memoize';
 import { WatchedDir } from 'broccoli-source';
 import { Inserter } from './inserter';
 import mergeTrees from 'broccoli-merge-trees';
-import CombineFastbootChunks from './combine-fastboot-chunks';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -24,7 +23,6 @@ export interface AutoImportSharedAPI {
   isPrimary(addonInstance: AddonInstance): boolean;
   analyze(tree: Node, addon: AddonInstance, treeType?: TreeType): Node;
   included(addonInstance: AddonInstance): void;
-  updateFastBootManifest(manifest: { vendorFiles: string[] }): void;
   addTo(tree: Node): Node;
 }
 
@@ -113,13 +111,6 @@ export default class AutoImport implements AutoImportSharedAPI {
     let bundler = debugBundler(this.makeBundler(allAppTree), 'output');
     let inserter = new Inserter(allAppTree, bundler, this.bundles);
     let trees = [allAppTree, bundler, inserter];
-    if (this.rootPackage.isFastBootEnabled) {
-      trees.push(
-        new CombineFastbootChunks(bundler, allAppTree, {
-          targetFilename: 'assets/auto-import-fastboot.js',
-        })
-      );
-    }
     return mergeTrees(trees, { overwrite: true });
   }
 
@@ -140,10 +131,6 @@ export default class AutoImport implements AutoImportSharedAPI {
     } else {
       host.options.fingerprint.exclude.push(pattern);
     }
-  }
-
-  updateFastBootManifest(manifest: { vendorFiles: string[] }) {
-    manifest.vendorFiles.push(`${this.bundles.lazyChunkPath}/auto-import-fastboot.js`);
   }
 }
 
