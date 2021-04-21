@@ -5,11 +5,14 @@ import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies, ResolvedImport, ResolvedTemplateImport, sharedResolverOptions } from './splitter';
-import { BundlerHook, BuildResult } from './bundler';
-import BundleConfig from './bundle-config';
-import { ensureDirSync } from 'fs-extra';
+import { BuildResult, Bundler, BundlerOptions } from './bundler';
+import { InputNode } from 'broccoli-node-api';
+import Plugin from 'broccoli-plugin';
 import { babelFilter } from '@embroider/shared-internals';
 import { Options } from './package';
+import makeDebug from 'debug';
+
+const debug = makeDebug('ember-auto-import:webpack');
 
 registerHelper('js-string-escape', jsStringEscape);
 registerHelper('join', function (list, connector) {
@@ -90,42 +93,62 @@ window._eai_r = require;
 window._eai_d = define;
 `;
 
-export default class WebpackBundler implements BundlerHook {
-  private stagingDir: string;
-  private webpack: webpack.Compiler;
-  private outputDir: string;
+export default class WebpackBundler extends Plugin implements Bundler {
+  private state:
+    | {
+        webpack: webpack.Compiler;
+        stagingDir: string;
+      }
+    | undefined;
 
-  constructor(
-    bundles: BundleConfig,
-    environment: 'production' | 'development' | 'test',
-    extraWebpackConfig: webpack.Configuration | undefined,
-    private consoleWrite: (message: string) => void,
-    private publicAssetURL: string | undefined,
-    private skipBabel: Required<Options>['skipBabel'],
-    private babelTargets: unknown,
-    tempArea: string
-  ) {
+  private lastBuildResult: BuildResult | undefined;
+
+  constructor(priorTrees: InputNode[], private opts: BundlerOptions) {
+    super(priorTrees, {
+      persistentOutput: true,
+      needsCache: true,
+      annotation: 'ember-auto-import-webpack',
+    });
+  }
+
+  get buildResult() {
+    if (!this.lastBuildResult) {
+      throw new Error(`bug: no buildResult available yet`);
+    }
+    return this.lastBuildResult;
+  }
+
+  private get webpack() {
+    return this.setup().webpack;
+  }
+
+  private get stagingDir() {
+    return this.setup().stagingDir;
+  }
+
+  private setup() {
+    if (this.state) {
+      return this.state;
+    }
+
     // resolve the real path, because we're going to do path comparisons later
     // that could fail if this is not canonical.
-    tempArea = realpathSync(tempArea);
+    //
+    // cast is ok because we passed needsCache to super
+    let stagingDir = realpathSync(this.cachePath!);
 
-    this.stagingDir = join(tempArea, 'staging');
-    ensureDirSync(this.stagingDir);
-    this.outputDir = join(tempArea, 'output');
-    ensureDirSync(this.outputDir);
     let entry: { [name: string]: string[] } = {};
-    bundles.names.forEach(bundle => {
-      entry[bundle] = [join(this.stagingDir, 'l.js'), join(this.stagingDir, `${bundle}.js`)];
+    this.opts.bundles.names.forEach(bundle => {
+      entry[bundle] = [join(stagingDir, 'l.js'), join(stagingDir, `${bundle}.js`)];
     });
-
     let config: Configuration = {
-      mode: environment === 'production' ? 'production' : 'development',
+      mode: this.opts.environment === 'production' ? 'production' : 'development',
       entry,
       performance: {
         hints: false,
       },
       output: {
-        path: this.outputDir,
+        path: join(this.outputPath, 'assets'),
         publicPath: '',
         filename: `chunk.[id].[chunkhash].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,
@@ -149,20 +172,35 @@ export default class WebpackBundler implements BundlerHook {
         ...sharedResolverOptions,
       },
       module: {
-        noParse: (file: string) => file === join(this.stagingDir, 'l.js'),
-        rules: [this.babelRule()],
+        noParse: (file: string) => file === join(stagingDir, 'l.js'),
+        rules: [this.babelRule(stagingDir)],
       },
       node: false,
     };
-    if (extraWebpackConfig) {
-      mergeConfig(config, extraWebpackConfig);
+
+    mergeConfig(config, ...[...this.opts.packages].map(pkg => pkg.webpackConfig));
+    if ([...this.opts.packages].find(pkg => pkg.forbidsEval)) {
+      config.devtool = 'source-map';
     }
-    this.webpack = webpack(config);
+    debug('webpackConfig %j', config);
+    this.state = { webpack: webpack(config), stagingDir };
+    return this.state;
   }
 
-  private babelRule(): webpack.RuleSetRule {
-    let shouldTranspile = babelFilter(this.skipBabel);
-    let stagingDir = this.stagingDir;
+  private skipBabel(): Required<Options>['skipBabel'] {
+    let output: Required<Options>['skipBabel'] = [];
+    for (let pkg of this.opts.packages) {
+      let skip = pkg.skipBabel;
+      if (skip) {
+        output = output.concat(skip);
+      }
+    }
+    return output;
+  }
+
+  private babelRule(stagingDir: string): webpack.RuleSetRule {
+    let shouldTranspile = babelFilter(this.skipBabel());
+
     return {
       test(filename: string) {
         // We don't apply babel to our own stagingDir (it contains only our own
@@ -192,7 +230,7 @@ export default class WebpackBundler implements BundlerHook {
               require.resolve('@babel/preset-env'),
               {
                 modules: false,
-                targets: this.babelTargets,
+                targets: this.opts.targets,
               },
             ],
           ],
@@ -201,13 +239,15 @@ export default class WebpackBundler implements BundlerHook {
     };
   }
 
-  async build(bundleDeps: Map<string, BundleDependencies>) {
+  async build(): Promise<void> {
+    let bundleDeps = await this.opts.splitter.deps();
+
     for (let [bundle, deps] of bundleDeps.entries()) {
       this.writeEntryFile(bundle, deps);
     }
     this.writeLoaderFile();
     let stats = await this.runWebpack();
-    return this.summarizeStats(stats);
+    this.lastBuildResult = this.summarizeStats(stats);
   }
 
   private summarizeStats(_stats: Required<webpack.Stats>): BuildResult {
@@ -223,20 +263,28 @@ export default class WebpackBundler implements BundlerHook {
       throw new Error(`unexpected webpack output: no assets`);
     }
 
-    let output = {
+    let output: BuildResult = {
       entrypoints: new Map(),
       lazyAssets: [] as string[],
-      dir: this.outputDir,
     };
     let nonLazyAssets: Set<string> = new Set();
     for (let id of Object.keys(entrypoints!)) {
-      let entrypoint = entrypoints![id];
-      output.entrypoints.set(id, entrypoint.assets);
-      entrypoint.assets!.forEach(asset => nonLazyAssets.add(asset.name));
+      let { assets: entrypointAssets } = entrypoints![id];
+      if (!entrypointAssets) {
+        throw new Error(`unexpected webpack output: no entrypoint.assets`);
+      }
+
+      this.opts.bundles.assertValidBundleName(id);
+
+      output.entrypoints.set(
+        id,
+        entrypointAssets.map(a => 'assets/' + a.name)
+      );
+      entrypointAssets.forEach(asset => nonLazyAssets.add(asset.name));
     }
     for (let asset of assets!) {
       if (!nonLazyAssets.has(asset.name)) {
-        output.lazyAssets.push(asset.name);
+        output.lazyAssets.push('assets/' + asset.name);
       }
     }
     return output;
@@ -261,7 +309,7 @@ export default class WebpackBundler implements BundlerHook {
         dynamicImports: deps.dynamicImports,
         dynamicTemplateImports: deps.dynamicTemplateImports.map(mapTemplateImports),
         staticTemplateImports: deps.staticTemplateImports.map(mapTemplateImports),
-        publicAssetURL: this.publicAssetURL,
+        publicAssetURL: this.opts.publicAssetURL,
       })
     );
   }
@@ -275,17 +323,17 @@ export default class WebpackBundler implements BundlerHook {
       this.webpack.run((err, stats) => {
         const statsString = stats ? stats.toString() : '';
         if (err) {
-          this.consoleWrite(statsString);
+          this.opts.consoleWrite(statsString);
           reject(err);
           return;
         }
         if (stats?.hasErrors()) {
-          this.consoleWrite(statsString);
+          this.opts.consoleWrite(statsString);
           reject(new Error('webpack returned errors to ember-auto-import'));
           return;
         }
         if (stats?.hasWarnings() || process.env.AUTO_IMPORT_VERBOSE) {
-          this.consoleWrite(statsString);
+          this.opts.consoleWrite(statsString);
         }
         // this cast is justified because we already checked hasErrors above
         resolve(stats as Required<webpack.Stats>);

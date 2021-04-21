@@ -37,18 +37,19 @@ module.exports = {
   },
 
   included(...args: unknown[]) {
-    let autoImport = AutoImport.lookup(this);
     this._super.included.apply(this, ...args);
     if (!isDeepAddonInstance(this)) {
-      autoImport.included(this);
+      AutoImport.lookup(this).included(this);
     }
   },
 
-  updateFastBootManifest(manifest: { vendorFiles: string[] }) {
-    let autoImport = AutoImport.lookup(this);
-    if (autoImport.isPrimary(this)) {
-      autoImport.updateFastBootManifest(manifest);
+  // this only runs on top-level addons, so we don't need our own
+  // !isDeepAddonInstance check here.
+  postprocessTree(which: string, tree: Node): Node {
+    if (which === 'all') {
+      return AutoImport.lookup(this).addTo(tree);
+    } else {
+      return tree;
     }
-    return manifest;
   },
 };

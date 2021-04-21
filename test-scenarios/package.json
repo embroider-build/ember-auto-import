@@ -6,7 +6,6 @@
     "qunit": "^2.6.1",
     "ts-node": "^9.1.1",
     "scenario-tester": "0.2.0",
-    "fastboot": "^1.2.0",
     "jsdom": "^11.11.0"
   },
   "scripts": {
@@ -19,7 +18,9 @@
     "@ef4/addon-template": "*",
     "@ef4/app-template": "*",
     "@embroider/macros": "^0.39.1",
+    "@types/fs-extra": "^5.0.4",
     "ember-auto-import": "2.0.0-alpha.0",
+    "fs-extra": "^6.0.1",
     "leader-v1": "npm:ember-auto-import@1.7",
     "leader-v2": "npm:ember-auto-import@1.11",
     "ember-cli-2.18": "npm:ember-cli@~2.18.0",
@@ -27,6 +28,7 @@
     "ember-cli-beta": "npm:ember-cli@beta",
     "ember-cli": "git+https://github.com/ember-cli/ember-cli#master",
     "ember-cli-fastboot": "^2.2.3",
+    "ember-cli-fastboot3": "npm:ember-cli-fastboot@3.2.0-beta.2",
     "ember-cli-typescript-2": "npm:ember-cli-typescript@^2.0.0-beta.3",
     "ember-cli-typescript-3": "npm:ember-cli-typescript@^3.0.0",
     "ember-cli-typescript-4": "npm:ember-cli-typescript@^4.0.0-alpha.1",

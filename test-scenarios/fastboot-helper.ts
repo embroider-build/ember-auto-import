@@ -1,15 +1,19 @@
 import { PreparedApp } from 'scenario-tester';
 import { join } from 'path';
+import resolve from 'resolve';
 
 export async function setupFastboot(app: PreparedApp, environment = 'development') {
   let result = await app.execute(`node node_modules/ember-cli/bin/ember build --environment=${environment}`);
   if (result.exitCode !== 0) {
     throw new Error(`failed to build app for fastboot: ${result.output}`);
   }
+  return await launchFastboot(app.dir);
+}
 
-  const FastBoot = require('fastboot');
+export async function launchFastboot(dir: string) {
+  const FastBoot = require(resolve.sync('fastboot', { basedir: resolve.sync('ember-cli-fastboot', { basedir: dir }) }));
   let fastboot = new FastBoot({
-    distPath: join(app.dir, 'dist'),
+    distPath: join(dir, 'dist'),
     resilient: false,
   });
   async function visit(url: string) {

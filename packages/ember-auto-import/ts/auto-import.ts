@@ -1,14 +1,18 @@
 import Splitter from './splitter';
-import Bundler from './bundler';
+import { Bundler, debugBundler } from './bundler';
 import Analyzer from './analyzer';
 import type { TreeType } from './analyzer';
 import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
-import Append from './broccoli-append';
 import { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
-import { AddonInstance, AppInstance, findTopmostAddon } from './ember-cli-models';
+import { AddonInstance, AppInstance, findTopmostAddon, ShallowAddonInstance } from './ember-cli-models';
+import WebpackBundler from './webpack';
+import { Memoize } from 'typescript-memoize';
+import { WatchedDir } from 'broccoli-source';
+import { Inserter } from './inserter';
+import mergeTrees from 'broccoli-merge-trees';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -19,11 +23,10 @@ export interface AutoImportSharedAPI {
   isPrimary(addonInstance: AddonInstance): boolean;
   analyze(tree: Node, addon: AddonInstance, treeType?: TreeType): Node;
   included(addonInstance: AddonInstance): void;
-  updateFastBootManifest(manifest: { vendorFiles: string[] }): void;
+  addTo(tree: Node): Node;
 }
 
 export default class AutoImport implements AutoImportSharedAPI {
-  private primaryPackage: AddonInstance;
   private packages: Set<Package> = new Set();
   private env: 'development' | 'test' | 'production';
   private consoleWrite: (msg: string) => void;
@@ -40,7 +43,6 @@ export default class AutoImport implements AutoImportSharedAPI {
   }
 
   constructor(addonInstance: AddonInstance) {
-    this.primaryPackage = addonInstance;
     let topmostAddon = findTopmostAddon(addonInstance);
     this.packages.add(Package.lookupParentOf(topmostAddon));
     let host = topmostAddon.app;
@@ -54,8 +56,11 @@ export default class AutoImport implements AutoImportSharedAPI {
     this.consoleWrite = (...args) => addonInstance.project.ui.write(...args);
   }
 
-  isPrimary(addon: AddonInstance) {
-    return this.primaryPackage === addon;
+  // we don't actually call this ourselves anymore, but earlier versions of
+  // ember-auto-import will still call it on us. For them the answer is always
+  // false.
+  isPrimary(_addon: AddonInstance) {
+    return false;
   }
 
   analyze(tree: Node, addon: AddonInstance, treeType?: TreeType) {
@@ -66,7 +71,7 @@ export default class AutoImport implements AutoImportSharedAPI {
     return analyzer;
   }
 
-  private makeBundler(allAppTree: Node) {
+  private makeBundler(allAppTree: Node): Bundler {
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
     let splitter = new Splitter({
@@ -76,60 +81,41 @@ export default class AutoImport implements AutoImportSharedAPI {
 
     // The Bundler asks the splitter for deps it should include and
     // is responsible for packaging those deps up.
-    return new Bundler(allAppTree, {
+    return new WebpackBundler(depsFor(allAppTree, this.packages), {
       splitter,
       environment: this.env,
       packages: this.packages,
       consoleWrite: this.consoleWrite,
       bundles: this.bundles,
       targets: this.targets,
+      publicAssetURL: this.publicAssetURL,
     });
   }
 
-  addTo(allAppTree: Node) {
-    let bundler = debugTree(this.makeBundler(allAppTree), 'output');
-
-    let mappings = new Map();
-    for (let name of this.bundles.names) {
-      let byType = new Map();
-      mappings.set(`entrypoints/${name}`, byType);
-      for (let type of this.bundles.types) {
-        let target = this.bundles.bundleEntrypoint(name, type);
-        byType.set(type, target);
-      }
+  @Memoize()
+  private get rootPackage(): Package {
+    let rootPackage = [...this.packages.values()].find(pkg => !pkg.isAddon);
+    if (!rootPackage) {
+      throw new Error(`bug in ember-auto-import, there should always be a Package representing the app`);
     }
-
-    let passthrough = new Map();
-    passthrough.set('lazy', this.bundles.lazyChunkPath);
-
-    return new Append(allAppTree, bundler, {
-      mappings,
-      passthrough,
-    });
+    return rootPackage;
   }
 
-  included(addonInstance: AddonInstance) {
-    let host = findTopmostAddon(addonInstance).app;
-    this.configureFingerprints(host);
+  private get publicAssetURL(): string | undefined {
+    // Only the app (not an addon) can customize the public asset URL, because
+    // it's an app concern.
+    return this.rootPackage.publicAssetURL;
+  }
 
-    // ember-cli as of 3.4-beta has introduced architectural changes that make
-    // it impossible for us to nicely emit the built dependencies via our own
-    // vendor and public trees, because it now considers those as *inputs* to
-    // the trees that we analyze, causing a circle, even though there is no
-    // real circular data dependency.
-    //
-    // We also cannot use postprocessTree('all'), because that only works in
-    // first-level addons.
-    //
-    // So we are forced to monkey patch EmberApp. We insert ourselves right at
-    // the beginning of addonPostprocessTree.
-    let original = host.addonPostprocessTree.bind(host);
-    host.addonPostprocessTree = (which: string, tree: Node) => {
-      if (which === 'all') {
-        tree = this.addTo(tree);
-      }
-      return original(which, tree);
-    };
+  addTo(allAppTree: Node): Node {
+    let bundler = debugBundler(this.makeBundler(allAppTree), 'output');
+    let inserter = new Inserter(allAppTree, bundler, this.bundles);
+    let trees = [allAppTree, bundler, inserter];
+    return mergeTrees(trees, { overwrite: true });
+  }
+
+  included(addonInstance: ShallowAddonInstance) {
+    this.configureFingerprints(addonInstance.app);
   }
 
   // We need to disable fingerprinting of chunks, because (1) they already
@@ -146,8 +132,15 @@ export default class AutoImport implements AutoImportSharedAPI {
       host.options.fingerprint.exclude.push(pattern);
     }
   }
+}
 
-  updateFastBootManifest(manifest: { vendorFiles: string[] }) {
-    manifest.vendorFiles.push(`${this.bundles.lazyChunkPath}/auto-import-fastboot.js`);
+function depsFor(allAppTree: Node, packages: Set<Package>) {
+  let deps = [allAppTree];
+  for (let pkg of packages) {
+    let watched = pkg.watchedDirectories;
+    if (watched) {
+      deps = deps.concat(watched.map(dir => new WatchedDir(dir)));
+    }
   }
+  return deps;
 }
