@@ -3,33 +3,23 @@ import Analyzer, { Import, LiteralImport, TemplateImport } from './analyzer';
 import Package from './package';
 import { shallowEqual } from './util';
 import { flatten, partition } from 'lodash';
-import { NodeJsInputFileSystem, CachedInputFileSystem, ResolverFactory } from 'enhanced-resolve';
-import { findUpPackagePath } from 'resolve-package-path';
-import { dirname, join } from 'path';
 import BundleConfig from './bundle-config';
-import { AbstractInputFileSystem } from 'enhanced-resolve/lib/common-types';
+import { join } from 'path';
 
 const debug = makeDebug('ember-auto-import:splitter');
 
-// these are here because we do our own resolving of entrypoints, so we
-// configure enhanced-resolve directly. But in the case of template literal
-// imports, we only resolve down to the right directory and leave the file
-// discovery up to webpack, so webpack needs to also know the options we're
-// using.
-export const sharedResolverOptions = {
-  extensions: ['.js', '.ts', '.json'],
-  mainFields: ['browser', 'module', 'main'],
-};
-
 export interface ResolvedImport {
   specifier: string;
-  entrypoint: string;
+  packageName: string;
+  packageRoot: string;
   importedBy: LiteralImport[];
 }
 
 export interface ResolvedTemplateImport {
   cookedQuasis: string[];
   expressionNameHints: string[];
+  packageName: string;
+  packageRoot: string;
   importedBy: TemplateImport[];
 }
 
@@ -44,25 +34,14 @@ export interface SplitterOptions {
   // list of bundle names in priority order
   bundles: BundleConfig;
   analyzers: Map<Analyzer, Package>;
-
-  // map from package name to package root
-  v2Addons: Record<string, string>;
 }
 
 export default class Splitter {
   private lastImports: Import[][] | undefined;
   private lastDeps: Map<string, BundleDependencies> | null = null;
   private packageVersions: Map<string, string> = new Map();
-  private resolver: ReturnType<typeof ResolverFactory['createResolver']>;
 
-  constructor(private options: SplitterOptions) {
-    this.resolver = ResolverFactory.createResolver({
-      // upstream types seem to be broken here
-      fileSystem: (new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000) as unknown) as AbstractInputFileSystem,
-      ...sharedResolverOptions,
-      alias: options.v2Addons,
-    });
-  }
+  constructor(private options: SplitterOptions) {}
 
   async deps(): Promise<Map<string, BundleDependencies>> {
     if (this.importsChanged()) {
@@ -121,22 +100,22 @@ export default class Splitter {
       return;
     }
 
-    let entrypoint = await this.resolveEntrypoint(target.path, imp.package);
     let seenAlready = targets.get(imp.specifier);
     if (seenAlready) {
-      await this.assertSafeVersion(seenAlready.entrypoint, seenAlready.importedBy[0], imp, entrypoint);
+      await this.assertSafeVersion(seenAlready.packageRoot, seenAlready.importedBy[0], imp, target.packageRoot);
       seenAlready.importedBy.push(imp);
     } else {
       targets.set(imp.specifier, {
         specifier: imp.specifier,
-        entrypoint,
+        packageName: target.packageName,
+        packageRoot: target.packageRoot,
         importedBy: [imp],
       });
     }
   }
 
   private async handleTemplateImport(imp: TemplateImport, targets: Map<string, ResolvedTemplateImport>) {
-    let [leadingQuasi, ...rest] = imp.cookedQuasis;
+    let [leadingQuasi] = imp.cookedQuasis;
 
     let target = imp.package.resolve(leadingQuasi, true);
     if (!target) {
@@ -162,51 +141,53 @@ export default class Splitter {
     // expression goes here and we don't care which one".c
     let specifierKey = imp.cookedQuasis.join('${e}');
 
-    let entrypoint = join(target.packagePath.slice(0, -1 * 'package.json'.length), target.local);
     let seenAlready = targets.get(specifierKey);
     if (seenAlready) {
-      await this.assertSafeVersion(seenAlready.cookedQuasis[0], seenAlready.importedBy[0], imp, entrypoint);
+      await this.assertSafeVersion(seenAlready.packageRoot, seenAlready.importedBy[0], imp, target.packageRoot);
       seenAlready.importedBy.push(imp);
     } else {
       targets.set(specifierKey, {
-        cookedQuasis: [entrypoint, ...rest],
+        packageName: target.packageName,
+        packageRoot: target.packageRoot,
+        cookedQuasis: imp.cookedQuasis,
         expressionNameHints: imp.expressionNameHints.map((hint, index) => hint || `arg${index}`),
         importedBy: [imp],
       });
     }
   }
 
-  private async versionOfPackage(entrypoint: string) {
-    if (this.packageVersions.has(entrypoint)) {
-      return this.packageVersions.get(entrypoint);
+  private async versionOfPackage(packageRoot: string) {
+    if (this.packageVersions.has(packageRoot)) {
+      return this.packageVersions.get(packageRoot);
     }
-    let pkgPath = findUpPackagePath(dirname(entrypoint));
-    let version = null;
-    if (pkgPath) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      let pkg = require(pkgPath);
-      version = pkg.version;
-    }
-    this.packageVersions.set(entrypoint, version);
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    let pkg = require(join(packageRoot, 'package.json'));
+    let version = pkg.version;
+    this.packageVersions.set(packageRoot, version);
     return version;
   }
 
-  private async assertSafeVersion(haveEntrypoint: string, prevImport: Import, nextImport: Import, entrypoint: string) {
-    if (haveEntrypoint === entrypoint) {
-      // both import statements are resolving to the exact same entrypoint --
+  private async assertSafeVersion(
+    havePackageRoot: string,
+    prevImport: Import,
+    nextImport: Import,
+    packageRoot: string
+  ) {
+    if (havePackageRoot === packageRoot) {
+      // both import statements are resolving to the exact same package --
       // this is the normal and happy case
       return;
     }
 
     let [haveVersion, nextVersion] = await Promise.all([
-      this.versionOfPackage(haveEntrypoint),
-      this.versionOfPackage(entrypoint),
+      this.versionOfPackage(havePackageRoot),
+      this.versionOfPackage(packageRoot),
     ]);
     if (haveVersion !== nextVersion) {
       throw new Error(
         `${nextImport.package.name} and ${prevImport.package.name} are using different versions of ${
           'specifier' in prevImport ? prevImport.specifier : prevImport.cookedQuasis[0]
-        } (${nextVersion} located at ${entrypoint} vs ${haveVersion} located at ${haveEntrypoint})`
+        } (${nextVersion} located at ${packageRoot} vs ${haveVersion} located at ${havePackageRoot})`
       );
     }
   }
@@ -291,19 +272,6 @@ export default class Splitter {
     debug('bundleForPath("%s")=%s', usage.path, bundleName);
     return bundleName;
   }
-
-  private async resolveEntrypoint(specifier: string, pkg: Package): Promise<string> {
-    return new Promise((resolvePromise, reject) => {
-      // upstream types seem to be out of date here
-      (this.resolver.resolve as any)({}, pkg.root, specifier, {}, (err: Error, path: string) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolvePromise(path);
-        }
-      });
-    }) as Promise<string>;
-  }
 }
 
 class LazyPrintDeps {
@@ -312,7 +280,7 @@ class LazyPrintDeps {
   private describeResolvedImport(imp: ResolvedImport) {
     return {
       specifier: imp.specifier,
-      entrypoint: imp.entrypoint,
+      packageRoot: imp.packageRoot,
       importedBy: imp.importedBy.map(this.describeImport.bind(this)),
     };
   }

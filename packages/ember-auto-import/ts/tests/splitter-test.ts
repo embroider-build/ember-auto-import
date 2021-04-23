@@ -4,7 +4,7 @@ import broccoli, { Builder } from 'broccoli';
 import { UnwatchedDir } from 'broccoli-source';
 import { outputFileSync } from 'fs-extra';
 import { join } from 'path';
-import Package from '../package';
+import Package, { Options } from '../package';
 import Analyzer from '../analyzer';
 import Splitter from '../splitter';
 import BundleConfig from '../bundle-config';
@@ -19,6 +19,7 @@ Qmodule('splitter', function (hooks) {
   let project: Project;
   let pack: Package;
   let splitter: Splitter;
+  let setup: (options?: Options) => void;
 
   hooks.beforeEach(function (this: any) {
     project = new Project('my-app');
@@ -36,15 +37,30 @@ Qmodule('splitter', function (hooks) {
         'index.js': '',
       },
     });
-    project.writeSync();
-    pack = new Package(stubAddonInstance(project.baseDir));
-    let analyzer = new Analyzer(new UnwatchedDir(project.baseDir), pack);
-    splitter = new Splitter({
-      bundles: new BundleConfig('thing' as any),
-      analyzers: new Map([[analyzer, pack]]),
-      v2Addons: {},
+
+    project.addDevDependency('aliasing-example', {
+      files: {
+        'outside.js': `export default function() {}`,
+        dist: {
+          'inside.js': `export default function() {}`,
+          'index.js': `export default function() {}`,
+        },
+      },
     });
-    builder = new broccoli.Builder(analyzer);
+
+    project.writeSync();
+
+    setup = function (options: Options = {}) {
+      pack = new Package(stubAddonInstance(project.baseDir, options));
+      let analyzer = new Analyzer(new UnwatchedDir(project.baseDir), pack);
+      splitter = new Splitter({
+        bundles: new BundleConfig('thing' as any),
+        analyzers: new Map([[analyzer, pack]]),
+      });
+      builder = new broccoli.Builder(analyzer);
+    };
+
+    setup();
   });
 
   hooks.afterEach(function (this: any) {
@@ -54,23 +70,37 @@ Qmodule('splitter', function (hooks) {
     project.dispose();
   });
 
-  let handledImportCallExamples = [
-    ["'alpha'", 'alpha'],
-    ["'@beta/thing'", '@beta/thing'],
-    ['`alpha`', 'alpha'],
-    ['`@beta/thing`', '@beta/thing'],
-    ["'alpha/mod'", 'alpha/mod'],
-    ["'@beta/thing/mod'", '@beta/thing/mod'],
-    ['`alpha/mod`', 'alpha/mod'],
-    ['`@beta/thing/mod`', '@beta/thing/mod'],
-    ['`alpha/${foo}`', ['alpha/', ''], ['foo']],
-    ['`alpha/in${foo}`', ['alpha/in', ''], ['foo']],
-    ['`@beta/thing/${foo}`', ['@beta/thing/', ''], ['foo']],
-    ['`@beta/thing/in${foo}`', ['@beta/thing/in', ''], ['foo']],
-    ['`alpha/${foo}/component`', ['alpha/', '/component'], ['foo']],
-    ['`@beta/thing/${foo}/component`', ['@beta/thing/', '/component'], ['foo']],
-    ['`alpha/${foo}/component/${bar}`', ['alpha/', '/component/', ''], ['foo', 'bar']],
-    ['`@beta/thing/${foo}/component/${bar}`', ['@beta/thing/', '/component/', ''], ['foo', 'bar']],
+  type Example = [
+    string,
+    { specifier: string; packageName: string } | { quasis: string[]; expressions: string[]; packageName: string }
+  ];
+
+  let handledImportCallExamples: Example[] = [
+    ["'alpha'", { specifier: 'alpha', packageName: 'alpha' }],
+    ["'@beta/thing'", { specifier: '@beta/thing', packageName: '@beta/thing' }],
+    ['`alpha`', { specifier: 'alpha', packageName: 'alpha' }],
+    ['`@beta/thing`', { specifier: '@beta/thing', packageName: '@beta/thing' }],
+    ["'alpha/mod'", { specifier: 'alpha/mod', packageName: 'alpha' }],
+    ["'@beta/thing/mod'", { specifier: '@beta/thing/mod', packageName: '@beta/thing' }],
+    ['`alpha/mod`', { specifier: 'alpha/mod', packageName: 'alpha' }],
+    ['`@beta/thing/mod`', { specifier: '@beta/thing/mod', packageName: '@beta/thing' }],
+    ['`alpha/${foo}`', { quasis: ['alpha/', ''], expressions: ['foo'], packageName: 'alpha' }],
+    ['`alpha/in${foo}`', { quasis: ['alpha/in', ''], expressions: ['foo'], packageName: 'alpha' }],
+    ['`@beta/thing/${foo}`', { quasis: ['@beta/thing/', ''], expressions: ['foo'], packageName: '@beta/thing' }],
+    ['`@beta/thing/in${foo}`', { quasis: ['@beta/thing/in', ''], expressions: ['foo'], packageName: '@beta/thing' }],
+    ['`alpha/${foo}/component`', { quasis: ['alpha/', '/component'], expressions: ['foo'], packageName: 'alpha' }],
+    [
+      '`@beta/thing/${foo}/component`',
+      { quasis: ['@beta/thing/', '/component'], expressions: ['foo'], packageName: '@beta/thing' },
+    ],
+    [
+      '`alpha/${foo}/component/${bar}`',
+      { quasis: ['alpha/', '/component/', ''], expressions: ['foo', 'bar'], packageName: 'alpha' },
+    ],
+    [
+      '`@beta/thing/${foo}/component/${bar}`',
+      { quasis: ['@beta/thing/', '/component/', ''], expressions: ['foo', 'bar'], packageName: '@beta/thing' },
+    ],
   ];
 
   for (let example of handledImportCallExamples) {
@@ -80,49 +110,26 @@ Qmodule('splitter', function (hooks) {
       await builder.build();
       let deps = await splitter.deps();
       assert.deepEqual([...deps.keys()], ['app', 'tests']);
-      if (Array.isArray(example[1])) {
-        assert.deepEqual(deps.get('app'), {
-          staticImports: [],
-          staticTemplateImports: [],
-          dynamicImports: [],
-          dynamicTemplateImports: [
-            {
-              cookedQuasis: [join(project.baseDir, 'node_modules', example[1][0]), ...example[1].slice(1)],
-              expressionNameHints: example[2] as string[],
-              importedBy: [
-                {
-                  isDynamic: true,
-                  cookedQuasis: example[1],
-                  expressionNameHints: example[2] as string[],
-                  path: 'sample.js',
-                  package: pack,
-                  treeType: undefined,
-                },
-              ],
-            },
-          ],
-        });
+      assert.deepEqual(deps.get('app')?.staticImports, []);
+      assert.deepEqual(deps.get('app')?.staticTemplateImports, []);
+      if ('quasis' in example[1]) {
+        assert.deepEqual(deps.get('app')?.dynamicImports, []);
+        let dynamicTemplateImports = deps.get('app')?.dynamicTemplateImports;
+        assert.equal(dynamicTemplateImports?.length, 1);
+        assert.deepEqual(dynamicTemplateImports?.[0].cookedQuasis, example[1].quasis);
+        assert.deepEqual(dynamicTemplateImports?.[0].expressionNameHints, example[1].expressions);
+        assert.equal(dynamicTemplateImports?.[0].packageName, example[1].packageName);
+        assert.equal(
+          dynamicTemplateImports?.[0].packageRoot,
+          join(project.baseDir, 'node_modules', example[1].packageName)
+        );
       } else {
-        assert.deepEqual(deps.get('app'), {
-          staticImports: [],
-          staticTemplateImports: [],
-          dynamicTemplateImports: [],
-          dynamicImports: [
-            {
-              specifier: example[1],
-              entrypoint: join(project.baseDir, 'node_modules', example[1], 'index.js'),
-              importedBy: [
-                {
-                  isDynamic: true,
-                  specifier: example[1],
-                  path: 'sample.js',
-                  package: pack,
-                  treeType: undefined,
-                },
-              ],
-            },
-          ],
-        });
+        assert.deepEqual(deps.get('app')?.dynamicTemplateImports, []);
+        let dynamicImports = deps.get('app')?.dynamicImports;
+        assert.equal(dynamicImports?.length, 1);
+        assert.equal(dynamicImports?.[0].specifier, example[1].specifier);
+        assert.equal(dynamicImports?.[0].packageName, example[1].packageName);
+        assert.equal(dynamicImports?.[0].packageRoot, join(project.baseDir, 'node_modules', example[1].packageName));
       }
     });
   }
@@ -137,49 +144,26 @@ Qmodule('splitter', function (hooks) {
       await builder.build();
       let deps = await splitter.deps();
       assert.deepEqual([...deps.keys()], ['app', 'tests']);
-      if (Array.isArray(example[1])) {
-        assert.deepEqual(deps.get('app'), {
-          staticImports: [],
-          dynamicTemplateImports: [],
-          dynamicImports: [],
-          staticTemplateImports: [
-            {
-              cookedQuasis: [join(project.baseDir, 'node_modules', example[1][0]), ...example[1].slice(1)],
-              expressionNameHints: example[2] as string[],
-              importedBy: [
-                {
-                  isDynamic: false,
-                  cookedQuasis: example[1],
-                  expressionNameHints: example[2] as string[],
-                  path: 'sample.js',
-                  package: pack,
-                  treeType: undefined,
-                },
-              ],
-            },
-          ],
-        });
+      assert.deepEqual(deps.get('app')?.dynamicImports, []);
+      assert.deepEqual(deps.get('app')?.dynamicTemplateImports, []);
+      if ('quasis' in example[1]) {
+        assert.deepEqual(deps.get('app')?.staticImports, []);
+        let staticTemplateImports = deps.get('app')?.staticTemplateImports;
+        assert.equal(staticTemplateImports?.length, 1);
+        assert.deepEqual(staticTemplateImports?.[0].cookedQuasis, example[1].quasis);
+        assert.deepEqual(staticTemplateImports?.[0].expressionNameHints, example[1].expressions);
+        assert.equal(staticTemplateImports?.[0].packageName, example[1].packageName);
+        assert.equal(
+          staticTemplateImports?.[0].packageRoot,
+          join(project.baseDir, 'node_modules', example[1].packageName)
+        );
       } else {
-        assert.deepEqual(deps.get('app'), {
-          dynamicImports: [],
-          staticTemplateImports: [],
-          dynamicTemplateImports: [],
-          staticImports: [
-            {
-              specifier: example[1],
-              entrypoint: join(project.baseDir, 'node_modules', example[1], 'index.js'),
-              importedBy: [
-                {
-                  isDynamic: false,
-                  specifier: example[1],
-                  path: 'sample.js',
-                  package: pack,
-                  treeType: undefined,
-                },
-              ],
-            },
-          ],
-        });
+        assert.deepEqual(deps.get('app')?.staticTemplateImports, []);
+        let staticImports = deps.get('app')?.staticImports;
+        assert.equal(staticImports?.length, 1);
+        assert.equal(staticImports?.[0].specifier, example[1].specifier);
+        assert.equal(staticImports?.[0].packageName, example[1].packageName);
+        assert.equal(staticImports?.[0].packageRoot, join(project.baseDir, 'node_modules', example[1].packageName));
       }
     });
   }
@@ -270,9 +254,90 @@ Qmodule('splitter', function (hooks) {
       );
     }
   });
+
+  test('exact alias remaps package name and root', async function (assert) {
+    setup({
+      alias: {
+        'my-aliased-package$': 'aliasing-example/dist/index.js',
+      },
+    });
+
+    let src = `import x from 'my-aliased-package';`;
+    outputFileSync(join(project.baseDir, 'sample.js'), src);
+    await builder.build();
+    let deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.staticImports.map(i => ({
+        packageName: i.packageName,
+        packageRoot: i.packageRoot,
+        specifier: i.specifier,
+      })),
+      [
+        {
+          packageName: 'aliasing-example',
+          packageRoot: join(project.baseDir, 'node_modules', 'aliasing-example'),
+          specifier: 'my-aliased-package',
+        },
+      ]
+    );
+  });
+
+  test('prefix alias remaps package name and root', async function (assert) {
+    setup({
+      alias: {
+        'my-aliased-package': 'aliasing-example/dist',
+      },
+    });
+
+    let src = `import x from 'my-aliased-package/inside';`;
+    outputFileSync(join(project.baseDir, 'sample.js'), src);
+    await builder.build();
+    let deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.staticImports.map(i => ({
+        packageName: i.packageName,
+        packageRoot: i.packageRoot,
+        specifier: i.specifier,
+      })),
+      [
+        {
+          packageName: 'aliasing-example',
+          packageRoot: join(project.baseDir, 'node_modules', 'aliasing-example'),
+          specifier: 'my-aliased-package/inside',
+        },
+      ]
+    );
+  });
+
+  test('aliasing within same package leaves packageRoot and packageName unchanged', async function (assert) {
+    setup({
+      alias: {
+        'aliasing-example': 'aliasing-example/dist',
+      },
+    });
+
+    let src = `import x from 'aliasing-example';`;
+    outputFileSync(join(project.baseDir, 'sample.js'), src);
+    await builder.build();
+    let deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.staticImports.map(i => ({
+        packageName: i.packageName,
+        packageRoot: i.packageRoot,
+        specifier: i.specifier,
+      })),
+      [
+        {
+          packageName: 'aliasing-example',
+          packageRoot: join(project.baseDir, 'node_modules', 'aliasing-example'),
+          specifier: 'aliasing-example',
+        },
+      ]
+    );
+  });
 });
 
-function stubAddonInstance(baseDir: string): AddonInstance {
+function stubAddonInstance(baseDir: string, autoImport: Options): AddonInstance {
   let project: EmberCLIProject = {
     root: baseDir,
     targets: {},
@@ -296,7 +361,9 @@ function stubAddonInstance(baseDir: string): AddonInstance {
   let app: AppInstance = {
     env: 'development',
     project,
-    options: {},
+    options: {
+      autoImport,
+    },
     addonPostprocessTree: {} as any,
   };
   return {

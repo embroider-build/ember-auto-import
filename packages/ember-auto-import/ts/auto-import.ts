@@ -35,7 +35,7 @@ export default class AutoImport implements AutoImportSharedAPI {
   private bundles: BundleConfig;
 
   // maps packageName to packageRoot
-  private v2Addons: Record<string, string> = {};
+  private v2Addons = new Map<string, string>();
 
   static register(addon: AddonInstance) {
     LeaderChooser.for(addon).register(addon, () => new AutoImport(addon));
@@ -74,7 +74,7 @@ export default class AutoImport implements AutoImportSharedAPI {
   }
 
   registerV2Addon(packageName: string, packageRoot: string): void {
-    this.v2Addons[packageName] = packageRoot;
+    this.v2Addons.set(packageName, packageRoot);
   }
 
   private makeBundler(allAppTree: Node): Bundler {
@@ -86,19 +86,13 @@ export default class AutoImport implements AutoImportSharedAPI {
     //
     // Since we handle v2 addons, we need to make sure all v2 addons function as
     // "dependencies" of the app even though they're not really.
-    //
-    // This adjusts our own package resolution rules that assert things about
-    // only auto-importing your dependencies. We *also* need to pass v2Addons to
-    // the Splitter so it knows about them when resolving the exact entrypoint
-    // modules.
-    this.rootPackage.setMagicDeps(this.v2Addons);
+    this.rootPackage.magicDeps = this.v2Addons;
 
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
     let splitter = new Splitter({
       analyzers: this.analyzers,
       bundles: this.bundles,
-      v2Addons: this.v2Addons,
     });
 
     // The Bundler asks the splitter for deps it should include and

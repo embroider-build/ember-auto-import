@@ -3,7 +3,12 @@ import { join, dirname } from 'path';
 import { readFileSync } from 'fs';
 import { Memoize } from 'typescript-memoize';
 import { Configuration } from 'webpack';
-import { AddonInstance, isDeepAddonInstance, Project } from '@embroider/shared-internals';
+import {
+  AddonInstance,
+  isDeepAddonInstance,
+  Project,
+  packageName as getPackageName,
+} from '@embroider/shared-internals';
 import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
 
@@ -33,8 +38,7 @@ interface DepResolution {
   type: 'package';
   path: string;
   packageName: string;
-  packagePath: string;
-  local: string;
+  packageRoot: string;
 }
 
 interface LocalResolution {
@@ -181,16 +185,8 @@ export default class Package {
   // extra dependencies that must be treated as if they were really dependencies
   // of this package. sigh.
   //
-  // deps: maps from packageName to packageRoot
-  setMagicDeps(deps: Record<string, string>) {
-    this.magicDeps = new Map();
-    for (let name of Object.keys(deps)) {
-      this.magicDeps.set(name, join(deps[name], 'package.json'));
-    }
-  }
-
-  // maps from packageName to packageJSONPath
-  private magicDeps: Map<string, string> | undefined;
+  // maps from packageName to packageRoot
+  magicDeps: Map<string, string> | undefined;
 
   private hasDependency(name: string): boolean {
     let { pkg } = this;
@@ -222,8 +218,11 @@ export default class Package {
     return 'dep';
   }
 
-  resolve(importedPath: string): DepResolution | LocalResolution | URLResolution;
-  resolve(importedPath: string, partial: true): DepResolution | LocalResolution | URLResolution | ImpreciseResolution;
+  resolve(importedPath: string): DepResolution | LocalResolution | URLResolution | undefined;
+  resolve(
+    importedPath: string,
+    partial: true
+  ): DepResolution | LocalResolution | URLResolution | ImpreciseResolution | undefined;
   resolve(importedPath: string, partial = false): Resolution | undefined {
     switch (Package.categorize(importedPath, partial)) {
       case 'url':
@@ -243,12 +242,19 @@ export default class Package {
     }
 
     let path = this.aliasFor(importedPath);
-    let [first, ...rest] = path.split('/');
-    let packageName;
-    if (first[0] === '@') {
-      packageName = `${first}/${rest.shift()}`;
-    } else {
-      packageName = first;
+    let packageName = getPackageName(path);
+    if (!packageName) {
+      // this can only happen if the user supplied an alias that points at a
+      // relative or absolute path, rather than a package name. If the
+      // originally authored import was an absolute or relative path, it would
+      // have hit our { type: 'local' } condition before we ran aliasFor.
+      //
+      // At the moment, we don't try to handle this case, but we could in the
+      // future.
+      return {
+        type: 'local',
+        local: path,
+      };
     }
 
     if (this.excludesDependency(packageName)) {
@@ -260,14 +266,24 @@ export default class Package {
       return;
     }
 
-    let packagePath = resolvePackagePath(packageName, this.root) ?? this.magicDeps?.get(packageName);
-    if (packagePath == null) {
+    let packageRoot: string | undefined;
+
+    let packagePath = resolvePackagePath(packageName, this.root);
+    if (packagePath) {
+      packageRoot = dirname(packagePath);
+    }
+
+    if (!packageRoot) {
+      packageRoot = this.magicDeps?.get(packageName);
+    }
+
+    if (packageRoot == null) {
       throw new Error(
         `${this.name} tried to import "${packageName}" but the package was not resolvable from ${this.root}`
       );
     }
 
-    if (isV1EmberAddonDependency(packagePath)) {
+    if (isV1EmberAddonDependency(packageRoot)) {
       // ember addon are not auto imported
       return;
     }
@@ -276,8 +292,7 @@ export default class Package {
       type: 'package',
       path,
       packageName,
-      local: rest.join('/'),
-      packagePath,
+      packageRoot,
     };
   }
 
@@ -303,8 +318,28 @@ export default class Package {
     return this.autoImportOptions && this.autoImportOptions.skipBabel;
   }
 
+  get aliases(): Record<string, string> | undefined {
+    return this.autoImportOptions?.alias;
+  }
+
+  // this follows the same rules as webpack's resolve.alias. It's a prefix
+  // match, unless the configured pattern ends with "$" in which case that means
+  // exact match.
   private aliasFor(name: string): string {
-    return (this.autoImportOptions && this.autoImportOptions.alias && this.autoImportOptions.alias[name]) || name;
+    let alias = this.autoImportOptions?.alias;
+    if (!alias) {
+      return name;
+    }
+
+    let exactMatch = alias[`${name}$`];
+    if (exactMatch) {
+      return exactMatch;
+    }
+    let prefixMatch = Object.keys(alias).find(pattern => name.startsWith(pattern));
+    if (prefixMatch && alias[prefixMatch]) {
+      return alias[prefixMatch] + name.slice(prefixMatch.length);
+    }
+    return name;
   }
 
   get fileExtensions(): string[] {
@@ -428,13 +463,13 @@ export default class Package {
 }
 
 const isAddonCache = new Map<string, boolean>();
-function isV1EmberAddonDependency(pathToPackageJSON: string): boolean {
-  let cached = isAddonCache.get(pathToPackageJSON);
+function isV1EmberAddonDependency(packageRoot: string): boolean {
+  let cached = isAddonCache.get(packageRoot);
   if (cached === undefined) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    let packageJSON = require(pathToPackageJSON);
+    let packageJSON = require(join(packageRoot, 'package.json'));
     let answer = packageJSON.keywords?.includes('ember-addon') && (packageJSON['ember-addon']?.version ?? 1) < 2;
-    isAddonCache.set(pathToPackageJSON, answer);
+    isAddonCache.set(packageRoot, answer);
     return answer;
   } else {
     return cached;
