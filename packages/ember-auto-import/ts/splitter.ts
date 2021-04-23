@@ -21,12 +21,6 @@ export const sharedResolverOptions = {
   mainFields: ['browser', 'module', 'main'],
 };
 
-const resolver = ResolverFactory.createResolver({
-  // upstream types seem to be broken here
-  fileSystem: (new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000) as unknown) as AbstractInputFileSystem,
-  ...sharedResolverOptions,
-});
-
 export interface ResolvedImport {
   specifier: string;
   entrypoint: string;
@@ -50,14 +44,25 @@ export interface SplitterOptions {
   // list of bundle names in priority order
   bundles: BundleConfig;
   analyzers: Map<Analyzer, Package>;
+
+  // map from package name to package root
+  v2Addons: Record<string, string>;
 }
 
 export default class Splitter {
   private lastImports: Import[][] | undefined;
   private lastDeps: Map<string, BundleDependencies> | null = null;
   private packageVersions: Map<string, string> = new Map();
+  private resolver: ReturnType<typeof ResolverFactory['createResolver']>;
 
-  constructor(private options: SplitterOptions) {}
+  constructor(private options: SplitterOptions) {
+    this.resolver = ResolverFactory.createResolver({
+      // upstream types seem to be broken here
+      fileSystem: (new CachedInputFileSystem(new NodeJsInputFileSystem(), 4000) as unknown) as AbstractInputFileSystem,
+      ...sharedResolverOptions,
+      alias: options.v2Addons,
+    });
+  }
 
   async deps(): Promise<Map<string, BundleDependencies>> {
     if (this.importsChanged()) {
@@ -116,7 +121,7 @@ export default class Splitter {
       return;
     }
 
-    let entrypoint = await resolveEntrypoint(target.path, imp.package);
+    let entrypoint = await this.resolveEntrypoint(target.path, imp.package);
     let seenAlready = targets.get(imp.specifier);
     if (seenAlready) {
       await this.assertSafeVersion(seenAlready.entrypoint, seenAlready.importedBy[0], imp, entrypoint);
@@ -286,19 +291,19 @@ export default class Splitter {
     debug('bundleForPath("%s")=%s', usage.path, bundleName);
     return bundleName;
   }
-}
 
-async function resolveEntrypoint(specifier: string, pkg: Package): Promise<string> {
-  return new Promise((resolvePromise, reject) => {
-    // upstream types seem to be out of date here
-    (resolver.resolve as any)({}, pkg.root, specifier, {}, (err: Error, path: string) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolvePromise(path);
-      }
-    });
-  }) as Promise<string>;
+  private async resolveEntrypoint(specifier: string, pkg: Package): Promise<string> {
+    return new Promise((resolvePromise, reject) => {
+      // upstream types seem to be out of date here
+      (this.resolver.resolve as any)({}, pkg.root, specifier, {}, (err: Error, path: string) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolvePromise(path);
+        }
+      });
+    }) as Promise<string>;
+  }
 }
 
 class LazyPrintDeps {

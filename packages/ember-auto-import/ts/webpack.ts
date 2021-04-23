@@ -231,7 +231,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   @Memoize()
   private get externalsHandler(): Configuration['externals'] {
-    let packageCache = new PackageCache();
+    let packageCache = PackageCache.shared('ember-auto-import');
     return function (params, callback) {
       let { context, request } = params;
       if (!context || !request) {

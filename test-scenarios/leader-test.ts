@@ -77,8 +77,38 @@ Scenarios.fromProject(baseApp)
   });
 
 Scenarios.fromProject(baseApp)
-  .map('leader-failure', project => {
+  .map('leader-too-old', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname, resolveName: 'leader-v2' });
+    let a = baseAddon();
+    a.name = 'problematic-addon';
+    a.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.addDependency(a);
+    let b = baseAddon();
+    b.name = 'other-problematic-addon';
+    b.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.addDependency(b);
+  })
+  .forEachScenario(scenario => {
+    Qmodule(scenario.name, function (hooks) {
+      let app: PreparedApp;
+      hooks.before(async () => {
+        app = await scenario.prepare();
+      });
+      test('ensure error', async function (assert) {
+        let result = await app.execute('npm run build');
+        assert.notEqual(result.exitCode, 0, result.output);
+        assert.ok(
+          /To use these addons, your app needs ember-auto-import >= 2: other-problematic-addon, problematic-addon/.test(
+            result.stderr
+          ),
+          result.stderr
+        );
+      });
+    });
+  });
+
+Scenarios.fromProject(baseApp)
+  .map('leader-missing', project => {
     let a = baseAddon();
     a.name = 'problematic-addon';
     a.linkDependency('ember-auto-import', { baseDir: __dirname });

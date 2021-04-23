@@ -42,6 +42,7 @@ Qmodule('splitter', function (hooks) {
     splitter = new Splitter({
       bundles: new BundleConfig('thing' as any),
       analyzers: new Map([[analyzer, pack]]),
+      v2Addons: {},
     });
     builder = new broccoli.Builder(analyzer);
   });

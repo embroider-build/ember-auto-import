@@ -68,7 +68,7 @@ function buildV2Addon() {
   });
 
   addon.addDependency(buildInnerV1Addon());
-  addon.addDependency(buildInnerV2Addon());
+  addon.addDependency(buildInnerV2Addon('inner-v2-addon'));
 
   addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
   addon.pkg['ember-addon'] = {
@@ -97,8 +97,33 @@ function buildInnerV1Addon() {
   return addon;
 }
 
-function buildInnerV2Addon() {
-  let addon = new Project('inner-v2-addon', {
+function buildIntermediateV1Addon() {
+  let addon = Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), { linkDeps: true });
+  addon.name = 'intermediate-v1-addon';
+  merge(addon.files, {
+    app: {
+      'from-intermediate-v1-addon.js': `
+        import { innerV2Addon } from 'second-v2-addon';
+        export default function() {
+          return 'intermediate-v1-addon-appTree-' + innerV2Addon();
+        }
+      `,
+    },
+    addon: {
+      'index.js': `
+        import { innerV2Addon } from 'second-v2-addon';
+        export default function() {
+          return 'intermediate-v1-addon-addonTree-' + innerV2Addon();
+        }
+      `,
+    },
+  });
+  addon.addDependency(buildInnerV2Addon('second-v2-addon'));
+  return addon;
+}
+
+function buildInnerV2Addon(name: string) {
+  let addon = new Project(name, {
     files: {
       'addon-main.js': `
         const { addonV1Shim } = require('@embroider/addon-shim');
@@ -106,7 +131,7 @@ function buildInnerV2Addon() {
       `,
       'index.js': `
         export function innerV2Addon() {
-          return 'inner-v2-addon-worked';
+          return '${name}-worked';
         }
       `,
     },
@@ -123,6 +148,7 @@ function buildInnerV2Addon() {
 
 let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
   project.addDevDependency(buildV2Addon());
+  project.addDevDependency(buildIntermediateV1Addon());
 
   merge(project.files, {
     app: {
@@ -188,6 +214,7 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
             import { module, test } from 'qunit';
             import { useHelloUtil, usePlainDep, useInnerV1Addon, useInnerV2Addon } from '@ef4/app-template/lib/exercise';
             import { helloTestSupport } from 'my-v2-addon/test-support';
+
             module('Unit | import from v2-addon', function () {
               test('can import from v2 addon top-level export', function (assert) {
                 assert.equal(useHelloUtil(), 'hello-util-worked');
@@ -212,6 +239,19 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
               });
               test('tests can import directly from another exported module', function (assert) {
                 assert.equal(helloTestSupport(), 'hello-test-support-worked');
+              });
+            });
+          `,
+        'intermediate-addon-test.js': `
+            import intermediateV1AppTree from '@ef4/app-template/from-intermediate-v1-addon';
+            import intermediateV1AddonTree from 'intermediate-v1-addon';
+            import { module, test } from 'qunit';
+            module('Unit | v2-addon from intermediate v1 addon', function () {
+              test('the app tree in a v1 addon can access a v2 addon', function(assert) {
+                assert.equal(intermediateV1AppTree(), 'intermediate-v1-addon-appTree-second-v2-addon-worked');
+              });
+              test('the addon tree in a v1 addon can access a v2 addon', function(assert) {
+                assert.equal(intermediateV1AddonTree(), 'intermediate-v1-addon-addonTree-second-v2-addon-worked');
               });
             });
           `,

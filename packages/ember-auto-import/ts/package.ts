@@ -178,21 +178,33 @@ export default class Package {
     return `${this.name}/${this.isAddon ? 'addon' : 'app'}`;
   }
 
+  // extra dependencies that must be treated as if they were really dependencies
+  // of this package. sigh.
+  //
+  // deps: maps from packageName to packageRoot
+  setMagicDeps(deps: Record<string, string>) {
+    this.magicDeps = new Map();
+    for (let name of Object.keys(deps)) {
+      this.magicDeps.set(name, join(deps[name], 'package.json'));
+    }
+  }
+
+  // maps from packageName to packageJSONPath
+  private magicDeps: Map<string, string> | undefined;
+
   private hasDependency(name: string): boolean {
-    let pkg = this.pkg;
-    return (
-      (pkg.dependencies && Boolean(pkg.dependencies[name])) ||
-      (pkg.devDependencies && Boolean(pkg.devDependencies[name])) ||
-      (pkg.peerDependencies && Boolean(pkg.peerDependencies[name]))
+    let { pkg } = this;
+    return Boolean(
+      pkg.dependencies?.[name] ||
+        pkg.devDependencies?.[name] ||
+        pkg.peerDependencies?.[name] ||
+        this.magicDeps?.get(name)
     );
   }
 
   private hasNonDevDependency(name: string): boolean {
     let pkg = this.pkg;
-    return (
-      (pkg.dependencies && Boolean(pkg.dependencies[name])) ||
-      (pkg.peerDependencies && Boolean(pkg.peerDependencies[name]))
-    );
+    return Boolean(pkg.dependencies?.[name] || pkg.peerDependencies?.[name] || this.magicDeps?.has(name));
   }
 
   static categorize(importedPath: string, partial = false) {
@@ -248,8 +260,8 @@ export default class Package {
       return;
     }
 
-    let packagePath = resolvePackagePath(packageName, this.root);
-    if (packagePath === null) {
+    let packagePath = resolvePackagePath(packageName, this.root) ?? this.magicDeps?.get(packageName);
+    if (packagePath == null) {
       throw new Error(
         `${this.name} tried to import "${packageName}" but the package was not resolvable from ${this.root}`
       );

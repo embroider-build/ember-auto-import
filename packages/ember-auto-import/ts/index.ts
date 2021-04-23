@@ -43,6 +43,11 @@ module.exports = {
     }
   },
 
+  // this exists to be called by @embroider/addon-shim
+  registerV2Addon(packageName: string, packageRoot: string) {
+    AutoImport.lookup(this).registerV2Addon(packageName, packageRoot);
+  },
+
   // this only runs on top-level addons, so we don't need our own
   // !isDeepAddonInstance check here.
   postprocessTree(which: string, tree: Node): Node {

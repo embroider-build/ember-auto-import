@@ -24,6 +24,7 @@ export interface AutoImportSharedAPI {
   analyze(tree: Node, addon: AddonInstance, treeType?: TreeType): Node;
   included(addonInstance: AddonInstance): void;
   addTo(tree: Node): Node;
+  registerV2Addon(packageName: string, packageRoot: string): void;
 }
 
 export default class AutoImport implements AutoImportSharedAPI {
@@ -32,6 +33,9 @@ export default class AutoImport implements AutoImportSharedAPI {
   private consoleWrite: (msg: string) => void;
   private analyzers: Map<Analyzer, Package> = new Map();
   private bundles: BundleConfig;
+
+  // maps packageName to packageRoot
+  private v2Addons: Record<string, string> = {};
 
   static register(addon: AddonInstance) {
     LeaderChooser.for(addon).register(addon, () => new AutoImport(addon));
@@ -69,12 +73,32 @@ export default class AutoImport implements AutoImportSharedAPI {
     return analyzer;
   }
 
+  registerV2Addon(packageName: string, packageRoot: string): void {
+    this.v2Addons[packageName] = packageRoot;
+  }
+
   private makeBundler(allAppTree: Node): Bundler {
+    // this is a concession to compatibility with ember-cli's treeForApp
+    // merging. Addons are allowed to inject modules into the app, and it's
+    // extremely common that those modules want to import from the addons
+    // themselves, even though this jumps arbitrarily many levels in the
+    // dependency graph.
+    //
+    // Since we handle v2 addons, we need to make sure all v2 addons function as
+    // "dependencies" of the app even though they're not really.
+    //
+    // This adjusts our own package resolution rules that assert things about
+    // only auto-importing your dependencies. We *also* need to pass v2Addons to
+    // the Splitter so it knows about them when resolving the exact entrypoint
+    // modules.
+    this.rootPackage.setMagicDeps(this.v2Addons);
+
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
     let splitter = new Splitter({
       analyzers: this.analyzers,
       bundles: this.bundles,
+      v2Addons: this.v2Addons,
     });
 
     // The Bundler asks the splitter for deps it should include and
