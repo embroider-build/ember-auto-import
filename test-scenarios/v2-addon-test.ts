@@ -111,14 +111,51 @@ function buildIntermediateV1Addon() {
     },
     addon: {
       'index.js': `
-        import { innerV2Addon } from 'second-v2-addon';
+        import { innerV2Addon } from 'third-v2-addon';
+        import { secondary } from 'third-v2-addon/secondary';
         export default function() {
-          return 'intermediate-v1-addon-addonTree-' + innerV2Addon();
+          return 'intermediate-v1-addon-addonTree-' + innerV2Addon() + '-' + secondary();
         }
       `,
     },
   });
   addon.addDependency(buildInnerV2Addon('second-v2-addon'));
+  addon.addDependency(buildV2AddonWithExports('third-v2-addon'));
+  return addon;
+}
+
+function buildV2AddonWithExports(name: string) {
+  let addon = new Project(name, {
+    files: {
+      'addon-main.js': `
+        const { addonV1Shim } = require('@embroider/addon-shim');
+        module.exports = addonV1Shim(__dirname);
+      `,
+      special: {
+        'index.js': `
+          export function innerV2Addon() {
+            return '${name}-worked';
+          }
+        `,
+        'secondary.js': `
+          export function secondary() {
+            return '${name}-secondary-worked';
+          }
+        `,
+      },
+    },
+  });
+  addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  addon.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.js',
+  };
+  addon.pkg.exports = {
+    '.': './special/index.js',
+    './*': './special/*.js',
+  };
   return addon;
 }
 
@@ -149,16 +186,19 @@ function buildInnerV2Addon(name: string) {
 let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
   project.addDevDependency(buildV2Addon());
   project.addDevDependency(buildIntermediateV1Addon());
+  project.addDevDependency(buildV2AddonWithExports('fourth-v2-addon'));
 
   merge(project.files, {
     app: {
       lib: {
         'exercise.js': `
             import { helloUtil, usePlainDep, useInnerV1Addon, useInnerV2Addon } from 'my-v2-addon';
+            import { innerV2Addon as fourthMain } from 'fourth-v2-addon';
+            import { secondary as fourthSecondary } from 'fourth-v2-addon/secondary';
             export function useHelloUtil() {
               return helloUtil();
             }
-            export { usePlainDep, useInnerV1Addon, useInnerV2Addon };
+            export { usePlainDep, useInnerV1Addon, useInnerV2Addon, fourthMain, fourthSecondary };
           `,
       },
       helpers: {
@@ -212,7 +252,14 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
       unit: {
         'inner-module-test.js': `
             import { module, test } from 'qunit';
-            import { useHelloUtil, usePlainDep, useInnerV1Addon, useInnerV2Addon } from '@ef4/app-template/lib/exercise';
+            import {
+              useHelloUtil,
+              usePlainDep,
+              useInnerV1Addon,
+              useInnerV2Addon,
+              fourthMain,
+              fourthSecondary
+            } from '@ef4/app-template/lib/exercise';
             import { helloTestSupport } from 'my-v2-addon/test-support';
 
             module('Unit | import from v2-addon', function () {
@@ -240,6 +287,12 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
               test('tests can import directly from another exported module', function (assert) {
                 assert.equal(helloTestSupport(), 'hello-test-support-worked');
               });
+              test('app can import main entrypoint from a v2 addon with customized exports', function (assert) {
+                assert.equal(fourthMain(), 'fourth-v2-addon-worked');
+              });
+              test('app can import secondary entrypoint from a v2 addon with customized exports', function (assert) {
+                assert.equal(fourthSecondary(), 'fourth-v2-addon-secondary-worked');
+              });
             });
           `,
         'intermediate-addon-test.js': `
@@ -251,7 +304,7 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
                 assert.equal(intermediateV1AppTree(), 'intermediate-v1-addon-appTree-second-v2-addon-worked');
               });
               test('the addon tree in a v1 addon can access a v2 addon', function(assert) {
-                assert.equal(intermediateV1AddonTree(), 'intermediate-v1-addon-addonTree-second-v2-addon-worked');
+                assert.equal(intermediateV1AddonTree(), 'intermediate-v1-addon-addonTree-third-v2-addon-worked-third-v2-addon-secondary-worked');
               });
             });
           `,
