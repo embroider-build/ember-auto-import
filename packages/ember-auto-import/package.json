@@ -53,6 +53,7 @@
     "lodash": "^4.17.19",
     "mkdirp": "^0.5.1",
     "parse5": "^6.0.1",
+    "resolve": "^1.20.0",
     "resolve-package-path": "^3.1.0",
     "rimraf": "^2.6.2",
     "semver": "^7.3.4",
