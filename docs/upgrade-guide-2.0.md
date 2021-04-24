@@ -7,6 +7,7 @@
 - apps that were adding css handling (like `css-loader`, `style-loader`, and `MiniCSSExtraPlugin`) to the webpack config must remove those, because they're now included by default for compatibility with the embroider v2 package spec.
 - apps should confirm that their deployment strategy includes all files produced under `dist` (not just the traditional expected ones like `dist/assets/your-app.js` and `dist/assets/vendor.js`)
 - addons that upgrade to ember-auto-import >= 2 will only work in apps that have ember-auto-import >= 2, so they should do their own semver major releases when they upgrade
+- our `alias` option has changed slightly to align better with how it works in webpack
 
 # Details
 
@@ -52,6 +53,10 @@ When used by an addon, ember-auto-import 2.0 will assert that the top-level app 
 There are too many top-level concerns governed by auto-import to continue to sneak it in via addons, without giving the app any control over the version range. Also, ember-auto-import is effectively a polyfill for Embroider, which will become the default for new apps in ember-cli 3.27. So apps should be moving toward working with ember-auto-import if they haven't already.
 
 We will still perform leader election, but only copies that are semver-compatible with the app will be eligible to lead. This allows addons to rely on new features in minor releases of ember-auto-import.
+
+## Alias Option
+
+In ember-auto-import 1.0, `autoImport.alias` only applied to exact matches. In 2.0, it is a prefix match by default, and you can make it an exact match using a trailing `$`. We follow the same meaning as https://webpack.js.org/configuration/resolve/#resolvealias.
 
 ## Clarifying our Semver Contract for Addons
 
