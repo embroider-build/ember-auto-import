@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.11.3
+
+- NO-OP: I accidentally published 2.0.0-alpha.0 to NPM under the `latest` tag. This is a re-published of 1.11.2 to supplant that as latest.
+
 ### 1.11.2
 
 - BUGFIX: the new prefix matching implementation of `alias` turned out to be a breaking change, so we're rolling it back in order to make it opt-in.
