@@ -2,7 +2,7 @@ import AutoImport from './auto-import';
 import { Node } from 'broccoli-node-api';
 // @ts-ignore
 import pkg from '../package';
-import { isDeepAddonInstance } from './ember-cli-models';
+import { isDeepAddonInstance } from '@embroider/shared-internals';
 
 module.exports = {
   name: pkg.name,
@@ -41,6 +41,11 @@ module.exports = {
     if (!isDeepAddonInstance(this)) {
       AutoImport.lookup(this).included(this);
     }
+  },
+
+  // this exists to be called by @embroider/addon-shim
+  registerV2Addon(packageName: string, packageRoot: string) {
+    AutoImport.lookup(this).registerV2Addon(packageName, packageRoot);
   },
 
   // this only runs on top-level addons, so we don't need our own

@@ -4,13 +4,16 @@ import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
-import { BundleDependencies, ResolvedImport, ResolvedTemplateImport, sharedResolverOptions } from './splitter';
+import { BundleDependencies, ResolvedTemplateImport } from './splitter';
 import { BuildResult, Bundler, BundlerOptions } from './bundler';
 import { InputNode } from 'broccoli-node-api';
 import Plugin from 'broccoli-plugin';
-import { babelFilter } from '@embroider/shared-internals';
+import { babelFilter, packageName } from '@embroider/shared-internals';
 import { Options } from './package';
+import { PackageCache } from '@embroider/shared-internals';
+import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
+import { ensureSymlinkSync } from 'fs-extra';
 
 const debug = makeDebug('ember-auto-import:webpack');
 
@@ -53,10 +56,10 @@ module.exports = (function(){
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
   {{#each staticImports as |module|}}
-    d('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.entrypoint}}'); });
+    d('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.specifier}}'); });
   {{/each}}
   {{#each dynamicImports as |module|}}
-    d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.entrypoint}}'); });
+    d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.specifier}}'); });
   {{/each}}
   {{#each staticTemplateImports as |module|}}
     d('_eai_sync_{{js-string-escape module.key}}', [], function() {
@@ -74,8 +77,8 @@ module.exports = (function(){
   {{/each}}
 })();
 `) as (args: {
-  staticImports: ResolvedImport[];
-  dynamicImports: ResolvedImport[];
+  staticImports: { specifier: string }[];
+  dynamicImports: { specifier: string }[];
   staticTemplateImports: { key: string; args: string; template: string }[];
   dynamicTemplateImports: { key: string; args: string; template: string }[];
   publicAssetURL: string | undefined;
@@ -166,16 +169,27 @@ export default class WebpackBundler extends Plugin implements Bundler {
           // not overriding the default loader resolution rules in case the app also
           // wants to control those.
           'babel-loader-8': require.resolve('babel-loader'),
+          'eai-style-loader': require.resolve('style-loader'),
+          'eai-css-loader': require.resolve('css-loader'),
         },
       },
       resolve: {
-        ...sharedResolverOptions,
+        extensions: ['.js', '.ts', '.json'],
+        mainFields: ['browser', 'module', 'main'],
+        alias: Object.assign({}, ...[...this.opts.packages].map(pkg => pkg.aliases).filter(Boolean)),
       },
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.js'),
-        rules: [this.babelRule(stagingDir)],
+        rules: [
+          this.babelRule(stagingDir),
+          {
+            test: /\.css$/i,
+            use: ['eai-style-loader', 'eai-css-loader'],
+          },
+        ],
       },
       node: false,
+      externals: this.externalsHandler,
     };
 
     mergeConfig(config, ...[...this.opts.packages].map(pkg => pkg.webpackConfig));
@@ -213,29 +227,53 @@ export default class WebpackBundler extends Plugin implements Bundler {
       },
       use: {
         loader: 'babel-loader-8',
-        options: {
-          // do not use the host project's own `babel.config.js` file
-          configFile: false,
-          babelrc: false,
-
-          // leaving this unset can generate an unhelpful warning from babel on
-          // large files like 'Note: The code generator has deoptimised the
-          // styling of... as it exceeds the max of 500KB."
-          generatorOpts: {
-            compact: true,
-          },
-
-          presets: [
-            [
-              require.resolve('@babel/preset-env'),
-              {
-                modules: false,
-                targets: this.opts.targets,
-              },
-            ],
-          ],
-        },
+        options: this.opts.babelConfig,
       },
+    };
+  }
+
+  @Memoize()
+  private get externalsHandler(): Configuration['externals'] {
+    let packageCache = PackageCache.shared('ember-auto-import');
+    return function (params, callback) {
+      let { context, request } = params;
+      if (!context || !request) {
+        return callback();
+      }
+
+      if (request.startsWith('!')) {
+        return callback();
+      }
+      let name = packageName(request);
+      if (!name) {
+        // we're only interested in handling inter-package resolutions
+        return callback();
+      }
+      let pkg = packageCache.ownerOfFile(context);
+      if (!pkg?.isV2Addon()) {
+        // we're only interested in imports that appear inside v2 addons
+        return callback();
+      }
+
+      try {
+        let found = packageCache.resolve(name, pkg);
+        if (!found.isEmberPackage() || found.isV2Addon()) {
+          // if we're importing a non-ember package or a v2 addon, we don't
+          // externalize. Those are all "normal" looking packages that should be
+          // resolvable statically.
+          return callback();
+        } else {
+          // the package exists but it is a v1 ember addon, so it's not
+          // resolvable at build time, so we externalize it.
+          return callback(undefined, 'commonjs ' + request);
+        }
+      } catch (err) {
+        if (err.code !== 'MODULE_NOT_FOUND') {
+          throw err;
+        }
+        // real package doesn't exist, so externalize it
+        return callback(undefined, 'commonjs ' + request);
+      }
     };
   }
 
@@ -246,6 +284,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       this.writeEntryFile(bundle, deps);
     }
     this.writeLoaderFile();
+    this.linkDeps(bundleDeps);
     let stats = await this.runWebpack();
     this.lastBuildResult = this.summarizeStats(stats);
   }
@@ -316,6 +355,27 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   private writeLoaderFile() {
     writeFileSync(join(this.stagingDir, `l.js`), loader);
+  }
+
+  private linkDeps(bundleDeps: Map<string, BundleDependencies>) {
+    for (let deps of bundleDeps.values()) {
+      for (let resolved of deps.staticImports) {
+        this.ensureLinked(resolved);
+      }
+      for (let resolved of deps.dynamicImports) {
+        this.ensureLinked(resolved);
+      }
+      for (let resolved of deps.staticTemplateImports) {
+        this.ensureLinked(resolved);
+      }
+      for (let resolved of deps.dynamicTemplateImports) {
+        this.ensureLinked(resolved);
+      }
+    }
+  }
+
+  private ensureLinked({ packageName, packageRoot }: { packageName: string; packageRoot: string }): void {
+    ensureSymlinkSync(packageRoot, join(this.stagingDir, 'node_modules', packageName), 'dir');
   }
 
   private async runWebpack(): Promise<Required<webpack.Stats>> {

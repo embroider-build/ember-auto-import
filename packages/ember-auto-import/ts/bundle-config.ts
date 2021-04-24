@@ -4,7 +4,7 @@
 */
 
 import { dirname } from 'path';
-import { AppInstance } from './ember-cli-models';
+import { AppInstance } from '@embroider/shared-internals';
 const testsPattern = new RegExp(`^(@[^/]+)?/?[^/]+/(tests|test-support)/`);
 
 import type { TreeType } from './analyzer';

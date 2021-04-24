@@ -7,7 +7,7 @@ import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
 import { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
-import { AddonInstance, AppInstance, findTopmostAddon, ShallowAddonInstance } from './ember-cli-models';
+import { AddonInstance, AppInstance, findTopmostAddon, ShallowAddonInstance } from '@embroider/shared-internals';
 import WebpackBundler from './webpack';
 import { Memoize } from 'typescript-memoize';
 import { WatchedDir } from 'broccoli-source';
@@ -24,6 +24,7 @@ export interface AutoImportSharedAPI {
   analyze(tree: Node, addon: AddonInstance, treeType?: TreeType): Node;
   included(addonInstance: AddonInstance): void;
   addTo(tree: Node): Node;
+  registerV2Addon(packageName: string, packageRoot: string): void;
 }
 
 export default class AutoImport implements AutoImportSharedAPI {
@@ -32,7 +33,9 @@ export default class AutoImport implements AutoImportSharedAPI {
   private consoleWrite: (msg: string) => void;
   private analyzers: Map<Analyzer, Package> = new Map();
   private bundles: BundleConfig;
-  private targets: unknown;
+
+  // maps packageName to packageRoot
+  private v2Addons = new Map<string, string>();
 
   static register(addon: AddonInstance) {
     LeaderChooser.for(addon).register(addon, () => new AutoImport(addon));
@@ -47,7 +50,6 @@ export default class AutoImport implements AutoImportSharedAPI {
     this.packages.add(Package.lookupParentOf(topmostAddon));
     let host = topmostAddon.app;
     this.env = host.env;
-    this.targets = host.project.targets;
     this.bundles = new BundleConfig(host);
     if (!this.env) {
       throw new Error('Bug in ember-auto-import: did not discover environment');
@@ -71,7 +73,21 @@ export default class AutoImport implements AutoImportSharedAPI {
     return analyzer;
   }
 
+  registerV2Addon(packageName: string, packageRoot: string): void {
+    this.v2Addons.set(packageName, packageRoot);
+  }
+
   private makeBundler(allAppTree: Node): Bundler {
+    // this is a concession to compatibility with ember-cli's treeForApp
+    // merging. Addons are allowed to inject modules into the app, and it's
+    // extremely common that those modules want to import from the addons
+    // themselves, even though this jumps arbitrarily many levels in the
+    // dependency graph.
+    //
+    // Since we handle v2 addons, we need to make sure all v2 addons function as
+    // "dependencies" of the app even though they're not really.
+    this.rootPackage.magicDeps = this.v2Addons;
+
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
     let splitter = new Splitter({
@@ -87,7 +103,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       packages: this.packages,
       consoleWrite: this.consoleWrite,
       bundles: this.bundles,
-      targets: this.targets,
+      babelConfig: this.rootPackage.cleanBabelConfig(),
       publicAssetURL: this.publicAssetURL,
     });
   }

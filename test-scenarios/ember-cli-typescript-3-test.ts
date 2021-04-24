@@ -5,6 +5,7 @@ import QUnit from 'qunit';
 const { module: Qmodule, test } = QUnit;
 
 appScenarios
+  .skip('lts')
   .map('ember-cli-typescript-3', project => {
     let aDependency = new Project({
       files: {
