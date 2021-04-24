@@ -29,6 +29,7 @@ appScenarios
     });
     project.addDevDependency(aModuleDependency);
     project.linkDevDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
 
     merge(project.files, {
       'ember-cli-build.js': EMBER_CLI_BUILD_JS,

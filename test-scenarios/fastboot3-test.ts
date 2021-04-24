@@ -91,6 +91,7 @@ function upgradeFastbootFormat() {
 Scenarios.fromProject(baseApp)
   .map('fastboot3', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
     project.linkDependency('ember-cli-fastboot', { baseDir: __dirname, resolveName: 'ember-cli-fastboot3' });
     project.addDevDependency(upgradeFastbootFormat());
 

@@ -8,6 +8,7 @@ const { module: Qmodule, test } = QUnit;
 function makeAddon() {
   let addon = Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), { linkDeps: true });
   addon.linkDependency('ember-auto-import', { baseDir: __dirname });
+
   addon.pkg.name = 'sample-addon';
   merge(addon.files, {
     app: {
@@ -110,6 +111,7 @@ appScenarios
 
     // top-level auto-import is mandatory
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
 
     merge(project.files, {
       app: {

@@ -8,6 +8,8 @@ const { module: Qmodule, test } = QUnit;
 appScenarios
   .map('conflict', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
+
     project.addDependency('inner-lib', '1.2.3');
     merge(project.files, {
       app: {

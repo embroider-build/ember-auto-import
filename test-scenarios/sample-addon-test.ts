@@ -210,6 +210,7 @@ addonScenarios
 
     project.linkDevDependency('moment', { baseDir: __dirname });
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
     project.linkDependency('lodash-es', { baseDir: __dirname });
   })
   .forEachScenario(scenario => {

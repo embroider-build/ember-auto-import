@@ -7,6 +7,7 @@ const { module: Qmodule, test } = QUnit;
 appScenarios
   .map('es-latest', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
     merge(project.files, {
       app: {
         controllers: {

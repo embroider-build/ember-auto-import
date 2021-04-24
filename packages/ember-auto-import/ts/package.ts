@@ -2,7 +2,7 @@ import resolvePackagePath from 'resolve-package-path';
 import { join, dirname } from 'path';
 import { readFileSync } from 'fs';
 import { Memoize } from 'typescript-memoize';
-import { Configuration } from 'webpack';
+import type { Configuration } from 'webpack';
 import {
   AddonInstance,
   isDeepAddonInstance,

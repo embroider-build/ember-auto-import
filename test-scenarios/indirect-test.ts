@@ -101,6 +101,7 @@ appScenarios
 
     // top-level auto-import is mandatory
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
 
     merge(project.files, {
       app: {

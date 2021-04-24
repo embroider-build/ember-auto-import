@@ -7,6 +7,8 @@ const { module: Qmodule, test } = QUnit;
 Scenarios.fromProject(baseApp)
   .map('leader-success', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
+
     project.addDependency('images', {
       files: {
         'thing.png': 'fake image here',
@@ -79,6 +81,7 @@ Scenarios.fromProject(baseApp)
 Scenarios.fromProject(baseApp)
   .map('leader-too-old', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname, resolveName: 'leader-v2' });
+
     let a = baseAddon();
     a.name = 'problematic-addon';
     a.linkDependency('ember-auto-import', { baseDir: __dirname });

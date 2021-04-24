@@ -7,6 +7,7 @@ const { module: Qmodule, test } = QUnit;
 appScenarios
   .map('common-chunk', project => {
     project.linkDevDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
 
     project.addDevDependency('some-lib', {
       files: {
