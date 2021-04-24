@@ -1,6 +1,6 @@
 import merge from 'lodash/merge';
-import { appScenarios } from './scenarios';
-import { PreparedApp, Project } from 'scenario-tester';
+import { appScenarios, baseApp } from './scenarios';
+import { PreparedApp, Project, Scenarios } from 'scenario-tester';
 import { setupFastboot } from './fastboot-helper';
 import { dirname } from 'path';
 import QUnit from 'qunit';
@@ -121,6 +121,8 @@ function buildIntermediateV1Addon() {
   });
   addon.addDependency(buildInnerV2Addon('second-v2-addon'));
   addon.addDependency(buildV2AddonWithExports('third-v2-addon'));
+  addon.linkDependency('ember-auto-import', { baseDir: __dirname });
+
   return addon;
 }
 
@@ -369,6 +371,31 @@ scenarios
           document.querySelector('[data-test="my-v2-addon/test-support"]').textContent.trim(),
           'false',
           'expected test-support not to be present'
+        );
+      });
+    });
+  });
+
+Scenarios.fromProject(baseApp)
+  .map('shim-requires-auto-import', project => {
+    let v1Addon = Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), { linkDeps: true });
+    v1Addon.name = 'my-v1-addon';
+    v1Addon.addDependency(buildV2AddonWithExports('my-v2-addon'));
+    project.addDependency(v1Addon);
+    project.linkDevDependency('ember-auto-import', { baseDir: __dirname });
+  })
+  .forEachScenario(scenario => {
+    Qmodule(scenario.name, function (hooks) {
+      let app: PreparedApp;
+      hooks.before(async () => {
+        app = await scenario.prepare();
+      });
+      test('ensure error', async function (assert) {
+        let result = await app.execute('npm run build');
+        assert.notEqual(result.exitCode, 0, result.output);
+        assert.ok(
+          /my-v1-addon needs to depend on ember-auto-import in order to use my-v2-addon/.test(result.stderr),
+          result.stderr
         );
       });
     });

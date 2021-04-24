@@ -91,7 +91,13 @@ export class LeaderChooser {
     if (isDeepAddonInstance(addon)) {
       this.addonCandidates.push({ create, version: addon.pkg.version, parentName: addon.parent.name });
     } else {
-      let { dependencies, devDependencies } = addon.project.pkg;
+      // we can drop this cast after we can depend on the latest
+      // @embroider/shared-internals, but latest embroider also depends on us so
+      // I'm releasing this package first.
+      let { dependencies, devDependencies } = addon.project.pkg as {
+        dependencies?: Record<string, string>;
+        devDependencies?: Record<string, string>;
+      };
       let range = dependencies?.['ember-auto-import'] ?? devDependencies?.['ember-auto-import'];
       if (!range && addon.project.pkg.name === 'ember-auto-import') {
         range = addon.project.pkg.version;

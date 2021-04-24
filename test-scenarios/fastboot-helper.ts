@@ -14,20 +14,28 @@ export async function launchFastboot(dir: string) {
   let logs: any[] = [];
 
   const FastBoot = require(resolve.sync('fastboot', { basedir: resolve.sync('ember-cli-fastboot', { basedir: dir }) }));
+
+  let sandboxGlobals = {
+    console: {
+      log(...args: any[]) {
+        logs.push(args);
+      },
+      warn(...args: any[]) {
+        logs.push(args);
+      },
+    },
+  };
+
   let fastboot = new FastBoot({
     distPath: join(dir, 'dist'),
     resilient: false,
+
+    // we test under multiple fastboot versions, some of which use the older
+    // sandboxGlobals and some of which use buildSandboxGlobals and will
+    // complain that sandboxGlobals is deprecated
+    sandboxGlobals,
     buildSandboxGlobals(defaultGlobals: any) {
-      return Object.assign({}, defaultGlobals, {
-        console: {
-          log(...args: any[]) {
-            logs.push(args);
-          },
-          warn(...args: any[]) {
-            logs.push(args);
-          },
-        },
-      });
+      return Object.assign({}, defaultGlobals, sandboxGlobals);
     },
   });
   async function visit(url: string) {
