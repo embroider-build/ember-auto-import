@@ -7,6 +7,7 @@ const { module: Qmodule, test } = QUnit;
 addonScenarios
   .map('addon-dev-dep', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
     project.addDevDependency('some-lib');
     merge(project.files, {
       addon: {

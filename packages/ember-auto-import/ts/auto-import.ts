@@ -13,6 +13,8 @@ import { Memoize } from 'typescript-memoize';
 import { WatchedDir } from 'broccoli-source';
 import { Inserter } from './inserter';
 import mergeTrees from 'broccoli-merge-trees';
+import resolve from 'resolve';
+import type webpackType from 'webpack';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -95,6 +97,17 @@ export default class AutoImport implements AutoImportSharedAPI {
       bundles: this.bundles,
     });
 
+    let webpack: typeof webpackType;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      webpack = require(resolve.sync('webpack', { basedir: this.rootPackage.root })) as typeof webpackType;
+    } catch (err) {
+      if (err.code !== 'MODULE_NOT_FOUND') {
+        throw err;
+      }
+      throw new Error(`this version of ember-auto-import requires the app to have a dependency on webpack 5`);
+    }
+
     // The Bundler asks the splitter for deps it should include and
     // is responsible for packaging those deps up.
     return new WebpackBundler(depsFor(allAppTree, this.packages), {
@@ -105,6 +118,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       bundles: this.bundles,
       babelConfig: this.rootPackage.cleanBabelConfig(),
       publicAssetURL: this.publicAssetURL,
+      webpack,
     });
   }
 

@@ -8,6 +8,7 @@ const { module: Qmodule, test } = QUnit;
 appScenarios
   .map('dynamic-import', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
     project.linkDependency('ember-cli-fastboot', { baseDir: __dirname });
 
     merge(project.files, {

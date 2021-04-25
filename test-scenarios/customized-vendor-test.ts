@@ -7,6 +7,7 @@ const { module: Qmodule, test } = QUnit;
 
 function customVendorTest(project: Project, vendorPath: string) {
   project.linkDependency('ember-auto-import', { baseDir: __dirname });
+  project.linkDependency('webpack', { baseDir: __dirname });
   project.linkDependency('ember-cli-fastboot', { baseDir: __dirname });
 
   merge(project.files, {

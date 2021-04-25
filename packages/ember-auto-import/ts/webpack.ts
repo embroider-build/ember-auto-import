@@ -1,4 +1,4 @@
-import webpack, { Configuration } from 'webpack';
+import type { Configuration, Compiler, RuleSetRule, Stats } from 'webpack';
 import { join, dirname } from 'path';
 import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
@@ -99,7 +99,7 @@ window._eai_d = define;
 export default class WebpackBundler extends Plugin implements Bundler {
   private state:
     | {
-        webpack: webpack.Compiler;
+        webpack: Compiler;
         stagingDir: string;
       }
     | undefined;
@@ -197,7 +197,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       config.devtool = 'source-map';
     }
     debug('webpackConfig %j', config);
-    this.state = { webpack: webpack(config), stagingDir };
+    this.state = { webpack: this.opts.webpack(config), stagingDir };
     return this.state;
   }
 
@@ -212,7 +212,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return output;
   }
 
-  private babelRule(stagingDir: string): webpack.RuleSetRule {
+  private babelRule(stagingDir: string): RuleSetRule {
     let shouldTranspile = babelFilter(this.skipBabel());
 
     return {
@@ -289,7 +289,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
     this.lastBuildResult = this.summarizeStats(stats);
   }
 
-  private summarizeStats(_stats: Required<webpack.Stats>): BuildResult {
+  private summarizeStats(_stats: Required<Stats>): BuildResult {
     let { entrypoints, assets } = _stats.toJson();
 
     // webpack's types are written rather loosely, implying that these two
@@ -378,7 +378,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
     ensureSymlinkSync(packageRoot, join(this.stagingDir, 'node_modules', packageName), 'dir');
   }
 
-  private async runWebpack(): Promise<Required<webpack.Stats>> {
+  private async runWebpack(): Promise<Required<Stats>> {
     return new Promise((resolve, reject) => {
       this.webpack.run((err, stats) => {
         const statsString = stats ? stats.toString() : '';
@@ -396,9 +396,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
           this.opts.consoleWrite(statsString);
         }
         // this cast is justified because we already checked hasErrors above
-        resolve(stats as Required<webpack.Stats>);
+        resolve(stats as Required<Stats>);
       });
-    }) as Promise<Required<webpack.Stats>>;
+    }) as Promise<Required<Stats>>;
   }
 }
 

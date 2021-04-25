@@ -8,6 +8,7 @@ const { module: Qmodule, test } = QUnit;
 appScenarios
   .map('import-sync', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
     project.linkDependency('ember-cli-fastboot', { baseDir: __dirname });
     project.linkDependency('@embroider/macros', { baseDir: __dirname });
 
