@@ -50,13 +50,13 @@ Today entry chunks are appended to vendor.js (and vendor.css if you manually add
 
 When used by an addon, ember-auto-import 2.0 will assert that the top-level app package has ember-auto-import >= 2.0. Therefore, addons that upgrade to ember-auto-import 2.0 should do their own semver major releases, and document that they now require ember-auto-import 2.0 in the app. This implies that semver major releases are needed recursively up the dependency chain if an addon is using an addon that upgrades to ember-auto-import 2.0.
 
-There are too many top-level concerns governed by auto-import to continue to sneak it in via addons, without giving the app any control over the version range. Also, ember-auto-import is effectively a polyfill for Embroider, which will become the default for new apps in ember-cli 3.27. So apps should be moving toward working with ember-auto-import if they haven't already.
+There are too many top-level concerns governed by auto-import to continue to sneak it in via addons, without giving the app any control over the version range. Also, ember-auto-import is effectively a polyfill for Embroider, which will become the default for new apps soon. So apps should be moving toward working with ember-auto-import if they haven't already.
 
 We will still perform leader election, but only copies that are semver-compatible with the app will be eligible to lead. This allows addons to rely on new features in minor releases of ember-auto-import.
 
 ## Alias Option
 
-In ember-auto-import 1.0, `autoImport.alias` only applied to exact matches. In 2.0, it is a prefix match by default, and you can make it an exact match using a trailing `$`. We follow the same meaning as https://webpack.js.org/configuration/resolve/#resolvealias.
+In ember-auto-import 1.0, `autoImport.alias` only applied to exact matches. In 2.0, it is a prefix match by default, and you can make it an exact match using a trailing `$`. We not follow the same semantics as https://webpack.js.org/configuration/resolve/#resolvealias.
 
 ## Clarifying our Semver Contract for Addons
 
@@ -65,6 +65,6 @@ When an app upgrades to a new major release of ember-auto-import, any of that ap
 1. first, try not to need custom webpack config by
    - working with us to make a first-class API in ember-auto-import that does the thing you need in a declarative way
    - fixing upstream bugs in libraries so they will build correctly without custom config
-2. if you do need custom webpack config, document for your users what versions of ember-auto-import (in the app) you support.
+2. if you do need custom webpack config, document for your users what versions of ember-auto-import and webpack (in the app) you support.
 
 We will not automatically error if an addon using ember-auto-import 1.0 emits custom webpack config in an app using ember-auto-import 2.0, because after a review I believe the vast majority of cases in the wild will actually work fine. But in general, we can't _guarantee_ that will work across any future major releases.
