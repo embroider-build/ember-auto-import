@@ -32,6 +32,17 @@ Scenarios.fromProject(baseApp)
   .expand({
     transpiled: project => {
       merge(project.files, {
+        'ember-cli-build.js': `
+          const EmberApp = require('ember-cli/lib/broccoli/ember-app');
+          module.exports = function (defaults) {
+            return new EmberApp(defaults, {
+              'ember-cli-babel': {
+                // needed because our unit test uses async functions
+                includePolyfill: true
+              }
+            }).toTree();
+          };
+        `,
         'testem.js': `
           module.exports = {
             test_page: 'tests/index.html?hidepassed',
