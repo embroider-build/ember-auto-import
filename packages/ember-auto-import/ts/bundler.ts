@@ -17,6 +17,7 @@ export interface BundlerOptions {
   bundles: BundleConfig;
   babelConfig: TransformOptions;
   publicAssetURL: string | undefined;
+  browserslist: string;
   webpack: typeof webpack;
 }
 
