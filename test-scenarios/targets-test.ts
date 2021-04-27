@@ -37,7 +37,7 @@ Scenarios.fromProject(baseApp)
             test_page: 'tests/index.html?hidepassed',
             disable_watching: true,
             launch_in_ci: [
-              'Chrome', 'IE'
+              ${process.platform === 'win32' ? 'IE' : 'Chrome'}
             ],
             launch_in_dev: [
               'Chrome'
