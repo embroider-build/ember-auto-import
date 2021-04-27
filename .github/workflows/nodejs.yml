@@ -54,3 +54,22 @@ jobs:
       - name: test
         run: ${{ matrix.command }}
         working-directory: test-scenarios
+
+  ie:
+    name: ie11 safety
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: rwjblue/setup-volta@v1
+        with:
+          node-version: '14'
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - run: npm install
+      - name: test
+        run: 'npm run test -- --filter targets-transpiled:'
+        working-directory: test-scenarios
