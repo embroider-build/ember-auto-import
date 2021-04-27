@@ -61,7 +61,7 @@ Scenarios.fromProject(baseApp)
         config: {
           'targets.js': `
             module.exports = {
-              browsers: 'ie 11'
+              browsers: ['ie 11']
             };
           `,
         },
