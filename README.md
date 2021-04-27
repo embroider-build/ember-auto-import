@@ -1,7 +1,3 @@
-# TODO:
-
-audit ember-auto-import's devDependencies (lodash-es & moment I think were only there to support tests that have moved)
-
 # ember-auto-import
 
 Just `import` from NPM, with zero configuration.
