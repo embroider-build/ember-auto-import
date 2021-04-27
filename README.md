@@ -1,7 +1,3 @@
-# TODO:
-
-audit ember-auto-import's devDependencies (lodash-es & moment I think were only there to support tests that have moved)
-
 # ember-auto-import
 
 Just `import` from NPM, with zero configuration.
@@ -9,7 +5,7 @@ Just `import` from NPM, with zero configuration.
 ## Installation
 
 ```
-ember install ember-auto-import
+npm install --save-dev ember-auto-import webpack@5
 ```
 
 ## Usage
@@ -94,18 +90,22 @@ let app = new EmberApp(defaults, {
       // field in package.json that would let us detect it
       // automatically).
       handlebars: 'handlebars/dist/handlebars',
+
+      // We do a prefix match by default, so the above would also
+      // convert "handlebars/foo" to "handlebars/dist/handlesbars/foo".
+      // If instad you want an exact match only, you can use a trailing "$".
+      // For example, this will rewrite "some-package/alpha" to "customized"
+      // but leave "some-package/beta" alone.
+      'some-package/alpha$': 'customized',
     },
     exclude: ['some-package'],
     skipBabel: [
       {
-        // when an already babel transpiled addons like "mapbox-gl" is
+        // when an already-babel-transpiled package like "mapbox-gl" is
         // not skipped, it can produce errors in the production mode
         // due to double transpilation
         package: 'mapbox-gl',
         semverRange: '*',
-      },
-      {
-        // list can continue
       },
     ],
     watchDependencies: [
@@ -123,7 +123,7 @@ let app = new EmberApp(defaults, {
 
 Supported Options
 
-- `alias`: _object_, Map from package names to substitute packages that will be used instead.
+- `alias`: _object_, Map from imported names to substitute names that will be imported instead. This is a prefix match by default. To opt out of prefix-matching and only match exactly, add a `$` suffix to the pattern.
 - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
 - `forbidEval`: _boolean_, defaults to false. We use `eval` in development by default (because that is the fastest way to provide sourcemaps). If you need to comply with a strict Content Security Policy (CSP), you can set `forbidEval: true`. You will still get sourcemaps, they will just use a slower implementation.
 - `publicAssetURL`: where to load additional dynamic javascript files from. You usually don't need to set this -- the default works for most apps. However, if you're using `<script defer>` or another method of asynchronously loading your vendor.js script you will need to set this to the URL where your asset directory is served (typically `/assets`).
@@ -133,12 +133,16 @@ Supported Options
 
 ## Usage from Addons
 
-Using ember-auto-import inside an addon is almost exactly the same as inside an app. The only differences are:
+Using ember-auto-import inside an addon is almost exactly the same as inside an app.
 
-- ember-auto-import must be in the `dependencies` of your addon, not in `devDependencies`. Otherwise it won't come along when people install your addon.
-- ember-auto-import will refuse to import `devDependencies` of your addon, for the same reason. Whatever you're importing must be in `dependencies`.
-- ember-auto-import will not detect import statements inside your `app` folder. This is because the files inside `app` are conceptually not part of your addon's own package namespace at all, so they don't get access to your addon's dependencies. Do all your auto-importing from the `addon` folder, and reexport in `app` as needed.
-- you configure ember-auto-import in your `index.js` file (not your `ember-cli-build.js` file), like this:
+### Installing ember-auto-impor in an addon
+
+To add ember-auto-import to your addon:
+
+- add ember-auto-import to your `dependencies`, not your `devDependencies`, so it will be present when your addon is used by apps
+- add webpack to your `devDependencies` (to support your test suite) but not your `dependencies` (the app's version will be used)
+- document for your users that their app must depend on ember-auto-import >= 2 in order to use your addon
+- configure ember-auto-import (if needed) in your `index.js` file (not your `ember-cli-build.js` file), like this:
 
   ```js
   // In your addon's index.js file
@@ -147,35 +151,31 @@ Using ember-auto-import inside an addon is almost exactly the same as inside an 
     options: {
       autoImport: {
         exclude: ['some-package'],
-        webpack: {
-          // extra webpack configuration goes here
-        },
       },
     },
   };
   ```
 
-- if your addon has an `included` hook, it's critical that you call `super` correctly so that ember-auto-import's `included` will also run:
-  ```js
-  included() {
-    this._super.included.apply(this, arguments);
-  }
-  ```
 - if your addon uses [Dynamic Import](#dynamic-import), it is [required](https://github.com/babel/ember-cli-babel#options) that you
   register the babel plugin in your `index.js` instead of `ember-cli-build.js`:
-  ```js 
-  // index.js 
-  module.exports = { 
-    options: { 
-      babel: { 
-        plugins: [ require.resolve('ember-auto-import/babel-plugin') ] 
-      } 
-    } 
+  ```js
+  // index.js
+  module.exports = {
+    options: {
+      babel: {
+        plugins: [require.resolve('ember-auto-import/babel-plugin')],
+      },
+    },
   };
   ```
 
-FAQ
----
+### Caveats in addons
+
+- ember-auto-import will refuse to import `devDependencies` of your addon into addon code (because that would fail in a consuming application). You _can_ import `devDependencies` into your test suite & dummy app.
+- ember-auto-import will not detect import statements inside your `app` folder. This is because the files inside `app` are conceptually not part of your addon's own package namespace at all, so they don't get access to your addon's dependencies. Do all your auto-importing from the `addon` folder, and reexport in `app` as needed.
+- while addons are allowed to pass the `autoImport.webpack` option to add things to the webpack config, this makes them less likely to be broadly compatible with apps using different webpack versions. If you need to rely on a specific webpack feature, you should document which versions of webpack you support.
+
+## FAQ
 
 ### `global is undefined` or `can't find module "path"` or `can't find module "fs"`
 
