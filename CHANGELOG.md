@@ -1,5 +1,19 @@
 # Changelog
 
+### 2.0.0
+
+- BREAKING: see [./docs/upgrade-guide-2.0.md] for the complete list of breaking changes in 2.0 with explanations and instructions.
+- BREAKING: webpack 5 upgrade by @gabrielcsapo and @ef4
+- BREAKING ENHANCEMENT: support embroider v2-formatted addons
+- BREAKING: drop support for babel 6
+- BREAKING: inject entry chunks directly into HTML
+- BREAKING: addons that use ember-auto-import 2.0 require that the app also has ember-auto-import 2.0.
+- BREAKING: apps must depend directly on webpack 5
+- BREAKING: change our `alias` option to more closely match webpack by doing a prefix match by default.
+- BUGFIX: fix compatibility with babel 7.26+ by @rwjblue
+- ENHANCEMENT: support auto-importing dependencies via `@embroider/macros` `importSync` by @simonihmig
+- BUGFIX: fix accidental duplication of webpack config
+
 ### 1.11.3
 
 - NO-OP: I accidentally published 2.0.0-alpha.0 to NPM under the `latest` tag. This is a re-published of 1.11.2 to supplant that as latest.
