@@ -150,6 +150,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
       performance: {
         hints: false,
       },
+      // this controls webpack's own runtime code generation. You still need
+      // preset-env to preprocess the libraries themselves (which is already
+      // part of this.opts.babelConfig)
+      target: `browserslist:${this.opts.browserslist}`,
       output: {
         path: join(this.outputPath, 'assets'),
         publicPath: '',

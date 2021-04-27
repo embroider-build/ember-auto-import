@@ -117,6 +117,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       consoleWrite: this.consoleWrite,
       bundles: this.bundles,
       babelConfig: this.rootPackage.cleanBabelConfig(),
+      browserslist: this.rootPackage.browserslist(),
       publicAssetURL: this.publicAssetURL,
       webpack,
     });

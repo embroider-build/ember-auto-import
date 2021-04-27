@@ -8,7 +8,7 @@ import Package, { Options } from '../package';
 import Analyzer from '../analyzer';
 import Splitter from '../splitter';
 import BundleConfig from '../bundle-config';
-import { Project } from 'fixturify-project';
+import { Project } from 'scenario-tester';
 import { merge } from 'lodash';
 import { AddonInstance, AppInstance, Project as EmberCLIProject } from '@embroider/shared-internals';
 

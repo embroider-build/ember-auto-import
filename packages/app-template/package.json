@@ -11,11 +11,11 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "./node_modules/ember-cli/bin/ember build",
+    "build": "node ./node_modules/ember-cli/bin/ember build",
     "lint:hbs": "ember-template-lint .",
     "lint:js": "eslint .",
-    "start": "./node_modules/ember-cli/bin/ember serve",
-    "test": "./node_modules/ember-cli/bin/ember test"
+    "start": "node ./node_modules/ember-cli/bin/ember serve",
+    "test": "node ./node_modules/ember-cli/bin/ember test"
   },
   "devDependencies": {
     "@ember/optional-features": "^1.0.0",

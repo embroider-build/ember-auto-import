@@ -460,6 +460,15 @@ export default class Package {
       ],
     };
   }
+
+  browserslist() {
+    if (this.isAddon) {
+      throw new Error(`Only the app can determine the browserslist`);
+    }
+    // cast here is safe because we just checked isAddon is false
+    let parent = this._parent as Project;
+    return (parent.targets as { browsers: string[] }).browsers.join(',');
+  }
 }
 
 const isAddonCache = new Map<string, boolean>();
