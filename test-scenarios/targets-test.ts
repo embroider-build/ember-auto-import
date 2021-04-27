@@ -85,7 +85,7 @@ Scenarios.fromProject(baseApp)
         config: {
           'targets.js': `
             module.exports = {
-              browsers: 'last 1 Chrome versions'
+              browsers: ['last 1 Chrome versions']
             };
           `,
         },
