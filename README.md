@@ -135,7 +135,7 @@ Supported Options
 
 Using ember-auto-import inside an addon is almost exactly the same as inside an app.
 
-### Installing ember-auto-impor in an addon
+### Installing ember-auto-import in an addon
 
 To add ember-auto-import to your addon:
 
