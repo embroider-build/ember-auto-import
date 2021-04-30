@@ -13,6 +13,8 @@
 - BUGFIX: fix compatibility with babel 7.26+ by @rwjblue
 - ENHANCEMENT: support auto-importing dependencies via `@embroider/macros` `importSync` by @simonihmig
 - BUGFIX: fix accidental duplication of webpack config
+- BREAKING: minimum supported Node is 12 (because 10 hit EOL on 2021-04-30)
+- BREAKING: minimum supported Ember and EmberCLI versions are both 3.4
 
 ### 1.11.3
 

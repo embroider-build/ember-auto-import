@@ -1,5 +1,6 @@
 import { Scenarios, Project } from 'scenario-tester';
 import { dirname, delimiter } from 'path';
+import { merge } from 'lodash';
 
 // https://github.com/volta-cli/volta/issues/702
 // We need this because we're launching node in child processes and we want
@@ -16,11 +17,34 @@ import { dirname, delimiter } from 'path';
 })();
 
 async function lts(project: Project) {
-  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-2.18' });
-  project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-2.18' });
+  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-lts' });
+  project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-lts' });
+
   project.pkg.volta = {
-    node: '10.24.0',
+    node: '12.22.1',
   };
+
+  merge(project.files, {
+    app: {
+      // this version of ember doesn't support native class syntax here (which is
+      // what we have in our base app template)
+      'app.js': `
+        import Application from '@ember/application';
+        import Resolver from 'ember-resolver';
+        import loadInitializers from 'ember-load-initializers';
+        import config from '@ef4/app-template/config/environment';
+
+        const App = Application.extend({
+          modulePrefix: config.modulePrefix,
+          podModulePrefix: config.podModulePrefix,
+          Resolver
+        })
+
+        loadInitializers(App, config.modulePrefix);
+        export default App
+      `,
+    },
+  });
 }
 
 async function release(project: Project) {
