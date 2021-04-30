@@ -19,8 +19,7 @@
     "lint:js": "eslint . --cache",
     "lint:js:fix": "eslint . --fix",
     "start": "node ./node_modules/ember-cli/bin/ember serve",
-    "test": "npm-run-all lint test:*",
-    "test:ember": "ember test"
+    "test": "node ./node_modules/ember-cli/bin/ember test"
   },
   "devDependencies": {
     "@ember/optional-features": "^2.0.0",
