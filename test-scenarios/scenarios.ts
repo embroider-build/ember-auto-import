@@ -38,6 +38,7 @@ async function canary(project: Project) {
   // aliasing of non-registry deps
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli' });
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-canary' });
+  project.linkDevDependency('ember-resolver', { baseDir: __dirname, resolveName: 'newer-resolver' });
 }
 
 export function supportMatrix(scenarios: Scenarios) {
