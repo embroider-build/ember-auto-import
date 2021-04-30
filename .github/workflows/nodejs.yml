@@ -50,7 +50,7 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
-      - run: npm install
+      - run: npm install --no-package-lock
       - name: test
         run: ${{ matrix.command }}
         working-directory: test-scenarios
