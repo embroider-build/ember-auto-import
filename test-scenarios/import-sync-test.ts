@@ -6,6 +6,12 @@ import { setupFastboot } from './fastboot-helper';
 const { module: Qmodule, test } = QUnit;
 
 appScenarios
+  // temporarily skipping canary because it has a breaking change that breaks
+  // @embroider/macros, and in here we are testing our interaction with
+  // @embroider/macros
+  //
+  // https://github.com/ember-cli/ember-cli/issues/9522
+  .skip('canary')
   .map('import-sync', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.linkDependency('webpack', { baseDir: __dirname });
