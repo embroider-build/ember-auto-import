@@ -29,7 +29,7 @@ appScenarios
             {{content-for "head"}}
             <link rel="stylesheet" href="/assets/vendor.css" />
             <link rel="stylesheet" href="/assets/@ef4/app-template.css" />
-            <meta http-equiv="Content-Security-Policy" content="default-src 'self';"></meta>
+            <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'sha256-jy2vgvhMsYlA4Y83g6FJOepnhw+qcNBytgYlXCHXAog=';"></meta>
             {{content-for "head-footer"}}
           </head>
           <body>
@@ -67,13 +67,21 @@ appScenarios
             <link rel="stylesheet" href="/assets/vendor.css" />
             <link rel="stylesheet" href="/assets/@ef4/app-template.css" />
             <link rel="stylesheet" href="/assets/test-support.css" />
-            <meta http-equiv="Content-Security-Policy" content="default-src 'self';"></meta>
+            <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'sha256-jy2vgvhMsYlA4Y83g6FJOepnhw+qcNBytgYlXCHXAog=';"></meta>
             {{content-for "head-footer"}}
             {{content-for "test-head-footer"}}
           </head>
           <body>
             {{content-for "body"}}
             {{content-for "test-body"}}
+
+            <div id="qunit"></div>
+            <div id="qunit-fixture">
+              <div id="ember-testing-container">
+                <div id="ember-testing"></div>
+              </div>
+            </div>
+
             <script src="/testem.js" integrity=""></script>
             <script src="/assets/vendor.js"></script>
             <script src="/assets/test-support.js"></script>

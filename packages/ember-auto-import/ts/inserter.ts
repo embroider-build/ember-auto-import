@@ -4,9 +4,9 @@ import makeDebug from 'debug';
 import { existsSync, readFileSync } from 'fs';
 import { outputFileSync, readJSONSync, writeJSONSync } from 'fs-extra';
 import { join } from 'path';
+import parse5 from 'parse5';
 import BundleConfig, { BundleName } from './bundle-config';
 import { BuildResult, Bundler } from './bundler';
-import { parse, traverse } from './parse-html';
 
 const debug = makeDebug('ember-auto-import:inserter');
 
@@ -48,7 +48,7 @@ export class Inserter extends Plugin {
   ) {
     debug(`parsing %s`, filename);
     let html = readFileSync(fullName, 'utf8');
-    let ast = parse(html);
+    let ast = parse5.parse(html, { sourceCodeLocationInfo: true });
     let { scripts, styles } = chunks(this.bundler.buildResult, this.config);
     let stringInserter = new StringInserter(html);
 
@@ -76,7 +76,7 @@ export class Inserter extends Plugin {
                   .map(chunk => `\n<fastboot-script src="${rootURL}${chunk}"></fastboot-script>`)
                   .join('');
               }
-              stringInserter.insert(element.sourceCodeLocation.endOffset, insertedSrc);
+              stringInserter.insert(element.sourceCodeLocation!.endOffset, insertedSrc);
             }
           }
         }
@@ -92,7 +92,7 @@ export class Inserter extends Plugin {
                 debug(`inserting %s`, chunks);
                 let rootURL = href.replace(url, '');
                 stringInserter.insert(
-                  element.sourceCodeLocation.endOffset,
+                  element.sourceCodeLocation!.endOffset,
                   chunks.map(chunk => `\n<link rel="stylesheet" href="${rootURL}${chunk}"/>`).join('')
                 );
               }
@@ -165,5 +165,17 @@ class StringInserter {
     }
     output.push(this.original.slice(cursor));
     return output.join('');
+  }
+}
+
+function traverse(node: parse5.ParentNode, fn: (elt: parse5.Element) => void) {
+  if ('tagName' in node) {
+    fn(node);
+  }
+
+  for (let child of node.childNodes) {
+    if ('childNodes' in child) {
+      traverse(child, fn);
+    }
   }
 }

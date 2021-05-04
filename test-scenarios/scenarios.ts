@@ -1,5 +1,6 @@
 import { Scenarios, Project } from 'scenario-tester';
 import { dirname, delimiter } from 'path';
+import { merge } from 'lodash';
 
 // https://github.com/volta-cli/volta/issues/702
 // We need this because we're launching node in child processes and we want
@@ -16,11 +17,50 @@ import { dirname, delimiter } from 'path';
 })();
 
 async function lts(project: Project) {
-  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-2.18' });
-  project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-2.18' });
+  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-lts' });
+  project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-lts' });
+
   project.pkg.volta = {
-    node: '10.24.0',
+    node: '12.22.1',
   };
+
+  // this version of ember doesn't support native class syntax here (which is
+  // what we have in our base app and addon templates)
+  function olderAppJS(moduleName: string) {
+    return `
+  import Application from '@ember/application';
+  import Resolver from 'ember-resolver';
+  import loadInitializers from 'ember-load-initializers';
+  import config from '${moduleName}/config/environment';
+
+  const App = Application.extend({
+    modulePrefix: config.modulePrefix,
+    podModulePrefix: config.podModulePrefix,
+    Resolver
+  })
+
+  loadInitializers(App, config.modulePrefix);
+  export default App
+`;
+  }
+
+  if (project.name === '@ef4/app-template') {
+    merge(project.files, {
+      app: {
+        'app.js': olderAppJS('@ef4/app-template'),
+      },
+    });
+  } else if (project.name === '@ef4/addon-template') {
+    merge(project.files, {
+      tests: {
+        dummy: {
+          app: {
+            'app.js': olderAppJS('dummy'),
+          },
+        },
+      },
+    });
+  }
 }
 
 async function release(project: Project) {
@@ -38,6 +78,7 @@ async function canary(project: Project) {
   // aliasing of non-registry deps
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli' });
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-canary' });
+  project.linkDevDependency('ember-resolver', { baseDir: __dirname, resolveName: 'newer-resolver' });
 }
 
 export function supportMatrix(scenarios: Scenarios) {
