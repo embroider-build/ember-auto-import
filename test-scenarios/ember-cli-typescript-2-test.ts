@@ -18,6 +18,8 @@ appScenarios
     });
     project.addDevDependency(aDependency);
     project.linkDevDependency('ember-cli-typescript', { baseDir: __dirname, resolveName: 'ember-cli-typescript-2' });
+    // this version of ember-cli-typescript doesn't work with newer ember-cli-babel
+    project.linkDevDependency('ember-cli-babel', { baseDir: __dirname, resolveName: 'ember-cli-babel-older' });
     project.linkDevDependency('ember-auto-import', { baseDir: __dirname });
     project.linkDependency('webpack', { baseDir: __dirname });
     project.linkDevDependency('typescript', { baseDir: __dirname, resolveName: 'typescript-4' });

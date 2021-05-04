@@ -24,6 +24,7 @@
     "fs-extra": "^6.0.1",
     "leader-v1": "npm:ember-auto-import@1.7",
     "leader-v2": "npm:ember-auto-import@1.11",
+    "ember-cli-babel-older": "npm:ember-cli-babel@7.11.1",
     "ember-cli-lts": "npm:ember-cli@~3.4.0",
     "ember-cli-latest": "npm:ember-cli@latest",
     "ember-cli-beta": "npm:ember-cli@beta",
