@@ -24,27 +24,43 @@ async function lts(project: Project) {
     node: '12.22.1',
   };
 
-  merge(project.files, {
-    app: {
-      // this version of ember doesn't support native class syntax here (which is
-      // what we have in our base app template)
-      'app.js': `
-        import Application from '@ember/application';
-        import Resolver from 'ember-resolver';
-        import loadInitializers from 'ember-load-initializers';
-        import config from '@ef4/app-template/config/environment';
+  // this version of ember doesn't support native class syntax here (which is
+  // what we have in our base app and addon templates)
+  function olderAppJS(moduleName: string) {
+    return `
+  import Application from '@ember/application';
+  import Resolver from 'ember-resolver';
+  import loadInitializers from 'ember-load-initializers';
+  import config from '${moduleName}/config/environment';
 
-        const App = Application.extend({
-          modulePrefix: config.modulePrefix,
-          podModulePrefix: config.podModulePrefix,
-          Resolver
-        })
+  const App = Application.extend({
+    modulePrefix: config.modulePrefix,
+    podModulePrefix: config.podModulePrefix,
+    Resolver
+  })
 
-        loadInitializers(App, config.modulePrefix);
-        export default App
-      `,
-    },
-  });
+  loadInitializers(App, config.modulePrefix);
+  export default App
+`;
+  }
+
+  if (project.name === '@ef4/app-template') {
+    merge(project.files, {
+      app: {
+        'app.js': olderAppJS('@ef4/app-template'),
+      },
+    });
+  } else if (project.name === '@ef4/addon-template') {
+    merge(project.files, {
+      tests: {
+        dummy: {
+          app: {
+            'app.js': olderAppJS('dummy'),
+          },
+        },
+      },
+    });
+  }
 }
 
 async function release(project: Project) {
