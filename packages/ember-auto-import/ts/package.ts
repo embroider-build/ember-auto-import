@@ -146,18 +146,13 @@ export default class Package {
     let version = parseInt(babelAddon.pkg.version.split('.')[0], 10);
     let babelOptions, extensions;
 
-    if (typeof babelAddon.getSupportedExtensions === 'function') {
-      babelOptions = babelAddon.buildBabelOptions('babel', options);
-      extensions = babelAddon.getSupportedExtensions();
-    } else {
-      babelOptions = babelAddon.buildBabelOptions(options);
-      extensions = babelOptions.filterExtensions || ['js'];
+    babelOptions = babelAddon.buildBabelOptions(options);
+    extensions = babelOptions.filterExtensions || ['js'];
 
-      // https://github.com/babel/ember-cli-babel/issues/227
-      delete babelOptions.annotation;
-      delete babelOptions.throwUnlessParallelizable;
-      delete babelOptions.filterExtensions;
-    }
+    // https://github.com/babel/ember-cli-babel/issues/227
+    delete babelOptions.annotation;
+    delete babelOptions.throwUnlessParallelizable;
+    delete babelOptions.filterExtensions;
 
     if (babelOptions.plugins) {
       babelOptions.plugins = babelOptions.plugins.filter((p: any) => !p._parallelBabel);
