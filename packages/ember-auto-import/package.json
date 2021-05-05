@@ -120,7 +120,8 @@
   "ember-addon": {
     "configPath": "tests/dummy/config",
     "before": [
-      "ember-cli-babel"
+      "ember-cli-babel",
+      "broccoli-asset-rev"
     ],
     "after": [
       "ember-cli-coffeescript",
