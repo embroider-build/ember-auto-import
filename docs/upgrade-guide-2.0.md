@@ -57,7 +57,7 @@ We will still perform leader election, but only copies that are semver-compatibl
 
 ## Alias Option
 
-In ember-auto-import 1.0, `autoImport.alias` only applied to exact matches. In 2.0, it is a prefix match by default, and you can make it an exact match using a trailing `$`. We not follow the same semantics as https://webpack.js.org/configuration/resolve/#resolvealias.
+In ember-auto-import 1.0, `autoImport.alias` only applied to exact matches. In 2.0, it is a prefix match by default, and you can make it an exact match using a trailing `$`. We now follow the same semantics as https://webpack.js.org/configuration/resolve/#resolvealias.
 
 ## Clarifying our Semver Contract for Addons
 
