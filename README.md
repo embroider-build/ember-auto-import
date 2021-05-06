@@ -2,6 +2,8 @@
 
 Just `import` from NPM, with zero configuration.
 
+**VERSION WARNING**: This README is up-to-date for ember-auto-import 2.0, which is currently in beta. For the stable release see [README 1.x](https://github.com/ef4/ember-auto-import/blob/v1.11.3/README.md).
+
 ## Installation
 
 ```
