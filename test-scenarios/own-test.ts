@@ -1,7 +1,7 @@
 import { supportMatrix } from './scenarios';
 import { PreparedApp, Scenarios } from 'scenario-tester';
 import QUnit from 'qunit';
-import { dirname } from 'path';
+import { dirname, resolve } from 'path';
 const { module: Qmodule, test } = QUnit;
 
 // this runs ember-auto-import's own tests (but through our support matrix, so
@@ -25,3 +25,12 @@ supportMatrix(Scenarios.fromDir(dirname(require.resolve('ember-auto-import/packa
       });
     });
   });
+
+Qmodule('self-version-check', function () {
+  test('npm run test', async function (assert) {
+    assert.equal(
+      require('./package.json').devDependencies['ember-auto-import'],
+      require(resolve(__dirname, '../packages/ember-auto-import/package.json')).version
+    );
+  });
+});
