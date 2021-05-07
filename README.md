@@ -7,7 +7,7 @@ Just `import` from NPM, with zero configuration.
 ## Installation
 
 ```
-npm install --save-dev ember-auto-import webpack@5
+npm install --save-dev ember-auto-import@beta webpack@5
 ```
 
 ## Usage
