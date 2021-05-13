@@ -2,15 +2,13 @@
 
 Just `import` from NPM, with zero configuration.
 
-**VERSION WARNING**: This README is up-to-date for ember-auto-import 2.0, which is currently in beta. For the stable release see [README 1.x](https://github.com/ef4/ember-auto-import/blob/v1.11.3/README.md).
-
-If you're upgrading from 1.x to 2.x [see the upgrade guide](./docs/upgrade-guide-2.0.md).
-
 ## Installation
 
 ```
-npm install --save-dev ember-auto-import@beta webpack@5
+npm install --save-dev ember-auto-import webpack
 ```
+
+If you're upgrading from 1.x to 2.x [see the upgrade guide](./docs/upgrade-guide-2.0.md).
 
 ## Usage
 
