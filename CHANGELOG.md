@@ -1,5 +1,10 @@
 # Changelog
 
+### 2.0.1
+
+- BUGFIX: avoid warning spew from babel about loose mode.
+- DOCS: fixed docs link by @MrChocolatine
+
 ### 2.0.0
 
 - BREAKING: see the [upgrade guide to v2](./docs/upgrade-guide-2.0.md) for the complete list of breaking changes in 2.0 with explanations and instructions.
