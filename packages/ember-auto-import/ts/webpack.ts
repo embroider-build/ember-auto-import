@@ -188,7 +188,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
           this.babelRule(stagingDir),
           {
             test: /\.css$/i,
-            use: ['eai-style-loader', 'eai-css-loader'],
+            use: [
+              { loader: 'eai-style-loader', options: [...this.opts.packages].find(pkg => pkg.styleLoaderOptions) },
+              { loader: 'eai-css-loader', options: [...this.opts.packages].find(pkg => pkg.cssLoaderOptions) },
+            ],
           },
         ],
       },
