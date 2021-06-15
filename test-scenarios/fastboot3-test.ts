@@ -22,7 +22,7 @@ function upgradeFastbootFormat() {
   let upgrader = new Project('fastboot_upgrader', {
     files: {
       'index.js': `
-        const Funnel = require('broccoli-funnel');
+        const { Funnel } = require('broccoli-funnel');
         const { readJSONSync, writeJSONSync, readFileSync, writeFileSync } = require('fs-extra');
         const { join } = require('path');
 
