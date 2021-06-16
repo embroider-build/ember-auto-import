@@ -29,6 +29,8 @@ export interface Options {
   alias?: { [fromName: string]: string };
   webpack?: Configuration;
   publicAssetURL?: string;
+  styleLoaderOptions?: Record<string, unknown>;
+  cssLoaderOptions?: Record<string, unknown>;
   forbidEval?: boolean;
   skipBabel?: { package: string; semverRange?: string }[];
   watchDependencies?: (string | string[])[];
@@ -352,6 +354,16 @@ export default class Package {
       }
     }
     return url;
+  }
+
+  get styleLoaderOptions(): Record<string, unknown> | undefined {
+    // only apps (not addons) are allowed to set this
+    return this.isAddon ? undefined : this.autoImportOptions?.styleLoaderOptions;
+  }
+
+  get cssLoaderOptions(): Record<string, unknown> | undefined {
+    // only apps (not addons) are allowed to set this
+    return this.isAddon ? undefined : this.autoImportOptions?.cssLoaderOptions;
   }
 
   get forbidsEval(): boolean {
