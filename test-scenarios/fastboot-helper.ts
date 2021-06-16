@@ -3,7 +3,7 @@ import { join } from 'path';
 import resolve from 'resolve';
 
 export async function setupFastboot(app: PreparedApp, environment = 'development') {
-  let result = await app.execute(`node node_modules/ember-cli/bin/ember build --environment=${environment}`);
+  let result = await app.execute(`${process.execPath} node_modules/ember-cli/bin/ember build --environment=${environment}`);
   if (result.exitCode !== 0) {
     throw new Error(`failed to build app for fastboot: ${result.output}`);
   }

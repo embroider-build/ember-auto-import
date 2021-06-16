@@ -15,6 +15,8 @@ import { Inserter } from './inserter';
 import mergeTrees from 'broccoli-merge-trees';
 import resolve from 'resolve';
 import type webpackType from 'webpack';
+import resolvePackagePath from 'resolve-package-path';
+import semver from 'semver';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -98,14 +100,16 @@ export default class AutoImport implements AutoImportSharedAPI {
     });
 
     let webpack: typeof webpackType;
-    try {
+    const pkg = resolvePackagePath('webpack', this.rootPackage.root);
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    if (pkg && semver.satisfies(require(pkg).version, '^5.0.0')) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       webpack = require(resolve.sync('webpack', { basedir: this.rootPackage.root })) as typeof webpackType;
-    } catch (err) {
-      if (err.code !== 'MODULE_NOT_FOUND') {
-        throw err;
-      }
-      throw new Error(`this version of ember-auto-import requires the app to have a dependency on webpack 5`);
+    } else {
+      throw new Error(
+        `[ember-auto-import] this version of ember-auto-import requires the app to have a dependency on webpack 5`
+      );
     }
 
     // The Bundler asks the splitter for deps it should include and
