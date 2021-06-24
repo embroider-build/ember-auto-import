@@ -1,5 +1,9 @@
 # Changelog
 
+### 2.0.2
+
+- BUGFIX: entry chunks should respect `publicAssetURL`
+
 ### 2.0.1
 
 - BUGFIX: avoid warning spew from babel about loose mode.
