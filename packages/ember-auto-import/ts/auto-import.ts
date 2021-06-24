@@ -144,7 +144,7 @@ export default class AutoImport implements AutoImportSharedAPI {
 
   addTo(allAppTree: Node): Node {
     let bundler = debugBundler(this.makeBundler(allAppTree), 'output');
-    let inserter = new Inserter(allAppTree, bundler, this.bundles);
+    let inserter = new Inserter(allAppTree, bundler, this.bundles, this.publicAssetURL);
     let trees = [allAppTree, bundler, inserter];
     return mergeTrees(trees, { overwrite: true });
   }
