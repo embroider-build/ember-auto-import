@@ -11,7 +11,12 @@ import { BuildResult, Bundler } from './bundler';
 const debug = makeDebug('ember-auto-import:inserter');
 
 export class Inserter extends Plugin {
-  constructor(allApp: InputNode, private bundler: Bundler, private config: BundleConfig) {
+  constructor(
+    allApp: InputNode,
+    private bundler: Bundler,
+    private config: BundleConfig,
+    private publicAssetURL: string | undefined
+  ) {
     super([allApp], {
       annotation: 'ember-auto-import-inserter',
     });
@@ -102,7 +107,9 @@ export class Inserter extends Plugin {
         entry.inserted = true;
         debug(`inserting %s`, scriptChunks);
         let rootURL = src.replace(url, '');
-        let insertedSrc = scriptChunks.map(chunk => `\n<script src="${rootURL}${chunk}"></script>`).join('');
+        let insertedSrc = scriptChunks
+          .map(chunk => `\n<script src="${this.chunkURL(rootURL, chunk)}"></script>`)
+          .join('');
         if (fastbootInfo?.readsHTML && bundleName === 'app') {
           // lazy chunks are eager in fastboot because webpack's lazy
           // loading doesn't work in fastboot, because we share a single
@@ -111,7 +118,7 @@ export class Inserter extends Plugin {
           // them eager on the server anyway, so they're handled as part
           // of server startup.
           insertedSrc += this.bundler.buildResult.lazyAssets
-            .map(chunk => `\n<fastboot-script src="${rootURL}${chunk}"></fastboot-script>`)
+            .map(chunk => `\n<fastboot-script src="${this.chunkURL(rootURL, chunk)}"></fastboot-script>`)
             .join('');
         }
         stringInserter.insert(element.sourceCodeLocation!.endOffset, insertedSrc);
@@ -128,9 +135,17 @@ export class Inserter extends Plugin {
         let rootURL = href.replace(url, '');
         stringInserter.insert(
           element.sourceCodeLocation!.endOffset,
-          styleChunks.map(chunk => `\n<link rel="stylesheet" href="${rootURL}${chunk}"/>`).join('')
+          styleChunks.map(chunk => `\n<link rel="stylesheet" href="${this.chunkURL(rootURL, chunk)}"/>`).join('')
         );
       }
+    }
+  }
+
+  private chunkURL(rootURL: string, chunk: string) {
+    if (this.publicAssetURL) {
+      return chunk.replace(/^assets\//, this.publicAssetURL);
+    } else {
+      return `${rootURL}${chunk}`;
     }
   }
 

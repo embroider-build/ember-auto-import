@@ -6,6 +6,7 @@
 - apps must add webpack to their own dependencies (`yarn add --dev webpack@5` or `npm install --save-dev webpack@5`)
 - apps that were adding css handling (like `css-loader`, `style-loader`, and `MiniCSSExtraPlugin`) to the webpack config must remove those, because they're now included by default for compatibility with the embroider v2 package spec.
 - apps should confirm that their deployment strategy includes all files produced under `dist` (not just the traditional expected ones like `dist/assets/your-app.js` and `dist/assets/vendor.js`)
+- apps that use `fingerprint.preprend` to move their assets to a different origin will also need to set `autoImport.publicAssetURL`. See example below.
 - addons that upgrade to ember-auto-import >= 2 will only work in apps that have ember-auto-import >= 2, so they should do their own semver major releases when they upgrade
 - our `alias` option has changed slightly to align better with how it works in webpack
 - we dropped support for node < 12 and ember-source < 3.4 and ember-cli < 3.4.
@@ -46,6 +47,33 @@ It's still OK to depend on an addon that uses babel 6, but that addon cannot use
 Today entry chunks are appended to vendor.js (and vendor.css if you manually added some webpack config that emits css). This is bad because it interacts badly with ember-cli's source mapping, it's more expensive in the build, it defeats some caching, and it's more complicated to get right. It also requires us to monkey-patch ember-cli, and it leads to a painful bug if the parent package of the chosen leader never calls `super` include `included`.
 
 2.0 inserts script (and link) tags directly into index.html instead. This is better for all the reasons above. The only potential downside is that the presence of these new files in dist may impact people with unnecessarily-specific deployment code that, instead of deploying `dist/*` like they should, deploys only `dist/assets/app.js`, `dist/assets/vendor.js`, etc, without noticing the new `dist/assets/chunk*.{js,css}` we emitted.
+
+### publicAssetURL
+
+If you use broccoli-asset-rev to move your assets:
+
+```js
+let app = new EmberApp(defaults, {
+  fingerprint: {
+    enabled: EmberApp.env() === 'production',
+    prepend: 'http://some-cdn/xyz',
+  },
+});
+```
+
+You will also need to set ember-auto-import's `publicAssetURL`:
+
+```js
+let app = new EmberApp(defaults, {
+  fingerprint: {
+    enabled: EmberApp.env() === 'production',
+    prepend: 'http://some-cdn/xyz',
+  },
+  autoImport: {
+    pubicAssetURL: EmberApp.env() === 'production' ? 'https://some-cdn/xyz/assets' : undefined,
+  },
+});
+```
 
 ### Mandatory top-level auto-import
 
