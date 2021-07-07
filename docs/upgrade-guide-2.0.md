@@ -70,7 +70,7 @@ let app = new EmberApp(defaults, {
     prepend: 'http://some-cdn/xyz',
   },
   autoImport: {
-    pubicAssetURL: EmberApp.env() === 'production' ? 'https://some-cdn/xyz/assets' : undefined,
+    publicAssetURL: EmberApp.env() === 'production' ? 'https://some-cdn/xyz/assets' : undefined,
   },
 });
 ```
