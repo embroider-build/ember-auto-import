@@ -293,10 +293,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
     this.writeLoaderFile();
     this.linkDeps(bundleDeps);
     let stats = await this.runWebpack();
-    this.lastBuildResult = this.summarizeStats(stats);
+    this.lastBuildResult = this.summarizeStats(stats, bundleDeps);
   }
 
-  private summarizeStats(_stats: Required<Stats>): BuildResult {
+  private summarizeStats(_stats: Required<Stats>, bundleDeps: Map<string, BundleDependencies>): BuildResult {
     let { entrypoints, assets } = _stats.toJson();
 
     // webpack's types are written rather loosely, implying that these two
@@ -322,10 +322,12 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
       this.opts.bundles.assertValidBundleName(id);
 
-      output.entrypoints.set(
-        id,
-        entrypointAssets.map(a => 'assets/' + a.name)
-      );
+      if (nonEmptyBundle(id, bundleDeps)) {
+        output.entrypoints.set(
+          id,
+          entrypointAssets.map(a => 'assets/' + a.name)
+        );
+      }
       entrypointAssets.forEach(asset => nonLazyAssets.add(asset.name));
     }
     for (let asset of assets!) {
@@ -337,17 +339,6 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private writeEntryFile(name: string, deps: BundleDependencies) {
-    const mapTemplateImports = (imp: ResolvedTemplateImport) => ({
-      key: imp.importedBy[0].cookedQuasis.join('${e}'),
-      args: imp.expressionNameHints.join(','),
-      template:
-        '`' +
-        zip(imp.cookedQuasis, imp.expressionNameHints)
-          .map(([q, e]) => q + (e ? '${' + e + '}' : ''))
-          .join('') +
-        '`',
-    });
-
     writeFileSync(
       join(this.stagingDir, `${name}.js`),
       entryTemplate({
@@ -451,4 +442,30 @@ function eitherPattern(...patterns: any[]): (resource: string) => boolean {
     }
     return false;
   };
+}
+
+function mapTemplateImports(imp: ResolvedTemplateImport) {
+  return {
+    key: imp.importedBy[0].cookedQuasis.join('${e}'),
+    args: imp.expressionNameHints.join(','),
+    template:
+      '`' +
+      zip(imp.cookedQuasis, imp.expressionNameHints)
+        .map(([q, e]) => q + (e ? '${' + e + '}' : ''))
+        .join('') +
+      '`',
+  };
+}
+
+function nonEmptyBundle(name: string, bundleDeps: Map<string, BundleDependencies>): boolean {
+  let deps = bundleDeps.get(name);
+  if (!deps) {
+    return false;
+  }
+  return (
+    deps.staticImports.length > 0 ||
+    deps.staticTemplateImports.length > 0 ||
+    deps.dynamicImports.length > 0 ||
+    deps.dynamicTemplateImports.length > 0
+  );
 }
