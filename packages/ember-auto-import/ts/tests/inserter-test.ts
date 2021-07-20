@@ -13,7 +13,7 @@ const { module: Qmodule, test } = QUnit;
 Qmodule('inserter', function (hooks) {
   let builder: Builder;
   let upstream: string;
-  let publicAssetURL: string | undefined;
+  let publicAssetURL: string;
   let bundleConfig: BundleConfig;
   let buildResult: BuildResult;
   let insertScriptsAt: string | undefined;
@@ -50,7 +50,7 @@ Qmodule('inserter', function (hooks) {
       },
       vendor: { css: '/assets/vendor.css', js: '/assets/vendor.js' },
     });
-    publicAssetURL = undefined;
+    publicAssetURL = '/assets/';
   });
 
   hooks.afterEach(function (this: any) {
@@ -131,26 +131,6 @@ Qmodule('inserter', function (hooks) {
     assert.equal(
       readIndex(),
       `<link rel="stylesheet" href="/assets/rodnev.css"/>\n<link rel="stylesheet" href="/assets/chunk.1.css"/>`
-    );
-  });
-
-  test('uses same rootURL as vendor.js', async function (assert) {
-    buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
-    writeIndex(`<script src="https://cdn.com/1234/assets/vendor.js"></script>`);
-    await build();
-    assert.equal(
-      readIndex(),
-      `<script src="https://cdn.com/1234/assets/vendor.js"></script>\n<script src="https://cdn.com/1234/assets/chunk.1.js"></script>`
-    );
-  });
-
-  test('uses same rootURL as vendor.css', async function (assert) {
-    buildResult.entrypoints.set('app', ['assets/chunk.1.css']);
-    writeIndex(`<link rel="stylesheet" href="https://cdn.com/1234/assets/vendor.css"/>`);
-    await build();
-    assert.equal(
-      readIndex(),
-      `<link rel="stylesheet" href="https://cdn.com/1234/assets/vendor.css"/>\n<link rel="stylesheet" href="https://cdn.com/1234/assets/chunk.1.css"/>`
     );
   });
 

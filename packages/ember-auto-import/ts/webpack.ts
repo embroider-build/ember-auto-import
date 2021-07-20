@@ -23,24 +23,6 @@ registerHelper('join', function (list, connector) {
 });
 
 const entryTemplate = compile(`
-if (typeof document !== 'undefined') {
-  {{#if publicAssetURL}}
-  __webpack_public_path__ = '{{js-string-escape publicAssetURL}}';
-  {{else}}
-  {{!
-      locate the webpack lazy loaded chunks relative to the currently executing
-      script. The last <script> in DOM should be us, assuming that we are being
-      synchronously loaded, which is the normal thing to do. If people are doing
-      weirder things than that, they may need to explicitly set a publicAssetURL
-      instead.
-  }}
-  __webpack_public_path__ = (function(){
-    var scripts = document.querySelectorAll('script');
-    return scripts[scripts.length - 1].src.replace(/\\/[^/]*$/, '/');
-  })();
-  {{/if}}
-}
-
 module.exports = (function(){
   var d = _eai_d;
   var r = _eai_r;
@@ -156,7 +138,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       target: `browserslist:${this.opts.browserslist}`,
       output: {
         path: join(this.outputPath, 'assets'),
-        publicPath: '',
+        publicPath: this.opts.publicAssetURL,
         filename: `chunk.[id].[chunkhash].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,
         libraryTarget: 'var',

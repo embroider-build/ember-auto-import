@@ -348,18 +348,13 @@ export default class Package {
     return this._emberCLIBabelExtensions!;
   }
 
-  publicAssetURL(): string | undefined {
-    // only apps (not addons) are allowed to set this
+  publicAssetURL(): string {
     if (this.isAddon) {
-      return undefined;
+      throw new Error(`bug: only the app should control publicAssetURL`);
     }
-    let url = this.autoImportOptions && this.autoImportOptions.publicAssetURL;
-    if (url) {
-      if (url[url.length - 1] !== '/') {
-        url = url + '/';
-      }
-    }
-    return url;
+    return ensureTrailingSlash(
+      this.autoImportOptions?.publicAssetURL ?? ensureTrailingSlash((this._parent as any).config().rootURL) + 'assets/'
+    );
   }
 
   get styleLoaderOptions(): Record<string, unknown> | undefined {
@@ -523,4 +518,11 @@ function isPrecise(leadingQuasi: string): boolean {
   let slashes = count(leadingQuasi, '/');
   let minSlashes = leadingQuasi.startsWith('@') ? 2 : 1;
   return slashes >= minSlashes;
+}
+
+function ensureTrailingSlash(url: string): string {
+  if (url[url.length - 1] !== '/') {
+    url = url + '/';
+  }
+  return url;
 }
