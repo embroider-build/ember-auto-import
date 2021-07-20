@@ -10,12 +10,18 @@ import { BuildResult, Bundler } from './bundler';
 
 const debug = makeDebug('ember-auto-import:inserter');
 
+export interface InserterOptions {
+  publicAssetURL: string | undefined;
+  insertScriptsAt: string | undefined;
+  insertStylesAt: string | undefined;
+}
+
 export class Inserter extends Plugin {
   constructor(
     allApp: InputNode,
     private bundler: Bundler,
     private config: BundleConfig,
-    private publicAssetURL: string | undefined
+    private options: InserterOptions
   ) {
     super([allApp], {
       annotation: 'ember-auto-import-inserter',
@@ -142,8 +148,8 @@ export class Inserter extends Plugin {
   }
 
   private chunkURL(rootURL: string, chunk: string) {
-    if (this.publicAssetURL) {
-      return chunk.replace(/^assets\//, this.publicAssetURL);
+    if (this.options.publicAssetURL) {
+      return chunk.replace(/^assets\//, this.options.publicAssetURL);
     } else {
       return `${rootURL}${chunk}`;
     }

@@ -16,9 +16,15 @@ Qmodule('inserter', function (hooks) {
   let publicAssetURL: string | undefined;
   let bundleConfig: BundleConfig;
   let buildResult: BuildResult;
+  let insertScriptsAt: string | undefined;
+  let insertStylesAt: string | undefined;
 
   async function build() {
-    let inserter = new Inserter(new UnwatchedDir(upstream), { buildResult } as Bundler, bundleConfig, publicAssetURL);
+    let inserter = new Inserter(new UnwatchedDir(upstream), { buildResult } as Bundler, bundleConfig, {
+      publicAssetURL,
+      insertScriptsAt,
+      insertStylesAt,
+    });
     builder = new broccoli.Builder(inserter);
     await builder.build();
   }
