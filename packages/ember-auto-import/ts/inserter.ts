@@ -6,7 +6,7 @@ import { outputFileSync, readJSONSync, writeJSONSync } from 'fs-extra';
 import { join } from 'path';
 import parse5 from 'parse5';
 import BundleConfig, { BundleName } from './bundle-config';
-import { BuildResult, Bundler } from './bundler';
+import { Bundler } from './bundler';
 
 const debug = makeDebug('ember-auto-import:inserter');
 
@@ -14,6 +14,30 @@ export interface InserterOptions {
   publicAssetURL: string;
   insertScriptsAt: string | undefined;
   insertStylesAt: string | undefined;
+}
+
+interface Chunks {
+  scripts: (
+    | {
+        scriptChunks: string[];
+        bundleName: BundleName;
+        inserted: boolean;
+        targetSrc: string;
+      }
+    | {
+        scriptChunks: string[];
+        bundleName: BundleName;
+        inserted: boolean;
+        targetElement: string;
+      }
+  )[];
+
+  styles: {
+    styleChunks: string[];
+    bundleName: BundleName;
+    inserted: boolean;
+    targetHref: string;
+  }[];
 }
 
 export class Inserter extends Plugin {
@@ -29,7 +53,7 @@ export class Inserter extends Plugin {
   }
   async build() {
     let fastbootInfo = this.fastbootManifestInfo();
-    let chunks = categorizeChunks(this.bundler.buildResult, this.config);
+    let chunks = this.categorizeChunks();
     for (let filename of this.config.htmlEntrypoints()) {
       let fullName = join(this.inputPaths[0], filename);
       if (existsSync(fullName)) {
@@ -76,6 +100,14 @@ export class Inserter extends Plugin {
         }
       }
 
+      if (element.tagName === this.options.insertScriptsAt) {
+        let entrypoint = element.attrs.find(a => a.name === 'entrypoint');
+        if (!entrypoint) {
+          throw new Error(`<${element.tagName}/> element in ${filename} is missing required entrypoint attribute`);
+        }
+        this.replaceCustomScript(chunks, fastbootInfo, stringInserter, element, entrypoint.value);
+      }
+
       if (element.tagName === 'link') {
         if (element.attrs.some(a => a.name === 'rel' && a.value === 'stylesheet')) {
           let href = element.attrs.find(a => a.name === 'href')?.value;
@@ -89,7 +121,13 @@ export class Inserter extends Plugin {
 
     let appScripts = [...chunks.scripts.values()].find(entry => entry.bundleName === 'app');
     if (appScripts && !appScripts.inserted) {
-      throw new Error(`ember-auto-import could not find a place to insert app scripts in ${filename}.`);
+      if ('targetSrc' in appScripts) {
+        throw new Error(`ember-auto-import could not find a place to insert app scripts in ${filename}.`);
+      } else {
+        throw new Error(
+          `ember-auto-import cannot find <${appScripts.targetElement} entrypoint="${appScripts.bundleName}"> in ${filename}.`
+        );
+      }
     }
 
     let appStyles = [...chunks.styles.values()].find(entry => entry.bundleName === 'app');
@@ -107,8 +145,11 @@ export class Inserter extends Plugin {
     element: parse5.Element,
     src: string
   ) {
-    for (let [url, entry] of chunks.scripts) {
-      if (src.endsWith(url)) {
+    for (let entry of chunks.scripts) {
+      if (!('targetSrc' in entry)) {
+        continue;
+      }
+      if (src.endsWith(entry.targetSrc)) {
         let { scriptChunks, bundleName } = entry;
         entry.inserted = true;
         debug(`inserting %s`, scriptChunks);
@@ -129,9 +170,63 @@ export class Inserter extends Plugin {
     }
   }
 
+  private replaceCustomScript(
+    chunks: Chunks,
+    fastbootInfo: ReturnType<typeof Inserter.prototype.fastbootManifestInfo>,
+    stringInserter: StringInserter,
+    element: parse5.Element,
+    bundleName: string
+  ) {
+    let loc = element.sourceCodeLocation!;
+    stringInserter.remove(loc.startOffset, loc.endOffset - loc.startOffset);
+    for (let entry of chunks.scripts) {
+      if (!('targetElement' in entry)) {
+        continue;
+      }
+      if (element.tagName !== entry.targetElement) {
+        continue;
+      }
+      if (bundleName !== entry.bundleName) {
+        continue;
+      }
+      let { scriptChunks } = entry;
+      entry.inserted = true;
+      debug(`inserting %s`, scriptChunks);
+      let tags = scriptChunks.map(chunk => this.scriptFromCustomElement(element, chunk));
+      if (fastbootInfo?.readsHTML && bundleName === 'app') {
+        // lazy chunks are eager in fastboot because webpack's lazy
+        // loading doesn't work in fastboot, because we share a single
+        // build with the browser and use a browser-specific
+        // lazy-loading implementation. It's probably better to make
+        // them eager on the server anyway, so they're handled as part
+        // of server startup.
+        tags = tags.concat(
+          this.bundler.buildResult.lazyAssets.map(chunk =>
+            this.scriptFromCustomElement(element, chunk, 'fastboot-script')
+          )
+        );
+      }
+      stringInserter.insert(loc.endOffset, tags.join('\n'));
+    }
+  }
+
+  private scriptFromCustomElement(element: parse5.Element, chunk: string, tag = 'script') {
+    let output = `<${tag} src="${this.chunkURL(chunk)}"`;
+    for (let { name, value } of element.attrs) {
+      if (name !== 'entrypoint') {
+        output += ` ${name}`;
+        if (value) {
+          output += `="${value}"`;
+        }
+      }
+    }
+    output += `></${tag}>`;
+    return output;
+  }
+
   private insertStyles(chunks: Chunks, stringInserter: StringInserter, element: parse5.Element, href: string) {
-    for (let [url, entry] of chunks.styles) {
-      if (href.endsWith(url)) {
+    for (let entry of chunks.styles) {
+      if (href.endsWith(entry.targetHref)) {
         let { styleChunks } = entry;
         entry.inserted = true;
         debug(`inserting %s`, styleChunks);
@@ -171,45 +266,77 @@ export class Inserter extends Plugin {
       return { pkg, readsHTML: false, vendorFiles: pkg.fastboot.manifest.vendorFiles };
     }
   }
-}
 
-interface Chunks {
-  scripts: Map<string, { scriptChunks: string[]; bundleName: BundleName; inserted: boolean }>;
-  styles: Map<string, { styleChunks: string[]; bundleName: BundleName; inserted: boolean }>;
-}
+  private categorizeChunks(): Chunks {
+    let scripts: Chunks['scripts'] = [];
+    let styles: Chunks['styles'] = [];
 
-function categorizeChunks(buildResult: BuildResult, config: BundleConfig): Chunks {
-  let scripts: Chunks['scripts'] = new Map();
-  let styles: Chunks['styles'] = new Map();
-
-  for (let [bundleName, assets] of buildResult.entrypoints) {
-    let scriptChunks = assets.filter(a => a.endsWith('.js'));
-    if (scriptChunks.length > 0) {
-      scripts.set(config.bundleEntrypoint(bundleName, 'js'), { scriptChunks, bundleName, inserted: false });
+    for (let [bundleName, assets] of this.bundler.buildResult.entrypoints) {
+      let scriptChunks = assets.filter(a => a.endsWith('.js'));
+      if (scriptChunks.length > 0) {
+        if (this.options.insertScriptsAt) {
+          scripts.push({
+            scriptChunks,
+            bundleName,
+            inserted: false,
+            targetElement: this.options.insertScriptsAt,
+          });
+        } else {
+          scripts.push({
+            scriptChunks,
+            bundleName,
+            inserted: false,
+            targetSrc: this.config.bundleEntrypoint(bundleName, 'js'),
+          });
+        }
+      }
+      let styleChunks = assets.filter(a => a.endsWith('.css'));
+      if (styleChunks.length > 0) {
+        styles.push({
+          styleChunks,
+          bundleName,
+          inserted: false,
+          targetHref: this.config.bundleEntrypoint(bundleName, 'css'),
+        });
+      }
     }
-    let styleChunks = assets.filter(a => a.endsWith('.css'));
-    if (styleChunks.length > 0) {
-      styles.set(config.bundleEntrypoint(bundleName, 'css'), { styleChunks, bundleName, inserted: false });
-    }
+    return { scripts, styles };
   }
-  return { scripts, styles };
 }
 
 class StringInserter {
-  private insertions: { location: number; str: string }[] = [];
+  private mutations: (
+    | {
+        type: 'insert';
+        location: number;
+        str: string;
+      }
+    | {
+        type: 'remove';
+        location: number;
+        length: number;
+      }
+  )[] = [];
   constructor(private original: string) {}
   insert(location: number, str: string) {
-    this.insertions.push({ location, str });
+    this.mutations.push({ type: 'insert', location, str });
+  }
+  remove(location: number, length: number) {
+    this.mutations.push({ type: 'remove', location, length });
   }
   serialize(): string {
     let output: string[] = [];
-    let insertions = this.insertions.slice().sort((a, b) => a.location - b.location);
+    let mutations = this.mutations.slice().sort((a, b) => a.location - b.location);
     let cursor = 0;
-    while (insertions.length > 0) {
-      let nextInsertion = insertions.shift()!;
-      output.push(this.original.slice(cursor, nextInsertion.location));
-      output.push(nextInsertion.str);
-      cursor = nextInsertion.location;
+    while (mutations.length > 0) {
+      let nextMutation = mutations.shift()!;
+      output.push(this.original.slice(cursor, nextMutation.location));
+      if (nextMutation.type === 'insert') {
+        output.push(nextMutation.str);
+        cursor = nextMutation.location;
+      } else {
+        cursor = nextMutation.location + nextMutation.length;
+      }
     }
     output.push(this.original.slice(cursor));
     return output.join('');

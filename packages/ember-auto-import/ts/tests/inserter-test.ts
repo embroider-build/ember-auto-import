@@ -3,7 +3,7 @@ import 'qunit-assertions-extra';
 import broccoli, { Builder } from 'broccoli';
 import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
-import { ensureDirSync, readFileSync, outputFileSync, removeSync } from 'fs-extra';
+import { ensureDirSync, readFileSync, outputFileSync, removeSync, readJSONSync } from 'fs-extra';
 import { join } from 'path';
 import { Inserter } from '../inserter';
 import BundleConfig from '../bundle-config';
@@ -95,6 +95,52 @@ Qmodule('inserter', function (hooks) {
     assert.equal(readIndex(), `<script src="/assets/vendor.js"></script>\n<script src="/assets/chunk.1.js"></script>`);
   });
 
+  test('inserts fastboot scripts when using newer fastboot manifest', async function (assert) {
+    buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
+    buildResult.lazyAssets.push('assets/chunk.2.js');
+    writeIndex(`<script src="/assets/vendor.js"></script>`);
+    outputFileSync(
+      join(upstream, 'package.json'),
+      JSON.stringify({
+        fastboot: {
+          schemaVersion: 5,
+        },
+      })
+    );
+    await build();
+    assert.equal(
+      readIndex(),
+      `<script src="/assets/vendor.js"></script>\n<script src="/assets/chunk.1.js"></script>\n<fastboot-script src="/assets/chunk.2.js"></fastboot-script>`
+    );
+  });
+
+  test('inserts scripts into older fastboot manifest', async function (assert) {
+    buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
+    buildResult.lazyAssets.push('assets/chunk.2.js');
+    writeIndex(`<script src="/assets/vendor.js"></script>`);
+    outputFileSync(
+      join(upstream, 'package.json'),
+      JSON.stringify({
+        fastboot: {
+          schemaVersion: 3,
+          manifest: {
+            vendorFiles: ['something.js'],
+          },
+        },
+      })
+    );
+    await build();
+    assert.equal(readIndex(), `<script src="/assets/vendor.js"></script>\n<script src="/assets/chunk.1.js"></script>`);
+    assert.deepEqual(readJSONSync(join(builder.outputPath, 'package.json')), {
+      fastboot: {
+        schemaVersion: 3,
+        manifest: {
+          vendorFiles: ['something.js', 'assets/chunk.1.js', 'assets/chunk.2.js'],
+        },
+      },
+    });
+  });
+
   test('inserts app styles after vendor.css', async function (assert) {
     buildResult.entrypoints.set('app', ['assets/chunk.1.css']);
     writeIndex(`<link rel="stylesheet" href="/assets/vendor.css"/>`);
@@ -154,5 +200,79 @@ Qmodule('inserter', function (hooks) {
       readIndex(),
       `<link rel="stylesheet" href="/assets/vendor.css"/>\n<link rel="stylesheet" href="https://cdn.com/4321/assets/chunk.1.css"/>`
     );
+  });
+
+  test('can customize script insertion location', async function (assert) {
+    buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
+    insertScriptsAt = 'auto-import-script';
+    writeIndex(`<auto-import-script entrypoint="app"></auto-import-script>\n<script src="/assets/vendor.js"></script>`);
+    await build();
+    assert.equal(readIndex(), `<script src="/assets/chunk.1.js"></script>\n<script src="/assets/vendor.js"></script>`);
+  });
+
+  test('customized script insertion supports fastboot-script', async function (assert) {
+    buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
+    buildResult.lazyAssets.push('assets/chunk.2.js');
+    outputFileSync(
+      join(upstream, 'package.json'),
+      JSON.stringify({
+        fastboot: {
+          schemaVersion: 5,
+        },
+      })
+    );
+    insertScriptsAt = 'auto-import-script';
+    writeIndex(
+      `<auto-import-script entrypoint="app" data-foo="bar"></auto-import-script>\n<script src="/assets/vendor.js"></script>`
+    );
+    await build();
+    assert.equal(
+      readIndex(),
+      `<script src="/assets/chunk.1.js" data-foo="bar"></script>\n<fastboot-script src="/assets/chunk.2.js" data-foo="bar"></fastboot-script>\n<script src="/assets/vendor.js"></script>`
+    );
+  });
+
+  test('can customize attributes on inserted script', async function (assert) {
+    buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
+    insertScriptsAt = 'auto-import-script';
+    writeIndex(`<div><auto-import-script entrypoint="app" defer data-foo="bar"></auto-import-script></div>`);
+    await build();
+    assert.equal(readIndex(), `<div><script src="/assets/chunk.1.js" defer data-foo="bar"></script></div>`);
+  });
+
+  test('removes unused custom script element', async function (assert) {
+    insertScriptsAt = 'auto-import-script';
+    writeIndex(
+      `<div><auto-import-script entrypoint="app"></auto-import-script></div><script src="/assets/vendor.js"></script>`
+    );
+    await build();
+    assert.equal(readIndex(), `<div></div><script src="/assets/vendor.js"></script>`);
+  });
+
+  test('errors when custom element is missing entrypoint', async function (assert) {
+    buildResult.entrypoints.set('app', ['assets/chunk.1.css']);
+    insertScriptsAt = 'auto-import-script';
+    writeIndex('<auto-import-script />');
+    try {
+      await build();
+      throw new Error('should not get here');
+    } catch (err: any) {
+      assert.contains(
+        err.message,
+        '<auto-import-script/> element in index.html is missing required entrypoint attribute'
+      );
+    }
+  });
+
+  test('errors when custom element is configured but not present', async function (assert) {
+    buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
+    insertScriptsAt = 'auto-import-script';
+    writeIndex('<uto-import-script entrypoint="app"></uto-import-script>');
+    try {
+      await build();
+      throw new Error('should not get here');
+    } catch (err: any) {
+      assert.contains(err.message, 'ember-auto-import cannot find <auto-import-script entrypoint="app"> in index.html');
+    }
   });
 });
