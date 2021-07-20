@@ -4,7 +4,6 @@
 */
 
 import { dirname } from 'path';
-import { AppInstance } from '@embroider/shared-internals';
 const testsPattern = new RegExp(`^(@[^/]+)?/?[^/]+/(tests|test-support)/`);
 
 import type { TreeType } from './analyzer';
@@ -16,8 +15,18 @@ function exhausted(label: string, value: never): never {
 export type BundleName = 'app' | 'tests';
 export type BundleType = 'js' | 'css';
 
+interface OutputPaths {
+  vendor: {
+    js: string;
+    css: string;
+  };
+  app: {
+    html: string;
+  };
+}
+
 export default class BundleConfig {
-  constructor(private emberApp: AppInstance) {}
+  constructor(private outputPaths: OutputPaths) {}
 
   // This list of valid bundles, in priority order. The first one in the list that
   // needs a given import will end up with that import.
@@ -50,9 +59,9 @@ export default class BundleConfig {
       case 'app':
         switch (type) {
           case 'js':
-            return this.emberApp.options.outputPaths.vendor.js.replace(/^\//, '');
+            return this.outputPaths.vendor.js.replace(/^\//, '');
           case 'css':
-            return this.emberApp.options.outputPaths.vendor.css.replace(/^\//, '');
+            return this.outputPaths.vendor.css.replace(/^\//, '');
           default:
             exhausted('app bundle type', type);
         }
@@ -94,6 +103,6 @@ export default class BundleConfig {
   }
 
   htmlEntrypoints() {
-    return [this.emberApp.options.outputPaths.app.html, 'tests/index.html'];
+    return [this.outputPaths.app.html, 'tests/index.html'];
   }
 }
