@@ -153,4 +153,26 @@ Qmodule('inserter', function (hooks) {
       `<link rel="stylesheet" href="https://cdn.com/1234/assets/vendor.css"/>\n<link rel="stylesheet" href="https://cdn.com/1234/assets/chunk.1.css"/>`
     );
   });
+
+  test('uses customized publicAssetURL for JS', async function (assert) {
+    publicAssetURL = 'https://cdn.com/4321/assets/';
+    buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
+    writeIndex(`<script src="/assets/vendor.js"></script>`);
+    await build();
+    assert.equal(
+      readIndex(),
+      `<script src="/assets/vendor.js"></script>\n<script src="https://cdn.com/4321/assets/chunk.1.js"></script>`
+    );
+  });
+
+  test('uses customized publicAssetURL for css', async function (assert) {
+    publicAssetURL = 'https://cdn.com/4321/assets/';
+    buildResult.entrypoints.set('app', ['assets/chunk.1.css']);
+    writeIndex(`<link rel="stylesheet" href="/assets/vendor.css"/>`);
+    await build();
+    assert.equal(
+      readIndex(),
+      `<link rel="stylesheet" href="/assets/vendor.css"/>\n<link rel="stylesheet" href="https://cdn.com/4321/assets/chunk.1.css"/>`
+    );
+  });
 });
