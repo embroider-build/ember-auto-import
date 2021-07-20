@@ -19,25 +19,41 @@ export interface InserterOptions {
 interface Chunks {
   scripts: (
     | {
+        // these chunks should be inserted after a script tag whose src ends
+        // with targetSrc
+        targetSrc: string;
         scriptChunks: string[];
         bundleName: BundleName;
         inserted: boolean;
-        targetSrc: string;
       }
     | {
+        // these chunks should replace the custom element with tagName
+        // targetElement
+        targetElement: string;
         scriptChunks: string[];
         bundleName: BundleName;
         inserted: boolean;
-        targetElement: string;
       }
   )[];
 
-  styles: {
-    styleChunks: string[];
-    bundleName: BundleName;
-    inserted: boolean;
-    targetHref: string;
-  }[];
+  styles: (
+    | {
+        // these chunks should be inserted after a link tag whose href ends with
+        // targetHref
+        targetHref: string;
+        styleChunks: string[];
+        bundleName: BundleName;
+        inserted: boolean;
+      }
+    | {
+        // these chunks should replace the custom element with tagName
+        // targetElement
+        targetElement: string;
+        styleChunks: string[];
+        bundleName: BundleName;
+        inserted: boolean;
+      }
+  )[];
 }
 
 export class Inserter extends Plugin {
@@ -116,6 +132,14 @@ export class Inserter extends Plugin {
             this.insertStyles(chunks, stringInserter, element, href);
           }
         }
+      }
+
+      if (element.tagName === this.options.insertStylesAt) {
+        let entrypoint = element.attrs.find(a => a.name === 'entrypoint');
+        if (!entrypoint) {
+          throw new Error(`<${element.tagName}/> element in ${filename} is missing required entrypoint attribute`);
+        }
+        this.replaceCustomStyle(chunks, stringInserter, element, entrypoint.value);
       }
     });
 
@@ -210,6 +234,32 @@ export class Inserter extends Plugin {
     }
   }
 
+  private replaceCustomStyle(
+    chunks: Chunks,
+    stringInserter: StringInserter,
+    element: parse5.Element,
+    bundleName: string
+  ) {
+    let loc = element.sourceCodeLocation!;
+    stringInserter.remove(loc.startOffset, loc.endOffset - loc.startOffset);
+    for (let entry of chunks.styles) {
+      if (!('targetElement' in entry)) {
+        continue;
+      }
+      if (element.tagName !== entry.targetElement) {
+        continue;
+      }
+      if (bundleName !== entry.bundleName) {
+        continue;
+      }
+      let { styleChunks } = entry;
+      entry.inserted = true;
+      debug(`inserting %s`, styleChunks);
+      let tags = styleChunks.map(chunk => this.styleFromCustomElement(element, chunk));
+      stringInserter.insert(loc.endOffset, tags.join('\n'));
+    }
+  }
+
   private scriptFromCustomElement(element: parse5.Element, chunk: string, tag = 'script') {
     let output = `<${tag} src="${this.chunkURL(chunk)}"`;
     for (let { name, value } of element.attrs) {
@@ -224,8 +274,25 @@ export class Inserter extends Plugin {
     return output;
   }
 
+  private styleFromCustomElement(element: parse5.Element, chunk: string) {
+    let output = `<link rel="stylesheet" href="${this.chunkURL(chunk)}"`;
+    for (let { name, value } of element.attrs) {
+      if (name !== 'entrypoint') {
+        output += ` ${name}`;
+        if (value) {
+          output += `="${value}"`;
+        }
+      }
+    }
+    output += `/>`;
+    return output;
+  }
+
   private insertStyles(chunks: Chunks, stringInserter: StringInserter, element: parse5.Element, href: string) {
     for (let entry of chunks.styles) {
+      if (!('targetHref' in entry)) {
+        continue;
+      }
       if (href.endsWith(entry.targetHref)) {
         let { styleChunks } = entry;
         entry.inserted = true;
@@ -292,12 +359,21 @@ export class Inserter extends Plugin {
       }
       let styleChunks = assets.filter(a => a.endsWith('.css'));
       if (styleChunks.length > 0) {
-        styles.push({
-          styleChunks,
-          bundleName,
-          inserted: false,
-          targetHref: this.config.bundleEntrypoint(bundleName, 'css'),
-        });
+        if (this.options.insertStylesAt) {
+          styles.push({
+            styleChunks,
+            bundleName,
+            inserted: false,
+            targetElement: this.options.insertStylesAt,
+          });
+        } else {
+          styles.push({
+            styleChunks,
+            bundleName,
+            inserted: false,
+            targetHref: this.config.bundleEntrypoint(bundleName, 'css'),
+          });
+        }
       }
     }
     return { scripts, styles };

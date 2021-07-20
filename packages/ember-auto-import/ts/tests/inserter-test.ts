@@ -249,7 +249,7 @@ Qmodule('inserter', function (hooks) {
     assert.equal(readIndex(), `<div></div><script src="/assets/vendor.js"></script>`);
   });
 
-  test('errors when custom element is missing entrypoint', async function (assert) {
+  test('errors when custom script element is missing entrypoint', async function (assert) {
     buildResult.entrypoints.set('app', ['assets/chunk.1.css']);
     insertScriptsAt = 'auto-import-script';
     writeIndex('<auto-import-script />');
@@ -273,6 +273,51 @@ Qmodule('inserter', function (hooks) {
       throw new Error('should not get here');
     } catch (err: any) {
       assert.contains(err.message, 'ember-auto-import cannot find <auto-import-script entrypoint="app"> in index.html');
+    }
+  });
+
+  test('can customize style insertion location', async function (assert) {
+    buildResult.entrypoints.set('app', ['assets/chunk.1.css']);
+    insertStylesAt = 'auto-import-style';
+    writeIndex(
+      `<auto-import-style entrypoint="app"></auto-import-style>\n<link rel="stylesheet" href="/assets/vendor.css"/>`
+    );
+    await build();
+    assert.equal(
+      readIndex(),
+      `<link rel="stylesheet" href="/assets/chunk.1.css"/>\n<link rel="stylesheet" href="/assets/vendor.css"/>`
+    );
+  });
+
+  test('can customize attributes on inserted style', async function (assert) {
+    buildResult.entrypoints.set('app', ['assets/chunk.1.css']);
+    insertScriptsAt = 'auto-import-style';
+    writeIndex(`<div><auto-import-style entrypoint="app" data-baz data-foo="bar"></auto-import-style></div>`);
+    await build();
+    assert.equal(readIndex(), `<div><link rel="stylesheet" href="/assets/chunk.1.css" data-baz data-foo="bar"/></div>`);
+  });
+
+  test('removes unused custom style element', async function (assert) {
+    insertScriptsAt = 'auto-import-style';
+    writeIndex(
+      `<div><auto-import-style entrypoint="app"></auto-import-style></div><link rel="styleshee" href="/assets/vendor.css"/>`
+    );
+    await build();
+    assert.equal(readIndex(), `<div></div><link rel="styleshee" href="/assets/vendor.css"/>`);
+  });
+
+  test('errors when custom style element is missing entrypoint', async function (assert) {
+    buildResult.entrypoints.set('app', ['assets/chunk.1.css']);
+    insertStylesAt = 'auto-import-style';
+    writeIndex('<auto-import-style></auto-import-style');
+    try {
+      await build();
+      throw new Error('should not get here');
+    } catch (err: any) {
+      assert.contains(
+        err.message,
+        '<auto-import-style/> element in index.html is missing required entrypoint attribute'
+      );
     }
   });
 });
