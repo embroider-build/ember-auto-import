@@ -16,44 +16,21 @@ export interface InserterOptions {
   insertStylesAt: string | undefined;
 }
 
-interface Chunks {
-  scripts: (
-    | {
-        // these chunks should be inserted after a script tag whose src ends
-        // with targetSrc
-        targetSrc: string;
-        scriptChunks: string[];
-        bundleName: BundleName;
-        inserted: boolean;
-      }
-    | {
-        // these chunks should replace the custom element with tagName
-        // targetElement
-        targetElement: string;
-        scriptChunks: string[];
-        bundleName: BundleName;
-        inserted: boolean;
-      }
-  )[];
+interface ScriptTarget {
+  scriptChunks: string[];
+  bundleName: BundleName;
+  inserted: boolean;
+}
 
-  styles: (
-    | {
-        // these chunks should be inserted after a link tag whose href ends with
-        // targetHref
-        targetHref: string;
-        styleChunks: string[];
-        bundleName: BundleName;
-        inserted: boolean;
-      }
-    | {
-        // these chunks should replace the custom element with tagName
-        // targetElement
-        targetElement: string;
-        styleChunks: string[];
-        bundleName: BundleName;
-        inserted: boolean;
-      }
-  )[];
+interface StyleTarget {
+  styleChunks: string[];
+  bundleName: BundleName;
+  inserted: boolean;
+}
+
+interface Targets {
+  scripts: ScriptTarget[];
+  styles: StyleTarget[];
 }
 
 export class Inserter extends Plugin {
@@ -93,87 +70,109 @@ export class Inserter extends Plugin {
     }
   }
 
+  private bundleEntrypoint(target: StyleTarget | ScriptTarget): string {
+    return this.config.bundleEntrypoint(target.bundleName, 'scriptChunks' in target ? 'js' : 'css');
+  }
+
   private processHTML(
     filename: string,
     fullName: string,
     fastbootInfo: ReturnType<typeof Inserter.prototype.fastbootManifestInfo>,
-    chunks: Chunks
+    targets: Targets
   ) {
     debug(`parsing %s`, filename);
     let html = readFileSync(fullName, 'utf8');
     let ast = parse5.parse(html, { sourceCodeLocationInfo: true });
     let stringInserter = new StringInserter(html);
 
-    debug(`looking for scripts: %s`, [...chunks.scripts.keys()]);
-    debug(`looking for styles: %s`, [...chunks.styles.keys()]);
+    if (this.options.insertScriptsAt) {
+      debug(`looking for custom script element: %s`, this.options.insertScriptsAt);
+    } else {
+      debug(
+        `looking for scripts with src: %s`,
+        targets.scripts.map(s => this.bundleEntrypoint(s))
+      );
+    }
+
+    if (this.options.insertStylesAt) {
+      debug(`looking for custom style element: %s`, this.options.insertStylesAt);
+    } else {
+      debug(
+        `looking for link with href: %s`,
+        targets.styles.map(s => this.bundleEntrypoint(s))
+      );
+    }
 
     traverse(ast, element => {
-      if (element.tagName === 'script') {
+      if (this.options.insertScriptsAt) {
+        if (element.tagName === this.options.insertScriptsAt) {
+          let entrypoint = element.attrs.find(a => a.name === 'entrypoint');
+          if (!entrypoint) {
+            throw new Error(`<${element.tagName}/> element in ${filename} is missing required entrypoint attribute`);
+          }
+          this.replaceCustomScript(targets, fastbootInfo, stringInserter, element, entrypoint.value);
+        }
+      } else if (element.tagName === 'script') {
         let src = element.attrs.find(a => a.name === 'src')?.value;
         if (src) {
           debug(`found script with src=%s`, src);
-          this.insertScripts(chunks, fastbootInfo, stringInserter, element, src);
+          this.insertScripts(targets, fastbootInfo, stringInserter, element, src);
         }
       }
 
-      if (element.tagName === this.options.insertScriptsAt) {
-        let entrypoint = element.attrs.find(a => a.name === 'entrypoint');
-        if (!entrypoint) {
-          throw new Error(`<${element.tagName}/> element in ${filename} is missing required entrypoint attribute`);
+      if (this.options.insertStylesAt) {
+        if (element.tagName === this.options.insertStylesAt) {
+          let entrypoint = element.attrs.find(a => a.name === 'entrypoint');
+          if (!entrypoint) {
+            throw new Error(`<${element.tagName}/> element in ${filename} is missing required entrypoint attribute`);
+          }
+          this.replaceCustomStyle(targets, stringInserter, element, entrypoint.value);
         }
-        this.replaceCustomScript(chunks, fastbootInfo, stringInserter, element, entrypoint.value);
-      }
-
-      if (element.tagName === 'link') {
+      } else if (element.tagName === 'link') {
         if (element.attrs.some(a => a.name === 'rel' && a.value === 'stylesheet')) {
           let href = element.attrs.find(a => a.name === 'href')?.value;
           if (href) {
             debug(`found stylesheet with href=%s`, href);
-            this.insertStyles(chunks, stringInserter, element, href);
+            this.insertStyles(targets, stringInserter, element, href);
           }
         }
       }
-
-      if (element.tagName === this.options.insertStylesAt) {
-        let entrypoint = element.attrs.find(a => a.name === 'entrypoint');
-        if (!entrypoint) {
-          throw new Error(`<${element.tagName}/> element in ${filename} is missing required entrypoint attribute`);
-        }
-        this.replaceCustomStyle(chunks, stringInserter, element, entrypoint.value);
-      }
     });
 
-    let appScripts = [...chunks.scripts.values()].find(entry => entry.bundleName === 'app');
+    let appScripts = [...targets.scripts].find(entry => entry.bundleName === 'app');
     if (appScripts && !appScripts.inserted) {
-      if ('targetSrc' in appScripts) {
-        throw new Error(`ember-auto-import could not find a place to insert app scripts in ${filename}.`);
-      } else {
+      if (this.options.insertScriptsAt) {
         throw new Error(
-          `ember-auto-import cannot find <${appScripts.targetElement} entrypoint="${appScripts.bundleName}"> in ${filename}.`
+          `ember-auto-import cannot find <${this.options.insertScriptsAt} entrypoint="${appScripts.bundleName}"> in ${filename}.`
         );
+      } else {
+        throw new Error(`ember-auto-import could not find a place to insert app scripts in ${filename}.`);
       }
     }
 
-    let appStyles = [...chunks.styles.values()].find(entry => entry.bundleName === 'app');
+    let appStyles = [...targets.styles.values()].find(entry => entry.bundleName === 'app');
     if (appStyles && !appStyles.inserted) {
-      throw new Error(`ember-auto-import could not find a place to insert app styles in ${filename}.`);
+      if (this.options.insertStylesAt) {
+        throw new Error(
+          `ember-auto-import cannot find <${this.options.insertStylesAt} entrypoint="${appStyles.bundleName}"> in ${filename}.`
+        );
+      } else {
+        throw new Error(`ember-auto-import could not find a place to insert app styles in ${filename}.`);
+      }
     }
 
     outputFileSync(join(this.outputPath, filename), stringInserter.serialize(), 'utf8');
   }
 
   private insertScripts(
-    chunks: Chunks,
+    targets: Targets,
     fastbootInfo: ReturnType<typeof Inserter.prototype.fastbootManifestInfo>,
     stringInserter: StringInserter,
     element: parse5.Element,
     src: string
   ) {
-    for (let entry of chunks.scripts) {
-      if (!('targetSrc' in entry)) {
-        continue;
-      }
-      if (src.endsWith(entry.targetSrc)) {
+    for (let entry of targets.scripts) {
+      if (src.endsWith(this.bundleEntrypoint(entry))) {
         let { scriptChunks, bundleName } = entry;
         entry.inserted = true;
         debug(`inserting %s`, scriptChunks);
@@ -195,7 +194,7 @@ export class Inserter extends Plugin {
   }
 
   private replaceCustomScript(
-    chunks: Chunks,
+    targets: Targets,
     fastbootInfo: ReturnType<typeof Inserter.prototype.fastbootManifestInfo>,
     stringInserter: StringInserter,
     element: parse5.Element,
@@ -203,13 +202,7 @@ export class Inserter extends Plugin {
   ) {
     let loc = element.sourceCodeLocation!;
     stringInserter.remove(loc.startOffset, loc.endOffset - loc.startOffset);
-    for (let entry of chunks.scripts) {
-      if (!('targetElement' in entry)) {
-        continue;
-      }
-      if (element.tagName !== entry.targetElement) {
-        continue;
-      }
+    for (let entry of targets.scripts) {
       if (bundleName !== entry.bundleName) {
         continue;
       }
@@ -235,20 +228,14 @@ export class Inserter extends Plugin {
   }
 
   private replaceCustomStyle(
-    chunks: Chunks,
+    targets: Targets,
     stringInserter: StringInserter,
     element: parse5.Element,
     bundleName: string
   ) {
     let loc = element.sourceCodeLocation!;
     stringInserter.remove(loc.startOffset, loc.endOffset - loc.startOffset);
-    for (let entry of chunks.styles) {
-      if (!('targetElement' in entry)) {
-        continue;
-      }
-      if (element.tagName !== entry.targetElement) {
-        continue;
-      }
+    for (let entry of targets.styles) {
       if (bundleName !== entry.bundleName) {
         continue;
       }
@@ -288,12 +275,9 @@ export class Inserter extends Plugin {
     return output;
   }
 
-  private insertStyles(chunks: Chunks, stringInserter: StringInserter, element: parse5.Element, href: string) {
-    for (let entry of chunks.styles) {
-      if (!('targetHref' in entry)) {
-        continue;
-      }
-      if (href.endsWith(entry.targetHref)) {
+  private insertStyles(targets: Targets, stringInserter: StringInserter, element: parse5.Element, href: string) {
+    for (let entry of targets.styles) {
+      if (href.endsWith(this.bundleEntrypoint(entry))) {
         let { styleChunks } = entry;
         entry.inserted = true;
         debug(`inserting %s`, styleChunks);
@@ -334,46 +318,25 @@ export class Inserter extends Plugin {
     }
   }
 
-  private categorizeChunks(): Chunks {
-    let scripts: Chunks['scripts'] = [];
-    let styles: Chunks['styles'] = [];
-
+  private categorizeChunks(): Targets {
+    let scripts: ScriptTarget[] = [];
+    let styles: StyleTarget[] = [];
     for (let [bundleName, assets] of this.bundler.buildResult.entrypoints) {
       let scriptChunks = assets.filter(a => a.endsWith('.js'));
       if (scriptChunks.length > 0) {
-        if (this.options.insertScriptsAt) {
-          scripts.push({
-            scriptChunks,
-            bundleName,
-            inserted: false,
-            targetElement: this.options.insertScriptsAt,
-          });
-        } else {
-          scripts.push({
-            scriptChunks,
-            bundleName,
-            inserted: false,
-            targetSrc: this.config.bundleEntrypoint(bundleName, 'js'),
-          });
-        }
+        scripts.push({
+          scriptChunks,
+          bundleName,
+          inserted: false,
+        });
       }
       let styleChunks = assets.filter(a => a.endsWith('.css'));
       if (styleChunks.length > 0) {
-        if (this.options.insertStylesAt) {
-          styles.push({
-            styleChunks,
-            bundleName,
-            inserted: false,
-            targetElement: this.options.insertStylesAt,
-          });
-        } else {
-          styles.push({
-            styleChunks,
-            bundleName,
-            inserted: false,
-            targetHref: this.config.bundleEntrypoint(bundleName, 'css'),
-          });
-        }
+        styles.push({
+          styleChunks,
+          bundleName,
+          inserted: false,
+        });
       }
     }
     return { scripts, styles };
