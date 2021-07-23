@@ -24,7 +24,7 @@ Qmodule('analyzer', function (hooks) {
       get babelOptions() {
         babelOptionsWasAccessed = true;
         return {
-          plugins: [require.resolve('../../babel-plugin')],
+          plugins: [require.resolve('@babel/plugin-syntax-typescript'), require.resolve('../../babel-plugin')],
         };
       },
       babelMajorVersion: 6,
