@@ -24,7 +24,7 @@ Qmodule('analyzer', function (hooks) {
       get babelOptions() {
         babelOptionsWasAccessed = true;
         return {
-          plugins: [require.resolve('../../babel-plugin')],
+          plugins: [require.resolve('@babel/plugin-syntax-typescript'), require.resolve('../../babel-plugin')],
         };
       },
       babelMajorVersion: 7,
@@ -173,6 +173,35 @@ Qmodule('analyzer', function (hooks) {
     await builder.build();
 
     assert.deepEqual(analyzer.imports, []);
+  });
+
+  test('type-only imports ignored in created file', async function (assert) {
+    await builder.build();
+    let original = `
+      import type Foo from 'type-import';
+      import Bar from 'value-import';
+
+      export type { Qux } from 'type-re-export';
+      export { Baz } from 'value-re-export';
+    `;
+    outputFileSync(join(upstream, 'sample.js'), original);
+    await builder.build();
+    assert.deepEqual(analyzer.imports, [
+      {
+        isDynamic: false,
+        specifier: 'value-import',
+        path: 'sample.js',
+        package: pack,
+        treeType: undefined,
+      },
+      {
+        isDynamic: false,
+        specifier: 'value-re-export',
+        path: 'sample.js',
+        package: pack,
+        treeType: undefined,
+      },
+    ]);
   });
 
   type LiteralExample = [string, string];
