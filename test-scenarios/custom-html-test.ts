@@ -57,7 +57,7 @@ appScenarios
           </html>
         `,
         templates: {
-          'application.hbs': `<div data-test="model">{{@model.aDep}}</div> <div data-test="vendor">{{@model.vendor}}</div>`,
+          'application.hbs': `<div data-test="model">{{this.model.aDep}}</div> <div data-test="vendor">{{this.model.vendor}}</div>`,
         },
         routes: {
           'application.js': `
