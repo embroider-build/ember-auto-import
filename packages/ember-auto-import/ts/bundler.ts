@@ -22,7 +22,10 @@ export interface BundlerOptions {
 }
 
 export interface BuildResult {
-  entrypoints: Map<BundleName, string[]>;
+  // the keys here include both our well-known BundleName's (which are defined
+  // automatically by ember-auto-import) as well as arbitrary string bundle
+  // names (because users can also add more entrypoints to the webpack config)
+  entrypoints: Map<BundleName | string, string[]>;
   lazyAssets: string[];
 }
 

@@ -34,10 +34,8 @@ export default class BundleConfig {
     return Object.freeze(['app', 'tests']);
   }
 
-  assertValidBundleName(name: string): asserts name is BundleName {
-    if (!this.names.includes(name as BundleName)) {
-      throw new Error(`bug: ${name} is not a known bundle name`);
-    }
+  isBuiltInBundleName(name: string): name is BundleName {
+    return this.names.includes(name as BundleName);
   }
 
   get types(): ReadonlyArray<BundleType> {

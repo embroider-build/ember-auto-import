@@ -302,9 +302,11 @@ export default class WebpackBundler extends Plugin implements Bundler {
         throw new Error(`unexpected webpack output: no entrypoint.assets`);
       }
 
-      this.opts.bundles.assertValidBundleName(id);
-
-      if (nonEmptyBundle(id, bundleDeps)) {
+      // our built-in bundles can be "empty" while still existing because we put
+      // setup code in them, so they get a special check for non-emptiness.
+      // Whereas any other bundle that was manually configured by the user
+      // should always be emitted.
+      if (!this.opts.bundles.isBuiltInBundleName(id) || nonEmptyBundle(id, bundleDeps)) {
         output.entrypoints.set(
           id,
           entrypointAssets.map(a => 'assets/' + a.name)

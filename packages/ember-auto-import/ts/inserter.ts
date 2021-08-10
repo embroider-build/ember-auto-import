@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from 'fs';
 import { outputFileSync, readJSONSync, writeJSONSync } from 'fs-extra';
 import { join } from 'path';
 import parse5 from 'parse5';
-import BundleConfig, { BundleName } from './bundle-config';
+import BundleConfig from './bundle-config';
 import { Bundler } from './bundler';
 
 const debug = makeDebug('ember-auto-import:inserter');
@@ -18,13 +18,21 @@ export interface InserterOptions {
 
 interface ScriptTarget {
   scriptChunks: string[];
-  bundleName: BundleName;
+  bundleName: string;
+  // ember-auto-import's own bundles (app and tests) can get automatically
+  // inserted after particular files in the HTML (vendor.js and
+  // test-support.js). Other custom bundles won't have this.
+  afterFile: string | undefined;
   inserted: boolean;
 }
 
 interface StyleTarget {
   styleChunks: string[];
-  bundleName: BundleName;
+  bundleName: string;
+  // ember-auto-import's own bundles (app and tests) can get automatically
+  // inserted after particular files in the HTML (vendor.css and
+  // test-support.css). Other custom bundles won't have this.
+  afterFile: string | undefined;
   inserted: boolean;
 }
 
@@ -70,10 +78,6 @@ export class Inserter extends Plugin {
     }
   }
 
-  private bundleEntrypoint(target: StyleTarget | ScriptTarget): string {
-    return this.config.bundleEntrypoint(target.bundleName, 'scriptChunks' in target ? 'js' : 'css');
-  }
-
   private processHTML(
     filename: string,
     fullName: string,
@@ -88,19 +92,13 @@ export class Inserter extends Plugin {
     if (this.options.insertScriptsAt) {
       debug(`looking for custom script element: %s`, this.options.insertScriptsAt);
     } else {
-      debug(
-        `looking for scripts with src: %s`,
-        targets.scripts.map(s => this.bundleEntrypoint(s))
-      );
+      debug(`looking for scripts with src: %s`, targets.scripts.map(s => s.afterFile).filter(Boolean));
     }
 
     if (this.options.insertStylesAt) {
       debug(`looking for custom style element: %s`, this.options.insertStylesAt);
     } else {
-      debug(
-        `looking for link with href: %s`,
-        targets.styles.map(s => this.bundleEntrypoint(s))
-      );
+      debug(`looking for link with href: %s`, targets.styles.map(s => s.afterFile).filter(Boolean));
     }
 
     traverse(ast, element => {
@@ -172,7 +170,7 @@ export class Inserter extends Plugin {
     src: string
   ) {
     for (let entry of targets.scripts) {
-      if (src.endsWith(this.bundleEntrypoint(entry))) {
+      if (entry.afterFile && src.endsWith(entry.afterFile)) {
         let { scriptChunks, bundleName } = entry;
         entry.inserted = true;
         debug(`inserting %s`, scriptChunks);
@@ -277,7 +275,7 @@ export class Inserter extends Plugin {
 
   private insertStyles(targets: Targets, stringInserter: StringInserter, element: parse5.Element, href: string) {
     for (let entry of targets.styles) {
-      if (href.endsWith(this.bundleEntrypoint(entry))) {
+      if (entry.afterFile && href.endsWith(entry.afterFile)) {
         let { styleChunks } = entry;
         entry.inserted = true;
         debug(`inserting %s`, styleChunks);
@@ -324,17 +322,27 @@ export class Inserter extends Plugin {
     for (let [bundleName, assets] of this.bundler.buildResult.entrypoints) {
       let scriptChunks = assets.filter(a => a.endsWith('.js'));
       if (scriptChunks.length > 0) {
+        let afterFile: string | undefined;
+        if (this.config.isBuiltInBundleName(bundleName)) {
+          afterFile = this.config.bundleEntrypoint(bundleName, 'js');
+        }
         scripts.push({
           scriptChunks,
           bundleName,
+          afterFile,
           inserted: false,
         });
       }
       let styleChunks = assets.filter(a => a.endsWith('.css'));
       if (styleChunks.length > 0) {
+        let afterFile: string | undefined;
+        if (this.config.isBuiltInBundleName(bundleName)) {
+          afterFile = this.config.bundleEntrypoint(bundleName, 'css');
+        }
         styles.push({
           styleChunks,
           bundleName,
+          afterFile,
           inserted: false,
         });
       }
