@@ -34,6 +34,8 @@ export interface Options {
   forbidEval?: boolean;
   skipBabel?: { package: string; semverRange?: string }[];
   watchDependencies?: (string | string[])[];
+  insertScriptsAt?: string;
+  insertStylesAt?: string;
 }
 
 interface DepResolution {
@@ -346,14 +348,13 @@ export default class Package {
     return this._emberCLIBabelExtensions!;
   }
 
-  get publicAssetURL(): string | undefined {
-    let url = this.autoImportOptions && this.autoImportOptions.publicAssetURL;
-    if (url) {
-      if (url[url.length - 1] !== '/') {
-        url = url + '/';
-      }
+  publicAssetURL(): string {
+    if (this.isAddon) {
+      throw new Error(`bug: only the app should control publicAssetURL`);
     }
-    return url;
+    return ensureTrailingSlash(
+      this.autoImportOptions?.publicAssetURL ?? ensureTrailingSlash((this._parent as any).config().rootURL) + 'assets/'
+    );
   }
 
   get styleLoaderOptions(): Record<string, unknown> | undefined {
@@ -370,6 +371,20 @@ export default class Package {
     // only apps (not addons) are allowed to set this, because it's motivated by
     // the apps own Content Security Policy.
     return Boolean(!this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval);
+  }
+
+  get insertScriptsAt(): string | undefined {
+    if (this.isAddon) {
+      throw new Error(`bug: only apps should control insertScriptsAt`);
+    }
+    return this.autoImportOptions?.insertScriptsAt;
+  }
+
+  get insertStylesAt(): string | undefined {
+    if (this.isAddon) {
+      throw new Error(`bug: only apps should control insertStylesAt`);
+    }
+    return this.autoImportOptions?.insertStylesAt;
   }
 
   get watchedDirectories(): string[] | undefined {
@@ -503,4 +518,11 @@ function isPrecise(leadingQuasi: string): boolean {
   let slashes = count(leadingQuasi, '/');
   let minSlashes = leadingQuasi.startsWith('@') ? 2 : 1;
   return slashes >= minSlashes;
+}
+
+function ensureTrailingSlash(url: string): string {
+  if (url[url.length - 1] !== '/') {
+    url = url + '/';
+  }
+  return url;
 }

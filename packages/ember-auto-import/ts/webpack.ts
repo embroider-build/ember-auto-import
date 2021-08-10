@@ -23,24 +23,6 @@ registerHelper('join', function (list, connector) {
 });
 
 const entryTemplate = compile(`
-if (typeof document !== 'undefined') {
-  {{#if publicAssetURL}}
-  __webpack_public_path__ = '{{js-string-escape publicAssetURL}}';
-  {{else}}
-  {{!
-      locate the webpack lazy loaded chunks relative to the currently executing
-      script. The last <script> in DOM should be us, assuming that we are being
-      synchronously loaded, which is the normal thing to do. If people are doing
-      weirder things than that, they may need to explicitly set a publicAssetURL
-      instead.
-  }}
-  __webpack_public_path__ = (function(){
-    var scripts = document.querySelectorAll('script');
-    return scripts[scripts.length - 1].src.replace(/\\/[^/]*$/, '/');
-  })();
-  {{/if}}
-}
-
 module.exports = (function(){
   var d = _eai_d;
   var r = _eai_r;
@@ -156,7 +138,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       target: `browserslist:${this.opts.browserslist}`,
       output: {
         path: join(this.outputPath, 'assets'),
-        publicPath: '',
+        publicPath: this.opts.publicAssetURL,
         filename: `chunk.[id].[chunkhash].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,
         libraryTarget: 'var',
@@ -293,10 +275,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
     this.writeLoaderFile();
     this.linkDeps(bundleDeps);
     let stats = await this.runWebpack();
-    this.lastBuildResult = this.summarizeStats(stats);
+    this.lastBuildResult = this.summarizeStats(stats, bundleDeps);
   }
 
-  private summarizeStats(_stats: Required<Stats>): BuildResult {
+  private summarizeStats(_stats: Required<Stats>, bundleDeps: Map<string, BundleDependencies>): BuildResult {
     let { entrypoints, assets } = _stats.toJson();
 
     // webpack's types are written rather loosely, implying that these two
@@ -320,12 +302,16 @@ export default class WebpackBundler extends Plugin implements Bundler {
         throw new Error(`unexpected webpack output: no entrypoint.assets`);
       }
 
-      this.opts.bundles.assertValidBundleName(id);
-
-      output.entrypoints.set(
-        id,
-        entrypointAssets.map(a => 'assets/' + a.name)
-      );
+      // our built-in bundles can be "empty" while still existing because we put
+      // setup code in them, so they get a special check for non-emptiness.
+      // Whereas any other bundle that was manually configured by the user
+      // should always be emitted.
+      if (!this.opts.bundles.isBuiltInBundleName(id) || nonEmptyBundle(id, bundleDeps)) {
+        output.entrypoints.set(
+          id,
+          entrypointAssets.map(a => 'assets/' + a.name)
+        );
+      }
       entrypointAssets.forEach(asset => nonLazyAssets.add(asset.name));
     }
     for (let asset of assets!) {
@@ -337,17 +323,6 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private writeEntryFile(name: string, deps: BundleDependencies) {
-    const mapTemplateImports = (imp: ResolvedTemplateImport) => ({
-      key: imp.importedBy[0].cookedQuasis.join('${e}'),
-      args: imp.expressionNameHints.join(','),
-      template:
-        '`' +
-        zip(imp.cookedQuasis, imp.expressionNameHints)
-          .map(([q, e]) => q + (e ? '${' + e + '}' : ''))
-          .join('') +
-        '`',
-    });
-
     writeFileSync(
       join(this.stagingDir, `${name}.js`),
       entryTemplate({
@@ -451,4 +426,30 @@ function eitherPattern(...patterns: any[]): (resource: string) => boolean {
     }
     return false;
   };
+}
+
+function mapTemplateImports(imp: ResolvedTemplateImport) {
+  return {
+    key: imp.importedBy[0].cookedQuasis.join('${e}'),
+    args: imp.expressionNameHints.join(','),
+    template:
+      '`' +
+      zip(imp.cookedQuasis, imp.expressionNameHints)
+        .map(([q, e]) => q + (e ? '${' + e + '}' : ''))
+        .join('') +
+      '`',
+  };
+}
+
+function nonEmptyBundle(name: string, bundleDeps: Map<string, BundleDependencies>): boolean {
+  let deps = bundleDeps.get(name);
+  if (!deps) {
+    return false;
+  }
+  return (
+    deps.staticImports.length > 0 ||
+    deps.staticTemplateImports.length > 0 ||
+    deps.dynamicImports.length > 0 ||
+    deps.dynamicTemplateImports.length > 0
+  );
 }

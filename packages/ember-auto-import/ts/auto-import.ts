@@ -54,7 +54,7 @@ export default class AutoImport implements AutoImportSharedAPI {
     this.packages.add(Package.lookupParentOf(topmostAddon));
     let host = topmostAddon.app;
     this.env = host.env;
-    this.bundles = new BundleConfig(host);
+    this.bundles = new BundleConfig(host.options.outputPaths);
     if (!this.env) {
       throw new Error('Bug in ember-auto-import: did not discover environment');
     }
@@ -122,7 +122,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       bundles: this.bundles,
       babelConfig: this.rootPackage.cleanBabelConfig(),
       browserslist: this.rootPackage.browserslist(),
-      publicAssetURL: this.publicAssetURL,
+      publicAssetURL: this.rootPackage.publicAssetURL(),
       webpack,
     });
   }
@@ -136,15 +136,13 @@ export default class AutoImport implements AutoImportSharedAPI {
     return rootPackage;
   }
 
-  private get publicAssetURL(): string | undefined {
-    // Only the app (not an addon) can customize the public asset URL, because
-    // it's an app concern.
-    return this.rootPackage.publicAssetURL;
-  }
-
   addTo(allAppTree: Node): Node {
     let bundler = debugBundler(this.makeBundler(allAppTree), 'output');
-    let inserter = new Inserter(allAppTree, bundler, this.bundles, this.publicAssetURL);
+    let inserter = new Inserter(allAppTree, bundler, this.bundles, {
+      publicAssetURL: this.rootPackage.publicAssetURL(),
+      insertScriptsAt: this.rootPackage.insertScriptsAt,
+      insertStylesAt: this.rootPackage.insertStylesAt,
+    });
     let trees = [allAppTree, bundler, inserter];
     return mergeTrees(trees, { overwrite: true });
   }
