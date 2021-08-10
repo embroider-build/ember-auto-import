@@ -128,6 +128,8 @@ Supported Options
 - `alias`: _object_, Map from imported names to substitute names that will be imported instead. This is a prefix match by default. To opt out of prefix-matching and only match exactly, add a `$` suffix to the pattern.
 - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
 - `forbidEval`: _boolean_, defaults to false. We use `eval` in development by default (because that is the fastest way to provide sourcemaps). If you need to comply with a strict Content Security Policy (CSP), you can set `forbidEval: true`. You will still get sourcemaps, they will just use a slower implementation.
+- `insertScriptsAt`: _string_, defaults to undefined. Optionally allows you to take manual control over where ember-auto-import's generated `<script>` tags will be inserted into your HTML and what attributes they will have. See "Customizing HTML Insertion" below.
+- `insertStylesAt`: _string_, defaults to undefined. Optionally allows you to take manual control over where ember-auto-import's generated `<link rel="stylesheet">` tags (if any) will be inserted into your HTML and what attributes they will have. See "Customizing HTML Insertion" below.
 - `publicAssetURL`: the public URL to your `/assets` directory on the web. Many apps won't need to set this because we try to detect it automatically, but you will need to set this explicitly if you're deploying your assets to a different origin than your app (for example, on a CDN) or if you are using `<script defer>` (which causes scripts to be unable to guess what origin they loaded from).
 - `skipBabel`: _list of objects, defaults to []_. The specified packages will be skipped from babel transpilation.
 - `watchDependencies`: _list of strings or string arrays, defaults to []_. Tells ember-auto-import that you'd like to trigger a rebuild if one of these auto-imported dependencies changes. Pass a package name that refers to one of your own dependencies, or pass an array of package names to address a deeper dependency.
@@ -176,6 +178,101 @@ To add ember-auto-import to your addon:
 - ember-auto-import will refuse to import `devDependencies` of your addon into addon code (because that would fail in a consuming application). You _can_ import `devDependencies` into your test suite & dummy app.
 - ember-auto-import will not detect import statements inside your `app` folder. This is because the files inside `app` are conceptually not part of your addon's own package namespace at all, so they don't get access to your addon's dependencies. Do all your auto-importing from the `addon` folder, and reexport in `app` as needed.
 - while addons are allowed to pass the `autoImport.webpack` option to add things to the webpack config, this makes them less likely to be broadly compatible with apps using different webpack versions. If you need to rely on a specific webpack feature, you should document which versions of webpack you support.
+
+## Customizing HTML Insertion
+
+ember-auto-import uses webpack to generate one or more chunk files containing all your auto-imported dependencies, and then ember-auto-import inserts `<script>` tags to your HTML to make sure those chunks are included into your app (and tests, as appropriate). By default, the "app" webpack chunk(s) will be inserted after Ember's traditional "vendor.js" and the "tests" webpack chunk(s) will be inserted after "test-support.js".
+
+If you need more control over the HTML insertion, you can use the `insertScriptsAt` option (or the `insertStylesAt` option, which is exactly analogous but for standalone CSS instead of JS). To customize HTML insertion:
+
+1. Set `insertScriptsAt` to a custom element name. You get to pick the name so that it can't collide with any existing custom elements in your site, but a good default choice is "auto-import-script":
+
+   ```js
+   let app = new EmberApp(defaults, {
+     autoImport: {
+       insertScriptsAt: 'auto-import-script',
+     },
+   });
+   ```
+
+2. In your `index.html` and `tests/index.html`, use the custom element to designate exactly where you want the "app" and "tests" entrypoints to be inserted:
+
+   ```diff
+    <!-- in index.html -->
+    <body>
+      {{content-for "body"}}
+      <script src="{{rootURL}}assets/vendor.js"></script>
+   +   <auto-import-script entrypoint="app"></auto-import-script>
+      <script src="{{rootURL}}assets/your-app.js"></script>
+      {{content-for "body-footer"}}
+    </body>
+   ```
+
+   ```diff
+    <!-- in tests/index.html -->
+    <body>
+      {{content-for "body"}}
+      {{content-for "test-body"}}
+
+      <div id="qunit"></div>
+      <div id="qunit-fixture">
+        <div id="ember-testing-container">
+          <div id="ember-testing"></div>
+        </div>
+      </div>
+
+      <script src="/testem.js" integrity=""></script>
+      <script src="{{rootURL}}assets/vendor.js"></script>
+   +   <auto-import-script entrypoint="app"></auto-import-script>
+      <script src="{{rootURL}}assets/test-support.js"></script>
+   +   <auto-import-script entrypoint="tests"></auto-import-script>
+      <script src="{{rootURL}}assets/your-app.js"></script>
+      <script src="{{rootURL}}assets/tests.js"></script>
+
+      {{content-for "body-footer"}}
+      {{content-for "test-body-footer"}}
+    </body>
+   ```
+
+3. Any attributes other than `entrypoint` will be copied onto the resulting `<script>` tags inserted by ember-auto-import. For example, if you want `<script defer></script>` you can say:
+
+   ```html
+   <auto-import-script defer entrypoint="app"> </auto-import-script>
+   ```
+
+   And this will result in output like:
+
+   ```html
+   <script defer src="/assets/chunk-12341234.js"></script>
+   ```
+
+Once you enable `insertScriptsAt` you _must_ designate places for the "app" and "tests" entrypoints if you want ember-auto-import to work correctly. You may also optionally designate additional entrypoints and manually add them to the webpack config. For example, you might want to build a polyfills bundle that needs to run before `vendor.js` on pre-ES-module browsers:
+
+```js
+// ember-cli-build.js
+let app = new EmberApp(defaults, {
+  autoImport: {
+    insertScriptsAt: 'auto-import-script',
+    webpack: {
+      entry: {
+        polyfills: './lib/polyfills.js',
+      },
+    },
+  },
+});
+
+// lib/polyfills.js
+import 'core-js/stable';
+import 'intl';
+```
+
+```html
+<!-- index.html -->
+<auto-import-script nomodule entrypoint="polyfills"></auto-import-script>
+<script src="{{rootURL}}assets/vendor.js"></script>
+<auto-import-script entrypoint="app"></auto-import-script>
+<script src="{{rootURL}}assets/your-app.js"></script>
+```
 
 ## FAQ
 
