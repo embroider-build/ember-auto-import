@@ -1,5 +1,13 @@
 # Changelog
 
+### 2.1.0
+
+- FEATURE: You can now control exactly how and where ember-auto-import will insert tags into your HTML using the `insertScriptsAt` and `insertStylesAt` options.
+- FEATURE: You can add custom entrypoints to the webpack config. Combined with `insertScriptsAt`, this makes it possible to (for example) auto-import a family of polyfills that must run before Ember's traditional `vendor.js`. It's also likely to be helpful for building webworkers or other similar standalone targets.
+- FEATURE: We now properly optimize TypeScript's `import type` syntax, meaning if you only import the types from a package it will not be included in your build. By @buschtoens.
+- DOCS: fixes in README by @stefanpenner
+- DOCS: fixes in upgrade guide by @kiwi-josh
+
 ### 2.0.2
 
 - BUGFIX: entry chunks should respect `publicAssetURL`
