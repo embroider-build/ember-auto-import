@@ -8,9 +8,14 @@ import { join } from 'path';
 import type Package from '../package';
 import Analyzer from '../analyzer';
 
-const { module: Qmodule, test } = QUnit;
+const { module: Qmodule, test, skip } = QUnit;
 
-Qmodule('analyzer', function (hooks) {
+Qmodule('analyzer', function () {
+  Qmodule('babel@6', hooks => generateAnalyzerTests(hooks, 6));
+  Qmodule('babel@7', hooks => generateAnalyzerTests(hooks, 7));
+});
+
+function generateAnalyzerTests(hooks: NestedHooks, babelMajorVersion: 6 | 7) {
   let builder: Builder;
   let upstream: string;
   let analyzer: Analyzer;
@@ -24,10 +29,13 @@ Qmodule('analyzer', function (hooks) {
       get babelOptions() {
         babelOptionsWasAccessed = true;
         return {
-          plugins: [require.resolve('@babel/plugin-syntax-typescript'), require.resolve('../../babel-plugin')],
+          plugins:
+            babelMajorVersion < 7
+              ? [require.resolve('../../babel-plugin')]
+              : [require.resolve('@babel/plugin-syntax-typescript'), require.resolve('../../babel-plugin')],
         };
       },
-      babelMajorVersion: 6,
+      babelMajorVersion,
       fileExtensions: ['js'],
     } as Package;
     analyzer = new Analyzer(new UnwatchedDir(upstream), pack);
@@ -175,7 +183,7 @@ Qmodule('analyzer', function (hooks) {
     assert.deepEqual(analyzer.imports, []);
   });
 
-  test('type-only imports ignored in created file', async function (assert) {
+  (babelMajorVersion < 7 ? skip : test)('type-only imports ignored in created file', async function (assert) {
     await builder.build();
     let original = `
       import type Foo from 'type-import';
@@ -288,4 +296,4 @@ Qmodule('analyzer', function (hooks) {
       assert.contains(err.message, 'import() is only allowed to contain string literals or template string literals');
     }
   });
-});
+}
