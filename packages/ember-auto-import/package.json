@@ -58,6 +58,7 @@
     "webpack": "^4.43.0"
   },
   "devDependencies": {
+    "@babel/plugin-syntax-typescript": "^7.12.13",
     "@types/babel-core": "^6.25.5",
     "@types/babel__core": "^7.0.4",
     "@types/babel__generator": "^7.0.1",
