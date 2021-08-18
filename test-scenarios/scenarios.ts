@@ -16,6 +16,15 @@ import { merge } from 'lodash';
   process.env['PATH'] = paths.join(delimiter);
 })();
 
+if (
+  require('../packages/ember-auto-import/package.json').version !==
+  require('./package.json').devDependencies['ember-auto-import']
+) {
+  throw new Error(
+    `version safety check failure. test-scenarios is not depending on the current verion of ember-auto-import`
+  );
+}
+
 async function lts(project: Project) {
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-lts' });
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-lts' });
