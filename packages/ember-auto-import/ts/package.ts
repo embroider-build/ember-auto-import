@@ -38,7 +38,7 @@ export interface Options {
   insertStylesAt?: string;
 }
 
-interface DepResolution {
+export interface DepResolution {
   type: 'package';
   path: string;
   packageName: string;
@@ -195,6 +195,13 @@ export default class Package {
         pkg.peerDependencies?.[name] ||
         this.magicDeps?.get(name)
     );
+  }
+
+  // the semver range of the given package that our package requests in
+  // package.json
+  requestedRange(packageName: string): string | undefined {
+    let { pkg } = this;
+    return pkg.dependencies?.[packageName] || pkg.devDependencies?.[packageName] || pkg.peerDependencies?.[packageName];
   }
 
   private hasNonDevDependency(name: string): boolean {
