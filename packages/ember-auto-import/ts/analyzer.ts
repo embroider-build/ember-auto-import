@@ -8,8 +8,7 @@ import { join, extname } from 'path';
 import { isEqual, flatten } from 'lodash';
 import type Package from './package';
 import symlinkOrCopy from 'symlink-or-copy';
-import { TransformOptions } from '@babel/core';
-import type { CallExpression, ExportNamedDeclaration, Expression, File, ImportDeclaration, TSType } from '@babel/types';
+import type { types as t, TransformOptions } from '@babel/core';
 import traverse from '@babel/traverse';
 
 makeDebug.formatters.m = (modules: Import[]) => {
@@ -77,16 +76,16 @@ export default class Analyzer extends Plugin {
   private modules: Import[] | null = [];
   private paths: Map<string, Import[]> = new Map();
 
-  private parse: undefined | ((source: string) => File);
+  private parse: undefined | ((source: string) => t.File);
 
   // Ignores type-only imports & exports, which are erased from the final build
   // output.
   // TypeScript: `import type foo from 'foo'`
   // Flow: `import typeof foo from 'foo'`
-  private erasedImportKinds: Set<ImportDeclaration['importKind']> = new Set(['type', 'typeof']);
+  private erasedImportKinds: Set<t.ImportDeclaration['importKind']> = new Set(['type', 'typeof']);
   // TypeScript: `export type foo from 'foo'`
   // Flow: doesn't have type-only exports
-  private erasedExportKinds: Set<ExportNamedDeclaration['exportKind']> = new Set(['type']);
+  private erasedExportKinds: Set<t.ExportNamedDeclaration['exportKind']> = new Set(['type']);
 
   constructor(inputTree: Node, private pack: Package, private treeType?: TreeType) {
     super([inputTree], {
@@ -183,7 +182,7 @@ export default class Analyzer extends Plugin {
 
   private processImportCallExpression(
     relativePath: string,
-    args: CallExpression['arguments'],
+    args: t.CallExpression['arguments'],
     isDynamic: boolean
   ): Import {
     // it's a syntax error to have anything other than exactly one
@@ -224,7 +223,7 @@ export default class Analyzer extends Plugin {
   }
 
   private parseImports(relativePath: string, source: string): Import[] {
-    let ast: File | undefined;
+    let ast: t.File | undefined;
     try {
       ast = this.parse!(source);
     } catch (err) {
@@ -275,16 +274,16 @@ export default class Analyzer extends Plugin {
   }
 }
 
-async function babel7Parser(babelOptions: TransformOptions): Promise<(source: string) => File> {
+async function babel7Parser(babelOptions: TransformOptions): Promise<(source: string) => t.File> {
   let core = import('@babel/core');
 
   const { parseSync } = await core;
   return function (source: string) {
-    return parseSync(source, babelOptions) as File;
+    return parseSync(source, babelOptions) as t.File;
   };
 }
 
-function inferNameHint(exp: Expression | TSType) {
+function inferNameHint(exp: t.Expression | t.TSType) {
   if (exp.type === 'Identifier') {
     return exp.name;
   }
