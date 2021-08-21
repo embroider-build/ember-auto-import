@@ -34,9 +34,9 @@ function analyzerPlugin(babel: typeof Babel) {
       CallExpression(path: NodePath<t.CallExpression>, state: State) {
         let callee = path.get('callee');
         if (callee.type === 'Import') {
-          state.imports.push(processImportCallExpression(path.node.arguments, true));
+          state.imports.push(processImportCallExpression(path, true));
         } else if (callee.isIdentifier() && callee.referencesImport('@embroider/macros', 'importSync')) {
-          state.imports.push(processImportCallExpression(path.node.arguments, false));
+          state.imports.push(processImportCallExpression(path, false));
         }
       },
       ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: State) {
@@ -58,10 +58,10 @@ function analyzerPlugin(babel: typeof Babel) {
   };
 }
 
-function processImportCallExpression(args: t.CallExpression['arguments'], isDynamic: boolean): ImportSyntax {
+function processImportCallExpression(path: NodePath<t.CallExpression>, isDynamic: boolean): ImportSyntax {
   // it's a syntax error to have anything other than exactly one
   // argument, so we can just assume this exists
-  let argument = args[0];
+  let argument = path.node.arguments[0];
 
   switch (argument.type) {
     case 'StringLiteral':
@@ -83,7 +83,7 @@ function processImportCallExpression(args: t.CallExpression['arguments'], isDyna
         };
       }
     default:
-      throw new Error('import() is only allowed to contain string literals or template string literals');
+      throw path.buildCodeFrameError('import() is only allowed to contain string literals or template string literals');
   }
 }
 
