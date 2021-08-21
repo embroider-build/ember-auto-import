@@ -19,7 +19,18 @@ export interface TemplateImportSyntax {
 export type ImportSyntax = LiteralImportSyntax | TemplateImportSyntax;
 
 export function serialize(imports: ImportSyntax[]): string {
-  return `eaimeta${JSON.stringify(imports)}eaimeta`;
+  let tokens = [];
+  for (let imp of imports) {
+    if ('specifier' in imp) {
+      tokens.push(imp.isDynamic ? 1 : 0);
+      tokens.push(imp.specifier);
+    } else {
+      tokens.push(imp.isDynamic ? 3 : 2);
+      tokens.push(imp.cookedQuasis);
+      tokens.push(imp.expressionNameHints);
+    }
+  }
+  return `eaimeta${JSON.stringify(tokens).slice(1, -1)}eaimeta`;
 }
 
 export function deserialize(source: string): ImportSyntax[] {
@@ -28,7 +39,39 @@ export function deserialize(source: string): ImportSyntax[] {
     let nextIndex = source.indexOf('eaimeta', index + 1);
     if (nextIndex >= 0) {
       let metaString = source.slice(index + 7, nextIndex);
-      let meta: ImportSyntax[] = JSON.parse(metaString);
+      let tokens = JSON.parse('[' + metaString + ']');
+      let meta: ImportSyntax[] = [];
+      while (tokens.length > 0) {
+        let type = tokens.shift();
+        switch (type) {
+          case 0:
+            meta.push({
+              isDynamic: false,
+              specifier: tokens.shift(),
+            });
+            break;
+          case 1:
+            meta.push({
+              isDynamic: true,
+              specifier: tokens.shift(),
+            });
+            break;
+          case 2:
+            meta.push({
+              isDynamic: false,
+              cookedQuasis: tokens.shift(),
+              expressionNameHints: tokens.shift(),
+            });
+            break;
+          case 3:
+            meta.push({
+              isDynamic: true,
+              cookedQuasis: tokens.shift(),
+              expressionNameHints: tokens.shift(),
+            });
+            break;
+        }
+      }
       return meta;
     }
   }
