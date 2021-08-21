@@ -7,7 +7,13 @@ import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
 import { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
-import { AddonInstance, AppInstance, findTopmostAddon, ShallowAddonInstance } from '@embroider/shared-internals';
+import {
+  AddonInstance,
+  AppInstance,
+  findTopmostAddon,
+  isDeepAddonInstance,
+  ShallowAddonInstance,
+} from '@embroider/shared-internals';
 import WebpackBundler from './webpack';
 import { Memoize } from 'typescript-memoize';
 import { WatchedDir } from 'broccoli-source';
@@ -17,6 +23,7 @@ import resolve from 'resolve';
 import type webpackType from 'webpack';
 import resolvePackagePath from 'resolve-package-path';
 import semver from 'semver';
+import type { TransformOptions } from '@babel/core';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -29,6 +36,7 @@ export interface AutoImportSharedAPI {
   included(addonInstance: AddonInstance): void;
   addTo(tree: Node): Node;
   registerV2Addon(packageName: string, packageRoot: string): void;
+  installBabelPlugin(addonInstance: AddonInstance): void;
 }
 
 export default class AutoImport implements AutoImportSharedAPI {
@@ -149,6 +157,25 @@ export default class AutoImport implements AutoImportSharedAPI {
 
   included(addonInstance: ShallowAddonInstance) {
     this.configureFingerprints(addonInstance.app);
+  }
+
+  installBabelPlugin(addonInstance: AddonInstance): void {
+    let parent: AppInstance | AddonInstance;
+    if (isDeepAddonInstance(addonInstance)) {
+      parent = addonInstance.parent;
+    } else {
+      parent = addonInstance.app;
+    }
+
+    let babelOptions: TransformOptions = (parent.options.babel = parent.options.babel || {});
+    let babelPlugins = (babelOptions.plugins = babelOptions.plugins || []);
+    if (
+      !babelPlugins.some(
+        entry => typeof entry === 'string' && entry.endsWith('ember-auto-import/js/analyzer-plugin.js')
+      )
+    ) {
+      babelPlugins.unshift(require.resolve('./analyzer-plugin'));
+    }
   }
 
   // We need to disable fingerprinting of chunks, because (1) they already

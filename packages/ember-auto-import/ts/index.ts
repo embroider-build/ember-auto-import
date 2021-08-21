@@ -38,6 +38,7 @@ module.exports = {
 
   included(...args: unknown[]) {
     this._super.included.apply(this, ...args);
+    AutoImport.lookup(this).installBabelPlugin(this);
     if (!isDeepAddonInstance(this)) {
       AutoImport.lookup(this).included(this);
     }

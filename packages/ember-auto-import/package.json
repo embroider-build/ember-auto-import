@@ -1,6 +1,6 @@
 {
   "name": "ember-auto-import",
-  "version": "2.1.0",
+  "version": "2.2.0-alpha.0",
   "description": "Zero-config import from NPM packages",
   "keywords": [
     "ember-addon",
@@ -81,6 +81,7 @@
     "@types/webpack": "^5.28.0",
     "broccoli": "^3.2.0",
     "broccoli-asset-rev": "^2.4.5",
+    "broccoli-babel-transpiler": "^7.8.0",
     "broccoli-source": "^3.0.0",
     "ember-ajax": "^3.0.0",
     "ember-cli": "^3.6.0",
@@ -120,10 +121,11 @@
   "ember-addon": {
     "configPath": "tests/dummy/config",
     "before": [
-      "ember-cli-babel",
-      "broccoli-asset-rev"
+      "broccoli-asset-rev",
+      "@embroider/macros"
     ],
     "after": [
+      "ember-cli-babel",
       "ember-cli-coffeescript",
       "ember-cli-typescript"
     ]

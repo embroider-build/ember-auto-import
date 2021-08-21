@@ -7,6 +7,8 @@ import { ensureDirSync, readFileSync, outputFileSync, removeSync, existsSync } f
 import { join } from 'path';
 import type Package from '../package';
 import Analyzer from '../analyzer';
+// @ts-ignore
+import broccoliBabel from 'broccoli-babel-transpiler';
 
 const { module: Qmodule, test } = QUnit;
 
@@ -15,37 +17,34 @@ Qmodule('analyzer', function (hooks) {
   let upstream: string;
   let analyzer: Analyzer;
   let pack: Package;
-  let babelOptionsWasAccessed = false;
 
   hooks.beforeEach(function (this: any) {
     quickTemp.makeOrRemake(this, 'workDir', 'auto-import-analyzer-tests');
     ensureDirSync((upstream = join(this.workDir, 'upstream')));
     pack = {
-      get babelOptions() {
-        babelOptionsWasAccessed = true;
-        return {
-          plugins: [require.resolve('@babel/plugin-syntax-typescript'), require.resolve('../../babel-plugin')],
-        };
-      },
-      babelMajorVersion: 7,
       fileExtensions: ['js'],
     } as Package;
-    analyzer = new Analyzer(new UnwatchedDir(upstream), pack);
+    let transpiled = broccoliBabel(new UnwatchedDir(upstream), {
+      plugins: [
+        require.resolve('../../js/analyzer-plugin'),
+        require.resolve('@babel/plugin-syntax-typescript'),
+
+        // keeping this in non-parallelizable form prevents
+        // broccoli-babel-transpiler from spinning up separate worker processes,
+        // which we don't want or need and which hang at the end of the test
+        // suite.
+        require('../../babel-plugin'),
+      ],
+    });
+    analyzer = new Analyzer(transpiled, pack);
     builder = new broccoli.Builder(analyzer);
   });
 
   hooks.afterEach(function (this: any) {
-    babelOptionsWasAccessed = false;
     removeSync(this.workDir);
     if (builder) {
       return builder.cleanup();
     }
-  });
-
-  test('babelOptions are accessed only during build', async function (assert) {
-    assert.notOk(babelOptionsWasAccessed);
-    await builder.build();
-    assert.ok(babelOptionsWasAccessed);
   });
 
   test('initial file passes through', async function (assert) {
@@ -53,7 +52,7 @@ Qmodule('analyzer', function (hooks) {
     outputFileSync(join(upstream, 'sample.js'), original);
     await builder.build();
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.equal(content, original);
+    assert.ok(content.endsWith(original), `${content} should end with ${original}`);
   });
 
   test('created file passes through', async function (assert) {
@@ -62,7 +61,7 @@ Qmodule('analyzer', function (hooks) {
     outputFileSync(join(upstream, 'sample.js'), original);
     await builder.build();
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.equal(content, original);
+    assert.ok(content.endsWith(original), `${content} should end with ${original}`);
   });
 
   test('updated file passes through', async function (assert) {
@@ -75,7 +74,7 @@ Qmodule('analyzer', function (hooks) {
     await builder.build();
 
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.equal(content, updated);
+    assert.ok(content.endsWith(updated), `${content} should end with ${updated}`);
   });
 
   test('deleted file passes through', async function (assert) {
