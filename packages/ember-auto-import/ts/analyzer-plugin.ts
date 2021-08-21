@@ -4,6 +4,7 @@ import { ImportSyntax, serialize } from './analyzer-syntax';
 
 interface State {
   imports: ImportSyntax[];
+  handled: WeakSet<t.CallExpression>;
 }
 
 // Ignores type-only imports & exports, which are erased from the final build
@@ -23,6 +24,7 @@ function analyzerPlugin(babel: typeof Babel) {
       Program: {
         enter(_path: NodePath<t.Program>, state: State) {
           state.imports = [];
+          state.handled = new WeakSet();
         },
         exit(path: NodePath<t.Program>, state: State) {
           let firstNode = path.node.body[0];
@@ -32,11 +34,22 @@ function analyzerPlugin(babel: typeof Babel) {
         },
       },
       CallExpression(path: NodePath<t.CallExpression>, state: State) {
+        if (state.handled.has(path.node)) {
+          // We see the same CallExpression multiple times if it has a
+          // TemplateLiteral argument and another plugin or preset is rewriting
+          // TemplateLiterals to something else. We need to guard against that
+          // because the first time is fine and we capture our analysis, but the
+          // second time would cause us to throw an exception when we see an
+          // illegal argument.
+          return;
+        }
         let callee = path.get('callee');
         if (callee.type === 'Import') {
           state.imports.push(processImportCallExpression(path, true));
+          state.handled.add(path.node);
         } else if (callee.isIdentifier() && callee.referencesImport('@embroider/macros', 'importSync')) {
           state.imports.push(processImportCallExpression(path, false));
+          state.handled.add(path.node);
         }
       },
       ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: State) {
