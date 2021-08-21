@@ -9,6 +9,7 @@ import type Package from '../package';
 import Analyzer from '../analyzer';
 // @ts-ignore
 import broccoliBabel from 'broccoli-babel-transpiler';
+import type { TransformOptions } from '@babel/core';
 
 const { module: Qmodule, test } = QUnit;
 
@@ -17,6 +18,7 @@ Qmodule('analyzer', function (hooks) {
   let upstream: string;
   let analyzer: Analyzer;
   let pack: Package;
+  let babelConfig: TransformOptions;
 
   hooks.beforeEach(function (this: any) {
     quickTemp.makeOrRemake(this, 'workDir', 'auto-import-analyzer-tests');
@@ -24,7 +26,7 @@ Qmodule('analyzer', function (hooks) {
     pack = {
       fileExtensions: ['js'],
     } as Package;
-    let transpiled = broccoliBabel(new UnwatchedDir(upstream), {
+    babelConfig = {
       plugins: [
         require.resolve('../../js/analyzer-plugin'),
         require.resolve('@babel/plugin-syntax-typescript'),
@@ -35,7 +37,8 @@ Qmodule('analyzer', function (hooks) {
         // suite.
         require('../../babel-plugin'),
       ],
-    });
+    };
+    let transpiled = broccoliBabel(new UnwatchedDir(upstream), babelConfig);
     analyzer = new Analyzer(transpiled, pack);
     builder = new broccoli.Builder(analyzer);
   });
@@ -52,7 +55,7 @@ Qmodule('analyzer', function (hooks) {
     outputFileSync(join(upstream, 'sample.js'), original);
     await builder.build();
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.ok(content.endsWith(original), `${content} should end with ${original}`);
+    assert.ok(content.startsWith(original), `${content} should end with ${original}`);
   });
 
   test('created file passes through', async function (assert) {
@@ -61,7 +64,7 @@ Qmodule('analyzer', function (hooks) {
     outputFileSync(join(upstream, 'sample.js'), original);
     await builder.build();
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.ok(content.endsWith(original), `${content} should end with ${original}`);
+    assert.ok(content.startsWith(original), `${content} should end with ${original}`);
   });
 
   test('updated file passes through', async function (assert) {
@@ -74,7 +77,7 @@ Qmodule('analyzer', function (hooks) {
     await builder.build();
 
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.ok(content.endsWith(updated), `${content} should end with ${updated}`);
+    assert.ok(content.startsWith(updated), `${content} should end with ${updated}`);
   });
 
   test('deleted file passes through', async function (assert) {
@@ -196,6 +199,26 @@ Qmodule('analyzer', function (hooks) {
       {
         isDynamic: false,
         specifier: 'value-re-export',
+        path: 'sample.js',
+        package: pack,
+        treeType: undefined,
+      },
+    ]);
+  });
+
+  test('dependency discovered from reexport', async function (assert) {
+    babelConfig.plugins!.push(
+      // this is here because Ember does this and we want to make sure we
+      // coexist with it
+      [require.resolve('@babel/plugin-transform-modules-amd'), { noInterop: true }]
+    );
+    let original = "export { default } from 'some-package';";
+    outputFileSync(join(upstream, 'sample.js'), original);
+    await builder.build();
+    assert.deepEqual(analyzer.imports, [
+      {
+        isDynamic: false,
+        specifier: 'some-package',
         path: 'sample.js',
         package: pack,
         treeType: undefined,

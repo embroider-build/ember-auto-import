@@ -27,10 +27,12 @@ function analyzerPlugin(babel: typeof Babel) {
           state.handled = new WeakSet();
         },
         exit(path: NodePath<t.Program>, state: State) {
-          let firstNode = path.node.body[0];
-          if (firstNode) {
-            t.addComment(firstNode, 'leading', serialize(state.imports), true);
-          }
+          // instead of attaching our comment metadata to an existing node, we
+          // add our own tiny harmless node. Otherwise, further processing may
+          // drop the node we put our comment on and lose it.
+          let meta = t.expressionStatement(t.numericLiteral(0));
+          t.addComment(meta, 'trailing', serialize(state.imports), true);
+          path.pushContainer('body', meta);
         },
       },
       CallExpression(path: NodePath<t.CallExpression>, state: State) {
