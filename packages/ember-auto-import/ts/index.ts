@@ -1,5 +1,5 @@
 import AutoImport from './auto-import';
-import { Node } from 'broccoli-node-api';
+import type { Node } from 'broccoli-node-api';
 // @ts-ignore
 import pkg from '../package';
 import { isDeepAddonInstance } from '@embroider/shared-internals';

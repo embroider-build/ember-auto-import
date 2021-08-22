@@ -1,4 +1,4 @@
-import { Node } from 'broccoli-node-api';
+import type { Node } from 'broccoli-node-api';
 import Plugin from 'broccoli-plugin';
 import walkSync from 'walk-sync';
 import { unlinkSync, rmdirSync, mkdirSync, readFileSync, removeSync } from 'fs-extra';

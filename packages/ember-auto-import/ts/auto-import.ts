@@ -5,7 +5,7 @@ import type { TreeType } from './analyzer';
 import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
-import { Node } from 'broccoli-node-api';
+import type { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
 import {
   AddonInstance,
