@@ -10,6 +10,8 @@ import Analyzer from '../analyzer';
 // @ts-ignore
 import broccoliBabel from 'broccoli-babel-transpiler';
 import type { TransformOptions } from '@babel/core';
+import { deserialize, ImportSyntax, serialize } from '../analyzer-syntax';
+import { ReadStream } from 'fs';
 
 const { module: Qmodule, test } = QUnit;
 
@@ -55,7 +57,7 @@ Qmodule('analyzer', function (hooks) {
     outputFileSync(join(upstream, 'sample.js'), original);
     await builder.build();
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.ok(content.startsWith(original), `${content} should end with ${original}`);
+    assert.ok(content.endsWith(original), `${content} should end with ${original}`);
   });
 
   test('created file passes through', async function (assert) {
@@ -64,7 +66,7 @@ Qmodule('analyzer', function (hooks) {
     outputFileSync(join(upstream, 'sample.js'), original);
     await builder.build();
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.ok(content.startsWith(original), `${content} should end with ${original}`);
+    assert.ok(content.endsWith(original), `${content} should end with ${original}`);
   });
 
   test('updated file passes through', async function (assert) {
@@ -77,7 +79,7 @@ Qmodule('analyzer', function (hooks) {
     await builder.build();
 
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.ok(content.startsWith(updated), `${content} should end with ${updated}`);
+    assert.ok(content.endsWith(updated), `${content} should end with ${updated}`);
   });
 
   test('deleted file passes through', async function (assert) {
@@ -371,5 +373,112 @@ Qmodule('analyzer', function (hooks) {
     } catch (err) {
       assert.contains(err.message, 'import() is only allowed to contain string literals or template string literals');
     }
+  });
+});
+
+Qmodule('analyzer-deserialize', function () {
+  function sampleData(): ImportSyntax[] {
+    return [
+      {
+        isDynamic: false,
+        specifier: 'alpha',
+      },
+      {
+        isDynamic: true,
+        specifier: 'beta',
+      },
+      {
+        isDynamic: false,
+        cookedQuasis: ['gamma/', ''],
+        expressionNameHints: [null],
+      },
+      {
+        isDynamic: true,
+        cookedQuasis: ['delta/', ''],
+        expressionNameHints: ['flavor'],
+      },
+    ];
+  }
+
+  function source(chunks: string[]): ReadStream {
+    let closer: undefined | (() => void);
+    return {
+      get chunksRemaining() {
+        return chunks.length;
+      },
+
+      read() {
+        if (chunks.length > 0) {
+          return chunks.shift();
+        } else {
+          if (closer) {
+            closer();
+          }
+          return null;
+        }
+      },
+      on(event: string, handler: () => unknown) {
+        if (event === 'readable') {
+          setTimeout(handler, 0);
+        }
+        if (event === 'close') {
+          closer = handler;
+        }
+      },
+      destroy() {
+        if (closer) {
+          closer();
+        }
+      },
+    } as unknown as ReadStream;
+  }
+
+  test('no meta found', async function (assert) {
+    let result = await deserialize(source(['abcdefgabcdefg']));
+    assert.deepEqual(result, []);
+  });
+
+  test('meta found in one chunk', async function (assert) {
+    let result = await deserialize(source(['stuff stuff stuff ' + serialize(sampleData())]));
+    assert.deepEqual(result, sampleData());
+  });
+
+  test('meta spans two chunks', async function (assert) {
+    let meta = serialize(sampleData());
+    let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, 10)}`, meta.slice(10)]));
+    assert.deepEqual(result, sampleData());
+  });
+
+  test('meta spans three chunks', async function (assert) {
+    let meta = serialize(sampleData());
+    let result = await deserialize(
+      source([`stuff stuff stuff ${meta.slice(0, 7)}`, meta.slice(7, 10), meta.slice(10)])
+    );
+    assert.deepEqual(result, sampleData());
+  });
+
+  test('leaves remaining chunks unconsumed after finding meta', async function (assert) {
+    let s = source([`stuff stuff stuff ${serialize(sampleData())} other stuff`, 'extra']);
+    let result = await deserialize(s);
+    assert.deepEqual(result, sampleData());
+    assert.equal((s as any).chunksRemaining, 1);
+  });
+
+  test('start marker split between chunks', async function (assert) {
+    let meta = serialize(sampleData());
+    let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, 2)}`, meta.slice(2)]));
+    assert.deepEqual(result, sampleData());
+  });
+
+  test('false start marker at end of chunk', async function (assert) {
+    let meta = serialize(sampleData());
+    let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, 2)}`, `other${meta}`]));
+    assert.deepEqual(result, sampleData());
+  });
+
+  test('end marker split between chunks', async function (assert) {
+    let meta = serialize(sampleData());
+    let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, -2)}`, meta.slice(-2)]));
+    assert.deepEqual(result, sampleData());
   });
 });

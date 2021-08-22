@@ -32,7 +32,7 @@ function analyzerPlugin(babel: typeof Babel) {
           // drop the node we put our comment on and lose it.
           let meta = t.expressionStatement(t.numericLiteral(0));
           t.addComment(meta, 'trailing', serialize(state.imports), true);
-          path.pushContainer('body', meta);
+          path.unshiftContainer('body', meta);
         },
       },
       CallExpression(path: NodePath<t.CallExpression>, state: State) {
@@ -105,5 +105,7 @@ function processImportCallExpression(path: NodePath<t.CallExpression>, isDynamic
 function inferNameHint(exp: t.Expression | t.TSType) {
   if (exp.type === 'Identifier') {
     return exp.name;
+  } else {
+    return null;
   }
 }

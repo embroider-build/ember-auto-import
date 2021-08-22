@@ -1,3 +1,5 @@
+import { ReadStream } from 'fs';
+
 export interface LiteralImportSyntax {
   isDynamic: boolean;
   specifier: string;
@@ -13,10 +15,12 @@ export interface TemplateImportSyntax {
   // optional because in general there may not be an obvious name, but in
   // practice there often is, and we can aid debuggability by using names that
   // match the original code.
-  expressionNameHints: (string | undefined)[];
+  expressionNameHints: (string | null)[];
 }
 
 export type ImportSyntax = LiteralImportSyntax | TemplateImportSyntax;
+
+const marker = 'eaimeta';
 
 export function serialize(imports: ImportSyntax[]): string {
   let tokens = [];
@@ -30,50 +34,216 @@ export function serialize(imports: ImportSyntax[]): string {
       tokens.push(imp.expressionNameHints);
     }
   }
-  return `eaimeta${JSON.stringify(tokens).slice(1, -1)}eaimeta`;
+  return `${marker}${JSON.stringify(tokens).slice(1, -1)}${marker}`;
 }
 
-export function deserialize(source: string): ImportSyntax[] {
-  let index = source.indexOf('eaimeta');
-  if (index >= 0) {
-    let nextIndex = source.indexOf('eaimeta', index + 1);
-    if (nextIndex >= 0) {
-      let metaString = source.slice(index + 7, nextIndex);
-      let tokens = JSON.parse('[' + metaString + ']');
-      let meta: ImportSyntax[] = [];
-      while (tokens.length > 0) {
-        let type = tokens.shift();
-        switch (type) {
-          case 0:
-            meta.push({
-              isDynamic: false,
-              specifier: tokens.shift(),
-            });
-            break;
-          case 1:
-            meta.push({
-              isDynamic: true,
-              specifier: tokens.shift(),
-            });
-            break;
-          case 2:
-            meta.push({
-              isDynamic: false,
-              cookedQuasis: tokens.shift(),
-              expressionNameHints: tokens.shift(),
-            });
-            break;
-          case 3:
-            meta.push({
-              isDynamic: true,
-              cookedQuasis: tokens.shift(),
-              expressionNameHints: tokens.shift(),
-            });
-            break;
-        }
+export function deserialize(source: ReadStream): Promise<ImportSyntax[]> {
+  let deserializer = new Deserializer(source);
+  return deserializer.output;
+}
+
+class Deserializer {
+  private state:
+    | {
+        // we're looking for the start marker
+        type: 'finding-start';
       }
-      return meta;
+    | {
+        type: 'start-partial-match';
+        // how many codepoints of the marker were present at the end of the
+        // previous chunk (to handle a marker that splits across chunks)
+        partialMatch: number;
+      }
+    | {
+        // we're looking for the end marker
+        type: 'finding-end';
+        // the meta we've read so far
+        meta: string[];
+      }
+    | {
+        type: 'end-partial-match';
+        // the meta we've read so far
+        meta: string[];
+        // how many codepoints of the marker were present at the end of the
+        // previous chunk (to handle a marker that splits across chunks)
+        partialMatch: number;
+      }
+    | {
+        type: 'done';
+        meta: string;
+      } = {
+    type: 'finding-start',
+  };
+
+  output: Promise<ImportSyntax[]>;
+  private resolve: (result: ImportSyntax[]) => void;
+  private reject: (err: any) => void;
+
+  constructor(private source: ReadStream) {
+    let r: (result: ImportSyntax[]) => void, e: (err: any) => void;
+    this.output = new Promise<ImportSyntax[]>((resolve, reject) => {
+      r = resolve;
+      e = reject;
+    });
+    this.resolve = r!;
+    this.reject = e!;
+    source.on('readable', this.run.bind(this));
+    source.on('error', this.reject);
+    source.on('close', this.finish.bind(this));
+  }
+
+  // keeps consuming chunks until we read null (meaning no buffered data
+  // available) or the state machine decides to stop
+  private run() {
+    let chunk: string | null;
+    // setting the read size bigger than the marker length is important. We can
+    // deal with a marker split between two chunks, but not three or more.
+    while (null !== (chunk = this.source.read(1024))) {
+      this.consumeChunk(chunk);
+      if (this.state.type === 'done') {
+        this.source.destroy();
+        break;
+      }
     }
   }
-  return [];
+
+  private consumeChunk(chunk: string): void {
+    let { state } = this;
+    switch (state.type) {
+      case 'finding-start':
+        {
+          let start = chunk.indexOf(marker);
+          if (start >= 0) {
+            // found the start, enter finding-end state
+            this.state = {
+              type: 'finding-end',
+              meta: [],
+            };
+            // pass the rest of the chunk forward to the next state
+            return this.consumeChunk(chunk.slice(start + marker.length));
+          }
+          let partialMatch = matchesAtEnd(chunk, marker);
+          if (partialMatch > 0) {
+            this.state = {
+              type: 'start-partial-match',
+              partialMatch,
+            };
+          }
+        }
+        break;
+      case 'start-partial-match':
+        if (chunk.startsWith(marker.slice(state.partialMatch))) {
+          // completed partial match, go into finding-end state
+          this.state = {
+            type: 'finding-end',
+            meta: [],
+          };
+          return this.consumeChunk(chunk.slice(marker.length - state.partialMatch));
+        } else {
+          // partial match failed to complete
+          this.state = {
+            type: 'finding-start',
+          };
+          return this.consumeChunk(chunk);
+        }
+      case 'finding-end': {
+        let endIndex = chunk.indexOf(marker);
+        if (endIndex >= 0) {
+          // found the end
+          this.state = {
+            type: 'done',
+            meta: [...state.meta, chunk.slice(0, endIndex)].join(''),
+          };
+        } else {
+          let partialMatch = matchesAtEnd(chunk, marker);
+          if (partialMatch > 0) {
+            this.state = {
+              type: 'end-partial-match',
+              meta: [...state.meta, chunk.slice(0, -partialMatch)],
+              partialMatch,
+            };
+          } else {
+            state.meta.push(chunk);
+          }
+        }
+        break;
+      }
+      case 'end-partial-match':
+        if (chunk.startsWith(marker.slice(state.partialMatch))) {
+          // completed partial match, go into finding-end state
+          this.state = {
+            type: 'done',
+            meta: state.meta.join(''),
+          };
+        } else {
+          // partial match failed to complete
+          this.state = {
+            type: 'finding-end',
+            meta: state.meta,
+          };
+          return this.consumeChunk(chunk);
+        }
+        break;
+      case 'done':
+        throw new Error(`bug: tried to consume more chunks when already done`);
+      default:
+        throw assertNever(state);
+    }
+  }
+
+  private finish() {
+    if (this.state.type !== 'done') {
+      // we didn't find complete meta in this file, it must not have any
+      this.resolve([]);
+      return;
+    }
+    let tokens = JSON.parse('[' + this.state.meta + ']');
+    let syntax: ImportSyntax[] = [];
+    while (tokens.length > 0) {
+      let type = tokens.shift();
+      switch (type) {
+        case 0:
+          syntax.push({
+            isDynamic: false,
+            specifier: tokens.shift(),
+          });
+          break;
+        case 1:
+          syntax.push({
+            isDynamic: true,
+            specifier: tokens.shift(),
+          });
+          break;
+        case 2:
+          syntax.push({
+            isDynamic: false,
+            cookedQuasis: tokens.shift(),
+            expressionNameHints: tokens.shift(),
+          });
+          break;
+        case 3:
+          syntax.push({
+            isDynamic: true,
+            cookedQuasis: tokens.shift(),
+            expressionNameHints: tokens.shift(),
+          });
+          break;
+      }
+    }
+    this.resolve(syntax);
+  }
+}
+
+function assertNever(value: never) {
+  throw new Error(`bug: never should happen ${value}`);
+}
+
+function matchesAtEnd(chunk: string, marker: string): number {
+  while (marker.length > 0) {
+    if (chunk.endsWith(marker)) {
+      return marker.length;
+    }
+    marker = marker.slice(0, -1);
+  }
+  return 0;
 }

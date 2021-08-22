@@ -1,13 +1,12 @@
 import type { Node } from 'broccoli-node-api';
-import Plugin from 'broccoli-plugin';
+import { Funnel } from 'broccoli-funnel';
 import walkSync from 'walk-sync';
-import { unlinkSync, rmdirSync, mkdirSync, readFileSync, removeSync } from 'fs-extra';
+import { createReadStream } from 'fs';
 import FSTree from 'fs-tree-diff';
 import makeDebug from 'debug';
 import { join, extname } from 'path';
 import { isEqual, flatten } from 'lodash';
 import type Package from './package';
-import symlinkOrCopy from 'symlink-or-copy';
 import { deserialize, LiteralImportSyntax, TemplateImportSyntax } from './analyzer-syntax';
 
 makeDebug.formatters.m = (modules: Import[]) => {
@@ -55,15 +54,14 @@ export type Import = LiteralImport | TemplateImport;
   Analyzer discovers and maintains info on all the module imports that
   appear in a broccoli tree.
 */
-export default class Analyzer extends Plugin {
+export default class Analyzer extends Funnel {
   private previousTree = new FSTree();
   private modules: Import[] | null = [];
   private paths: Map<string, Import[]> = new Map();
 
   constructor(inputTree: Node, private pack: Package, private treeType?: TreeType) {
-    super([inputTree], {
+    super(inputTree, {
       annotation: 'ember-auto-import-analyzer',
-      persistentOutput: true,
     });
   }
 
@@ -75,35 +73,23 @@ export default class Analyzer extends Plugin {
     return this.modules;
   }
 
-  async build() {
-    this.getPatchset().forEach(([operation, relativePath]) => {
-      let outputPath = join(this.outputPath, relativePath);
-
+  async build(...args: unknown[]) {
+    await super.build(...args);
+    for (let [operation, relativePath] of this.getPatchset()) {
       switch (operation) {
         case 'unlink':
           if (this.matchesExtension(relativePath)) {
             this.removeImports(relativePath);
           }
-          unlinkSync(outputPath);
-          break;
-        case 'rmdir':
-          rmdirSync(outputPath);
-          break;
-        case 'mkdir':
-          mkdirSync(outputPath);
           break;
         case 'change':
-          removeSync(outputPath);
-        // deliberate fallthrough
         case 'create': {
-          let absoluteInputPath = join(this.inputPaths[0], relativePath);
           if (this.matchesExtension(relativePath)) {
-            this.updateImports(relativePath, readFileSync(absoluteInputPath, 'utf8'));
+            await this.updateImports(relativePath);
           }
-          symlinkOrCopy.sync(absoluteInputPath, outputPath);
         }
       }
-    });
+    }
   }
 
   private getPatchset() {
@@ -128,21 +114,21 @@ export default class Analyzer extends Plugin {
     }
   }
 
-  updateImports(relativePath: string, source: string) {
-    debug(`updating imports for ${relativePath}, ${source.length}`);
-    let newImports = this.parseImports(relativePath, source);
-    if (!isEqual(this.paths.get(relativePath), newImports)) {
-      this.paths.set(relativePath, newImports);
-      this.modules = null; // invalidates cache
-    }
-  }
-
-  private parseImports(relativePath: string, source: string): Import[] {
-    return deserialize(source).map(m => ({
+  async updateImports(relativePath: string): Promise<void> {
+    debug(`updating imports for ${relativePath}`);
+    let stream = createReadStream(join(this.inputPaths[0], relativePath), { encoding: 'utf8' });
+    let meta = await deserialize(stream);
+    debug(`it worked`);
+    let newImports = meta.map(m => ({
       path: relativePath,
       package: this.pack,
       treeType: this.treeType,
       ...m,
     }));
+
+    if (!isEqual(this.paths.get(relativePath), newImports)) {
+      this.paths.set(relativePath, newImports);
+      this.modules = null; // invalidates cache
+    }
   }
 }
