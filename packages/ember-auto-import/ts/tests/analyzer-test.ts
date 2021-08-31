@@ -41,7 +41,7 @@ Qmodule('analyzer', function (hooks) {
       ],
     };
     let transpiled = broccoliBabel(new UnwatchedDir(upstream), babelConfig);
-    analyzer = new Analyzer(transpiled, pack);
+    analyzer = new Analyzer(transpiled, pack, undefined, true);
     builder = new broccoli.Builder(analyzer);
   });
 

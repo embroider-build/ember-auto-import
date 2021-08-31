@@ -5,6 +5,9 @@ import { ImportSyntax, serialize } from './analyzer-syntax';
 interface State {
   imports: ImportSyntax[];
   handled: WeakSet<t.CallExpression>;
+  opts: {
+    imports?: ImportSyntax[];
+  };
 }
 
 // Ignores type-only imports & exports, which are erased from the final build
@@ -23,7 +26,7 @@ function analyzerPlugin(babel: typeof Babel) {
     visitor: {
       Program: {
         enter(_path: NodePath<t.Program>, state: State) {
-          state.imports = [];
+          state.imports = state.opts.imports || [];
           state.handled = new WeakSet();
         },
         exit(path: NodePath<t.Program>, state: State) {

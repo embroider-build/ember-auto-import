@@ -66,7 +66,7 @@ Qmodule('splitter', function (hooks) {
           require('../../babel-plugin'),
         ],
       });
-      let analyzer = new Analyzer(transpiled, pack);
+      let analyzer = new Analyzer(transpiled, pack, undefined, true);
       splitter = new Splitter({
         bundles: new BundleConfig({
           vendor: {

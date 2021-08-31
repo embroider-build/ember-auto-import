@@ -7,13 +7,7 @@ import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
 import type { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
-import {
-  AddonInstance,
-  AppInstance,
-  findTopmostAddon,
-  isDeepAddonInstance,
-  ShallowAddonInstance,
-} from '@embroider/shared-internals';
+import { AddonInstance, AppInstance, findTopmostAddon, isDeepAddonInstance } from '@embroider/shared-internals';
 import WebpackBundler from './webpack';
 import { Memoize } from 'typescript-memoize';
 import { WatchedDir } from 'broccoli-source';
@@ -33,11 +27,10 @@ const debugTree = buildDebugCallback('ember-auto-import');
 // what you're doing.
 export interface AutoImportSharedAPI {
   isPrimary(addonInstance: AddonInstance): boolean;
-  analyze(tree: Node, addon: AddonInstance, treeType?: TreeType): Node;
+  analyze(tree: Node, addon: AddonInstance, treeType?: TreeType, supportsFastAnalyzer?: true): Node;
   included(addonInstance: AddonInstance): void;
   addTo(tree: Node): Node;
   registerV2Addon(packageName: string, packageRoot: string): void;
-  installBabelPlugin(addonInstance: AddonInstance): void;
 }
 
 export default class AutoImport implements AutoImportSharedAPI {
@@ -78,10 +71,15 @@ export default class AutoImport implements AutoImportSharedAPI {
     return false;
   }
 
-  analyze(tree: Node, addon: AddonInstance, treeType?: TreeType) {
+  analyze(tree: Node, addon: AddonInstance, treeType?: TreeType, supportsFastAnalyzer?: true) {
     let pack = Package.lookupParentOf(addon);
     this.packages.add(pack);
-    let analyzer = new Analyzer(debugTree(tree, `preprocessor:input-${this.analyzers.size}`), pack, treeType);
+    let analyzer = new Analyzer(
+      debugTree(tree, `preprocessor:input-${this.analyzers.size}`),
+      pack,
+      treeType,
+      supportsFastAnalyzer
+    );
     this.analyzers.set(analyzer, pack);
     return analyzer;
   }
@@ -156,11 +154,18 @@ export default class AutoImport implements AutoImportSharedAPI {
     return mergeTrees(trees, { overwrite: true });
   }
 
-  included(addonInstance: ShallowAddonInstance) {
-    this.configureFingerprints(addonInstance.app);
+  // CAUTION: versions <= 2.1.0 only invoked this method on the app's copy of
+  // ember-auto-import, whereas we now invoke it on every copy. That means you
+  // can't guarantee this will be called for an addon that is using one of those
+  // older versions.
+  included(addonInstance: AddonInstance) {
+    this.installBabelPlugin(addonInstance);
+    if (!isDeepAddonInstance(addonInstance)) {
+      this.configureFingerprints(addonInstance.app);
+    }
   }
 
-  installBabelPlugin(addonInstance: AddonInstance): void {
+  private installBabelPlugin(addonInstance: AddonInstance): void {
     let parent: AppInstance | AddonInstance;
     if (isDeepAddonInstance(addonInstance)) {
       parent = addonInstance.parent;
