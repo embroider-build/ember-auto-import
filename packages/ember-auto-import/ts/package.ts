@@ -68,6 +68,8 @@ export default class Package {
   private _options: any;
   private _parent: Project | AddonInstance;
   private _hasBabelDetails = false;
+  private _babelMajorVersion?: number;
+  private _babelOptions: any;
   private _emberCLIBabelExtensions?: string[];
   private autoImportOptions: Options | undefined;
   private isDeveloping: boolean;
@@ -114,9 +116,21 @@ export default class Package {
     if (this._hasBabelDetails) {
       return;
     }
-    let { extensions } = this.buildBabelOptions(this._parent, this._options);
+    let { babelOptions, extensions, version } = this.buildBabelOptions(this._parent, this._options);
     this._emberCLIBabelExtensions = extensions;
+    this._babelOptions = babelOptions;
+    this._babelMajorVersion = version;
     this._hasBabelDetails = true;
+  }
+
+  get babelOptions(): TransformOptions {
+    this._ensureBabelDetails();
+    return this._babelOptions;
+  }
+
+  get babelMajorVersion() {
+    this._ensureBabelDetails();
+    return this._babelMajorVersion;
   }
 
   @Memoize()

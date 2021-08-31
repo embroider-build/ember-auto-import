@@ -2,7 +2,6 @@ import AutoImport from './auto-import';
 import type { Node } from 'broccoli-node-api';
 // @ts-ignore
 import pkg from '../package';
-import { isDeepAddonInstance } from '@embroider/shared-internals';
 
 module.exports = {
   name: pkg.name,
@@ -31,17 +30,14 @@ module.exports = {
           treeType = options.treeType;
         }
 
-        return AutoImport.lookup(this).analyze(tree, this, treeType);
+        return AutoImport.lookup(this).analyze(tree, this, treeType, true);
       },
     });
   },
 
   included(...args: unknown[]) {
     this._super.included.apply(this, ...args);
-    AutoImport.lookup(this).installBabelPlugin(this);
-    if (!isDeepAddonInstance(this)) {
-      AutoImport.lookup(this).included(this);
-    }
+    AutoImport.lookup(this).included(this);
   },
 
   // this exists to be called by @embroider/addon-shim

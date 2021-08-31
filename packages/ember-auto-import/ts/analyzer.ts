@@ -1,13 +1,14 @@
 import type { Node } from 'broccoli-node-api';
 import { Funnel } from 'broccoli-funnel';
 import walkSync from 'walk-sync';
-import { createReadStream } from 'fs';
+import { createReadStream, readFileSync } from 'fs';
 import FSTree from 'fs-tree-diff';
 import makeDebug from 'debug';
 import { join, extname } from 'path';
 import { isEqual, flatten } from 'lodash';
 import type Package from './package';
-import { deserialize, LiteralImportSyntax, TemplateImportSyntax } from './analyzer-syntax';
+import { deserialize, ImportSyntax, LiteralImportSyntax, TemplateImportSyntax } from './analyzer-syntax';
+import { Memoize } from 'typescript-memoize';
 
 makeDebug.formatters.m = (modules: Import[]) => {
   return JSON.stringify(
@@ -59,7 +60,12 @@ export default class Analyzer extends Funnel {
   private modules: Import[] | null = [];
   private paths: Map<string, Import[]> = new Map();
 
-  constructor(inputTree: Node, private pack: Package, private treeType?: TreeType) {
+  constructor(
+    inputTree: Node,
+    private pack: Package,
+    private treeType: TreeType | undefined,
+    private supportsFastAnalyzer: true | undefined
+  ) {
     super(inputTree, {
       annotation: 'ember-auto-import-analyzer',
     });
@@ -115,10 +121,17 @@ export default class Analyzer extends Funnel {
   }
 
   async updateImports(relativePath: string): Promise<void> {
-    debug(`updating imports for ${relativePath}`);
-    let stream = createReadStream(join(this.inputPaths[0], relativePath), { encoding: 'utf8' });
-    let meta = await deserialize(stream);
-    debug(`it worked`);
+    let meta: ImportSyntax[];
+    if (this.supportsFastAnalyzer) {
+      debug(`updating imports for ${relativePath}`);
+      let stream = createReadStream(join(this.inputPaths[0], relativePath), { encoding: 'utf8' });
+      meta = await deserialize(stream);
+    } else {
+      debug(`updating imports (the slower way) for ${relativePath}`);
+      let parse = await this.parser();
+      meta = parse(readFileSync(join(this.inputPaths[0], relativePath), 'utf8'), relativePath);
+    }
+
     let newImports = meta.map(m => ({
       path: relativePath,
       package: this.pack,
@@ -130,5 +143,40 @@ export default class Analyzer extends Funnel {
       this.paths.set(relativePath, newImports);
       this.modules = null; // invalidates cache
     }
+  }
+
+  @Memoize()
+  async parser(): Promise<(source: string, relativePath: string) => ImportSyntax[]> {
+    if (this.pack.babelMajorVersion !== 7) {
+      throw new Error(
+        `don't know how to setup a parser for Babel version ${this.pack.babelMajorVersion} (used by ${this.pack.name})`
+      );
+    }
+    const { transformSync } = await import('@babel/core');
+    const analyzerPlugin = require.resolve('./analyzer-plugin');
+
+    return (source: string, relativePath: string) => {
+      let options = Object.assign({}, this.pack.babelOptions);
+      options.code = false;
+      options.filename = relativePath;
+      if (options.plugins) {
+        options.plugins = options.plugins.slice();
+      } else {
+        options.plugins = [];
+      }
+      let analyzerOptions: { imports: ImportSyntax[] } = {
+        imports: [],
+      };
+      options.plugins.unshift([analyzerPlugin, analyzerOptions]);
+      try {
+        transformSync(source, options);
+      } catch (err) {
+        if (err.name !== 'SyntaxError') {
+          throw err;
+        }
+        debug('Ignoring an unparseable file');
+      }
+      return analyzerOptions.imports;
+    };
   }
 }
