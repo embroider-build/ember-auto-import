@@ -28,7 +28,7 @@ addonScenarios
         let result = await app.execute('npm run build');
         assert.notEqual(result.exitCode, 0, result.output);
         assert.ok(
-          /@ef4\/addon-template tried to import \"some-lib\" from addon code, but \"some-lib\" is a devDependency/.test(
+          /@ef4\/addon-template tried to import \"some-lib\" in \"@ef4\/addon-template\/index.js\" from addon code, but \"some-lib\" is a devDependency/.test(
             result.stderr
           ),
           result.stderr
