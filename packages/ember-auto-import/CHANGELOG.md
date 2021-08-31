@@ -1,5 +1,12 @@
 # Changelog
 
+### 2.2.0
+
+- ENHANCEMENT: significantly faster builds.
+- ENHANCEMENT: improved error messages for resolution errors by @NullVoxPopuli
+- HOUSEKEEPING: adjust which files get published by @buschtoens
+- ENHANCEMENT: relax semver check to tolerate shared versions that satisfy all consumers
+
 ### 2.1.0
 
 - FEATURE: You can now control exactly how and where ember-auto-import will insert tags into your HTML using the `insertScriptsAt` and `insertStylesAt` options.
