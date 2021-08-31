@@ -1,5 +1,5 @@
 declare module 'broccoli' {
-  import { InputNode } from "broccoli-node-api";
+  import type { InputNode } from 'broccoli-node-api';
   export class Builder {
     constructor(tree: InputNode);
     build(): Promise<void>;
@@ -7,4 +7,3 @@ declare module 'broccoli' {
     cleanup(): Promise<void>;
   }
 }
-

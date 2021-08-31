@@ -11,6 +11,8 @@ import BundleConfig from '../bundle-config';
 import { Project } from 'scenario-tester';
 import { merge } from 'lodash';
 import { AddonInstance, AppInstance, Project as EmberCLIProject } from '@embroider/shared-internals';
+// @ts-ignore
+import broccoliBabel from 'broccoli-babel-transpiler';
 
 const { module: Qmodule, test } = QUnit;
 
@@ -52,7 +54,19 @@ Qmodule('splitter', function (hooks) {
 
     setup = function (options: Options = {}) {
       pack = new Package(stubAddonInstance(project.baseDir, options));
-      let analyzer = new Analyzer(new UnwatchedDir(project.baseDir), pack);
+      let transpiled = broccoliBabel(new UnwatchedDir(project.baseDir), {
+        plugins: [
+          require.resolve('../../js/analyzer-plugin'),
+          require.resolve('@babel/plugin-syntax-typescript'),
+
+          // keeping this in non-parallelizable form prevents
+          // broccoli-babel-transpiler from spinning up separate worker processes,
+          // which we don't want or need and which hang at the end of the test
+          // suite.
+          require('../../babel-plugin'),
+        ],
+      });
+      let analyzer = new Analyzer(transpiled, pack);
       splitter = new Splitter({
         bundles: new BundleConfig({
           vendor: {
