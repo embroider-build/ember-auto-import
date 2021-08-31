@@ -15,7 +15,8 @@ bower.json
 ember-cli-build.js
 testem.js
 /js/tests
-/ts/tests
+/ts
+/tsconfig.json
 /scripts
 /types
 
