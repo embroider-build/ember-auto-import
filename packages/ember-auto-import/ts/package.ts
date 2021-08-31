@@ -209,12 +209,13 @@ export default class Package {
     return 'dep';
   }
 
-  resolve(importedPath: string): DepResolution | LocalResolution | URLResolution | undefined;
+  resolve(importedPath: string, fromPath: string): DepResolution | LocalResolution | URLResolution | undefined;
   resolve(
     importedPath: string,
+    fromPath: string,
     partial: true
   ): DepResolution | LocalResolution | URLResolution | ImpreciseResolution | undefined;
-  resolve(importedPath: string, partial = false): Resolution | undefined {
+  resolve(importedPath: string, fromPath: string, partial = false): Resolution | undefined {
     switch (Package.categorize(importedPath, partial)) {
       case 'url':
         return { type: 'url', url: importedPath };
@@ -270,7 +271,7 @@ export default class Package {
 
     if (packageRoot == null) {
       throw new Error(
-        `${this.name} tried to import "${packageName}" but the package was not resolvable from ${this.root}`
+        `${this.name} tried to import "${packageName}" in "${fromPath}" but the package was not resolvable from ${this.root}`
       );
     }
 
@@ -278,7 +279,7 @@ export default class Package {
       // ember addon are not auto imported
       return;
     }
-    this.assertAllowedDependency(packageName);
+    this.assertAllowedDependency(packageName, fromPath);
     return {
       type: 'package',
       path,
@@ -287,10 +288,10 @@ export default class Package {
     };
   }
 
-  private assertAllowedDependency(name: string) {
+  private assertAllowedDependency(name: string, fromPath: string) {
     if (this.isAddon && !this.hasNonDevDependency(name)) {
       throw new Error(
-        `${this.name} tried to import "${name}" from addon code, but "${name}" is a devDependency. You may need to move it into dependencies.`
+        `${this.name} tried to import "${name}" in "${fromPath}" from addon code, but "${name}" is a devDependency. You may need to move it into dependencies.`
       );
     }
   }

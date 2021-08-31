@@ -78,7 +78,8 @@ export default class Splitter {
   }
 
   private async handleLiteralImport(imp: LiteralImport, targets: Map<string, ResolvedImport>) {
-    let target = imp.package.resolve(imp.specifier);
+    let target = imp.package.resolve(imp.specifier, imp.path);
+
     if (!target) {
       return;
     }
@@ -118,7 +119,7 @@ export default class Splitter {
   private async handleTemplateImport(imp: TemplateImport, targets: Map<string, ResolvedTemplateImport>) {
     let [leadingQuasi] = imp.cookedQuasis;
 
-    let target = imp.package.resolve(leadingQuasi, true);
+    let target = imp.package.resolve(leadingQuasi, imp.path, true);
     if (!target) {
       throw new Error(`ember-auto-import is unable to handle ${leadingQuasi}`);
     }
