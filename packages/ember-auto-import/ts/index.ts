@@ -1,5 +1,5 @@
 import AutoImport from './auto-import';
-import { Node } from 'broccoli-node-api';
+import type { Node } from 'broccoli-node-api';
 // @ts-ignore
 import pkg from '../package';
 import { isDeepAddonInstance } from '@embroider/shared-internals';
@@ -38,6 +38,7 @@ module.exports = {
 
   included(...args: unknown[]) {
     this._super.included.apply(this, ...args);
+    AutoImport.lookup(this).installBabelPlugin(this);
     if (!isDeepAddonInstance(this)) {
       AutoImport.lookup(this).included(this);
     }

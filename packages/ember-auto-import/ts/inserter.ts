@@ -1,4 +1,4 @@
-import { InputNode } from 'broccoli-node-api';
+import type { InputNode } from 'broccoli-node-api';
 import Plugin from 'broccoli-plugin';
 import makeDebug from 'debug';
 import { existsSync, readFileSync } from 'fs';

@@ -10,7 +10,7 @@ class FakeProject {
   constructor(public pkg: { name: string; devDependencies: Record<string, string> }) {}
 
   fakeAddon(name: string, version = '1.0.0'): AddonInstance & FakeAddon {
-    return (new FakeAddon(name, version, this, this) as unknown) as AddonInstance & FakeAddon;
+    return new FakeAddon(name, version, this, this) as unknown as AddonInstance & FakeAddon;
   }
 }
 
@@ -27,7 +27,7 @@ class FakeAddon {
   }
 
   fakeAddon(name: string, version = '1.0.0'): AddonInstance & FakeAddon {
-    return (new FakeAddon(name, version, this, this.project) as unknown) as AddonInstance & FakeAddon;
+    return new FakeAddon(name, version, this, this.project) as unknown as AddonInstance & FakeAddon;
   }
 }
 
@@ -42,8 +42,8 @@ Qmodule('leader-chooser', function () {
     let appInstance = project.fakeAddon('ember-auto-import', '2.0.0');
     let addonInstance = project.fakeAddon('intermediate').fakeAddon('ember-auto-import', '2.0.1');
 
-    LeaderChooser.for(appInstance).register(appInstance, () => ('app won' as unknown) as AutoImport);
-    LeaderChooser.for(addonInstance).register(addonInstance, () => ('addon won' as unknown) as AutoImport);
+    LeaderChooser.for(appInstance).register(appInstance, () => 'app won' as unknown as AutoImport);
+    LeaderChooser.for(addonInstance).register(addonInstance, () => 'addon won' as unknown as AutoImport);
     assert.equal(LeaderChooser.for(appInstance).leader, 'addon won');
   });
 
@@ -57,8 +57,8 @@ Qmodule('leader-chooser', function () {
     let appInstance = project.fakeAddon('ember-auto-import', '2.0.0');
     let addonInstance = project.fakeAddon('intermediate').fakeAddon('ember-auto-import', '2.0.1');
 
-    LeaderChooser.for(addonInstance).register(addonInstance, () => ('addon won' as unknown) as AutoImport);
-    LeaderChooser.for(appInstance).register(appInstance, () => ('app won' as unknown) as AutoImport);
+    LeaderChooser.for(addonInstance).register(addonInstance, () => 'addon won' as unknown as AutoImport);
+    LeaderChooser.for(appInstance).register(appInstance, () => 'app won' as unknown as AutoImport);
     assert.equal(LeaderChooser.for(appInstance).leader, 'addon won');
   });
 
@@ -72,8 +72,8 @@ Qmodule('leader-chooser', function () {
     let appInstance = project.fakeAddon('ember-auto-import', '1.0.0');
     let addonInstance = project.fakeAddon('intermediate').fakeAddon('ember-auto-import', '2.0.1');
 
-    LeaderChooser.for(addonInstance).register(addonInstance, () => ('addon won' as unknown) as AutoImport);
-    LeaderChooser.for(appInstance).register(appInstance, () => ('app won' as unknown) as AutoImport);
+    LeaderChooser.for(addonInstance).register(addonInstance, () => 'addon won' as unknown as AutoImport);
+    LeaderChooser.for(appInstance).register(appInstance, () => 'app won' as unknown as AutoImport);
     assert.throws(() => {
       LeaderChooser.for(appInstance).leader;
     }, /To use these addons, your app needs ember-auto-import >= 2: intermediate/);
@@ -89,8 +89,8 @@ Qmodule('leader-chooser', function () {
     let appInstance = project.fakeAddon('ember-auto-import', '2.0.0');
     let addonInstance = project.fakeAddon('intermediate').fakeAddon('ember-auto-import', '1.10.1');
 
-    LeaderChooser.for(appInstance).register(appInstance, () => ('app won' as unknown) as AutoImport);
-    LeaderChooser.for(addonInstance).register(addonInstance, () => ('addon won' as unknown) as AutoImport);
+    LeaderChooser.for(appInstance).register(appInstance, () => 'app won' as unknown as AutoImport);
+    LeaderChooser.for(addonInstance).register(addonInstance, () => 'addon won' as unknown as AutoImport);
     assert.equal(LeaderChooser.for(appInstance).leader, 'app won');
   });
 
@@ -105,9 +105,9 @@ Qmodule('leader-chooser', function () {
     let addonInstance = project.fakeAddon('intermediate').fakeAddon('ember-auto-import', '2.1.4');
     let tooNewInstance = project.fakeAddon('intermediate2').fakeAddon('ember-auto-import', '2.2.0');
 
-    LeaderChooser.for(appInstance).register(appInstance, () => ('app won' as unknown) as AutoImport);
-    LeaderChooser.for(addonInstance).register(addonInstance, () => ('addon won' as unknown) as AutoImport);
-    LeaderChooser.for(tooNewInstance).register(tooNewInstance, () => ('too new won' as unknown) as AutoImport);
+    LeaderChooser.for(appInstance).register(appInstance, () => 'app won' as unknown as AutoImport);
+    LeaderChooser.for(addonInstance).register(addonInstance, () => 'addon won' as unknown as AutoImport);
+    LeaderChooser.for(tooNewInstance).register(tooNewInstance, () => 'too new won' as unknown as AutoImport);
 
     assert.equal(LeaderChooser.for(appInstance).leader, 'addon won');
   });

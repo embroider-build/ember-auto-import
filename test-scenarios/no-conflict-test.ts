@@ -9,7 +9,7 @@ appScenarios
   .map('no-conflict', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.linkDependency('webpack', { baseDir: __dirname });
-    project.addDependency('inner-lib', '1.2.3');
+    project.addDependency('inner-lib', '1.2.3', { requestedRange: '^1.0.0' });
     merge(project.files, {
       app: {
         'app.js': `
@@ -23,7 +23,7 @@ appScenarios
 
     let addon = Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), { linkDeps: true });
     addon.linkDependency('ember-auto-import', { baseDir: __dirname });
-    addon.addDependency('inner-lib', '1.2.3');
+    addon.addDependency('inner-lib', '1.3.4', { requestedRange: '^1.0.0' });
     merge(addon.files, {
       addon: {
         'index.js': `

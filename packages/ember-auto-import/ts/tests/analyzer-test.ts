@@ -7,6 +7,11 @@ import { ensureDirSync, readFileSync, outputFileSync, removeSync, existsSync } f
 import { join } from 'path';
 import type Package from '../package';
 import Analyzer from '../analyzer';
+// @ts-ignore
+import broccoliBabel from 'broccoli-babel-transpiler';
+import type { TransformOptions } from '@babel/core';
+import { deserialize, ImportSyntax, serialize, MARKER } from '../analyzer-syntax';
+import { ReadStream } from 'fs';
 
 const { module: Qmodule, test } = QUnit;
 
@@ -15,37 +20,36 @@ Qmodule('analyzer', function (hooks) {
   let upstream: string;
   let analyzer: Analyzer;
   let pack: Package;
-  let babelOptionsWasAccessed = false;
+  let babelConfig: TransformOptions;
 
   hooks.beforeEach(function (this: any) {
     quickTemp.makeOrRemake(this, 'workDir', 'auto-import-analyzer-tests');
     ensureDirSync((upstream = join(this.workDir, 'upstream')));
     pack = {
-      get babelOptions() {
-        babelOptionsWasAccessed = true;
-        return {
-          plugins: [require.resolve('@babel/plugin-syntax-typescript'), require.resolve('../../babel-plugin')],
-        };
-      },
-      babelMajorVersion: 7,
       fileExtensions: ['js'],
     } as Package;
-    analyzer = new Analyzer(new UnwatchedDir(upstream), pack);
+    babelConfig = {
+      plugins: [
+        require.resolve('../../js/analyzer-plugin'),
+        require.resolve('@babel/plugin-syntax-typescript'),
+
+        // keeping this in non-parallelizable form prevents
+        // broccoli-babel-transpiler from spinning up separate worker processes,
+        // which we don't want or need and which hang at the end of the test
+        // suite.
+        require('../../babel-plugin'),
+      ],
+    };
+    let transpiled = broccoliBabel(new UnwatchedDir(upstream), babelConfig);
+    analyzer = new Analyzer(transpiled, pack);
     builder = new broccoli.Builder(analyzer);
   });
 
   hooks.afterEach(function (this: any) {
-    babelOptionsWasAccessed = false;
     removeSync(this.workDir);
     if (builder) {
       return builder.cleanup();
     }
-  });
-
-  test('babelOptions are accessed only during build', async function (assert) {
-    assert.notOk(babelOptionsWasAccessed);
-    await builder.build();
-    assert.ok(babelOptionsWasAccessed);
   });
 
   test('initial file passes through', async function (assert) {
@@ -53,7 +57,7 @@ Qmodule('analyzer', function (hooks) {
     outputFileSync(join(upstream, 'sample.js'), original);
     await builder.build();
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.equal(content, original);
+    assert.ok(content.endsWith(original), `${content} should end with ${original}`);
   });
 
   test('created file passes through', async function (assert) {
@@ -62,7 +66,7 @@ Qmodule('analyzer', function (hooks) {
     outputFileSync(join(upstream, 'sample.js'), original);
     await builder.build();
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.equal(content, original);
+    assert.ok(content.endsWith(original), `${content} should end with ${original}`);
   });
 
   test('updated file passes through', async function (assert) {
@@ -75,7 +79,7 @@ Qmodule('analyzer', function (hooks) {
     await builder.build();
 
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.equal(content, updated);
+    assert.ok(content.endsWith(updated), `${content} should end with ${updated}`);
   });
 
   test('deleted file passes through', async function (assert) {
@@ -197,6 +201,26 @@ Qmodule('analyzer', function (hooks) {
       {
         isDynamic: false,
         specifier: 'value-re-export',
+        path: 'sample.js',
+        package: pack,
+        treeType: undefined,
+      },
+    ]);
+  });
+
+  test('dependency discovered from reexport', async function (assert) {
+    babelConfig.plugins!.push(
+      // this is here because Ember does this and we want to make sure we
+      // coexist with it
+      [require.resolve('@babel/plugin-transform-modules-amd'), { noInterop: true }]
+    );
+    let original = "export { default } from 'some-package';";
+    outputFileSync(join(upstream, 'sample.js'), original);
+    await builder.build();
+    assert.deepEqual(analyzer.imports, [
+      {
+        isDynamic: false,
+        specifier: 'some-package',
         path: 'sample.js',
         package: pack,
         treeType: undefined,
@@ -349,5 +373,118 @@ Qmodule('analyzer', function (hooks) {
     } catch (err) {
       assert.contains(err.message, 'import() is only allowed to contain string literals or template string literals');
     }
+  });
+});
+
+Qmodule('analyzer-deserialize', function () {
+  function sampleData(): ImportSyntax[] {
+    return [
+      {
+        isDynamic: false,
+        specifier: 'alpha',
+      },
+      {
+        isDynamic: true,
+        specifier: 'beta',
+      },
+      {
+        isDynamic: false,
+        cookedQuasis: ['gamma/', ''],
+        expressionNameHints: [null],
+      },
+      {
+        isDynamic: true,
+        cookedQuasis: ['delta/', ''],
+        expressionNameHints: ['flavor'],
+      },
+    ];
+  }
+
+  function source(chunks: string[]): ReadStream {
+    let closer: undefined | (() => void);
+    return {
+      get chunksRemaining() {
+        return chunks.length;
+      },
+
+      read() {
+        if (chunks.length > 0) {
+          return chunks.shift();
+        } else {
+          if (closer) {
+            closer();
+          }
+          return null;
+        }
+      },
+      on(event: string, handler: () => unknown) {
+        if (event === 'readable') {
+          setTimeout(handler, 0);
+        }
+        if (event === 'close') {
+          closer = handler;
+        }
+      },
+      destroy() {
+        if (closer) {
+          closer();
+        }
+      },
+    } as unknown as ReadStream;
+  }
+
+  test('no meta found', async function (assert) {
+    let result = await deserialize(source(['abcdefgabcdefg']));
+    assert.deepEqual(result, []);
+  });
+
+  test('meta found in one chunk', async function (assert) {
+    let result = await deserialize(source(['stuff stuff stuff ' + serialize(sampleData())]));
+    assert.deepEqual(result, sampleData());
+  });
+
+  test('meta spans two chunks', async function (assert) {
+    let meta = serialize(sampleData());
+    let result = await deserialize(
+      source([`stuff stuff stuff ${meta.slice(0, MARKER.length + 2)}`, meta.slice(MARKER.length + 2)])
+    );
+    assert.deepEqual(result, sampleData());
+  });
+
+  test('meta spans three chunks', async function (assert) {
+    let meta = serialize(sampleData());
+    let result = await deserialize(
+      source([
+        `stuff stuff stuff ${meta.slice(0, MARKER.length + 2)}`,
+        meta.slice(MARKER.length + 2, MARKER.length + 5),
+        meta.slice(MARKER.length + 5),
+      ])
+    );
+    assert.deepEqual(result, sampleData());
+  });
+
+  test('leaves remaining chunks unconsumed after finding meta', async function (assert) {
+    let s = source([`stuff stuff stuff ${serialize(sampleData())} other stuff`, 'extra']);
+    let result = await deserialize(s);
+    assert.deepEqual(result, sampleData());
+    assert.equal((s as any).chunksRemaining, 1);
+  });
+
+  test('start marker split between chunks', async function (assert) {
+    let meta = serialize(sampleData());
+    let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, 2)}`, meta.slice(2)]));
+    assert.deepEqual(result, sampleData());
+  });
+
+  test('false start marker at end of chunk', async function (assert) {
+    let meta = serialize(sampleData());
+    let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, 2)}`, `other${meta}`]));
+    assert.deepEqual(result, sampleData());
+  });
+
+  test('end marker split between chunks', async function (assert) {
+    let meta = serialize(sampleData());
+    let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, -2)}`, meta.slice(-2)]));
+    assert.deepEqual(result, sampleData());
   });
 });

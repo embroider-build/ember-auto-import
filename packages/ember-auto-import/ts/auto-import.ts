@@ -5,9 +5,15 @@ import type { TreeType } from './analyzer';
 import Package from './package';
 import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
-import { Node } from 'broccoli-node-api';
+import type { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
-import { AddonInstance, AppInstance, findTopmostAddon, ShallowAddonInstance } from '@embroider/shared-internals';
+import {
+  AddonInstance,
+  AppInstance,
+  findTopmostAddon,
+  isDeepAddonInstance,
+  ShallowAddonInstance,
+} from '@embroider/shared-internals';
 import WebpackBundler from './webpack';
 import { Memoize } from 'typescript-memoize';
 import { WatchedDir } from 'broccoli-source';
@@ -17,6 +23,8 @@ import resolve from 'resolve';
 import type webpackType from 'webpack';
 import resolvePackagePath from 'resolve-package-path';
 import semver from 'semver';
+import type { TransformOptions } from '@babel/core';
+import { MARKER } from './analyzer-syntax';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -29,6 +37,7 @@ export interface AutoImportSharedAPI {
   included(addonInstance: AddonInstance): void;
   addTo(tree: Node): Node;
   registerV2Addon(packageName: string, packageRoot: string): void;
+  installBabelPlugin(addonInstance: AddonInstance): void;
 }
 
 export default class AutoImport implements AutoImportSharedAPI {
@@ -151,6 +160,23 @@ export default class AutoImport implements AutoImportSharedAPI {
     this.configureFingerprints(addonInstance.app);
   }
 
+  installBabelPlugin(addonInstance: AddonInstance): void {
+    let parent: AppInstance | AddonInstance;
+    if (isDeepAddonInstance(addonInstance)) {
+      parent = addonInstance.parent;
+    } else {
+      parent = addonInstance.app;
+    }
+
+    let babelOptions: TransformOptions = (parent.options.babel = parent.options.babel || {});
+    let babelPlugins = (babelOptions.plugins = babelOptions.plugins || []);
+    if (!babelPlugins.some(isAnalyzerPlugin)) {
+      // the MARKER is included so that babel caches will invalidate if the
+      // MARKER changes
+      babelPlugins.unshift([require.resolve('./analyzer-plugin'), { MARKER }]);
+    }
+  }
+
   // We need to disable fingerprinting of chunks, because (1) they already
   // have their own webpack-generated hashes and (2) the runtime loader code
   // can't easily be told about broccoli-asset-rev's hashes.
@@ -176,4 +202,12 @@ function depsFor(allAppTree: Node, packages: Set<Package>) {
     }
   }
   return deps;
+}
+
+function isAnalyzerPlugin(entry: unknown) {
+  const suffix = 'ember-auto-import/js/analyzer-plugin.js';
+  return (
+    (typeof entry === 'string' && entry.endsWith(suffix)) ||
+    (Array.isArray(entry) && typeof entry[0] === 'string' && entry[0].endsWith(suffix))
+  );
 }
