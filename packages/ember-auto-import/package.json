@@ -1,6 +1,6 @@
 {
   "name": "ember-auto-import",
-  "version": "2.1.0",
+  "version": "2.2.0-alpha.1",
   "description": "Zero-config import from NPM packages",
   "keywords": [
     "ember-addon",
@@ -32,15 +32,14 @@
     "@babel/plugin-proposal-class-properties": "^7.13.0",
     "@babel/preset-env": "^7.10.2",
     "@babel/traverse": "^7.1.6",
-    "@babel/types": "^7.1.6",
     "@embroider/shared-internals": "^0.40.0",
     "babel-loader": "^8.0.6",
     "babel-plugin-ember-modules-api-polyfill": "^3.5.0",
     "babel-plugin-htmlbars-inline-precompile": "^5.2.1",
     "babel-plugin-syntax-dynamic-import": "^6.18.0",
     "broccoli-debug": "^0.6.4",
+    "broccoli-funnel": "^3.0.8",
     "broccoli-merge-trees": "^4.2.0",
-    "broccoli-node-api": "^1.7.0",
     "broccoli-plugin": "^4.0.0",
     "broccoli-source": "^3.0.0",
     "css-loader": "^5.2.0",
@@ -58,12 +57,12 @@
     "rimraf": "^2.6.2",
     "semver": "^7.3.4",
     "style-loader": "^2.0.0",
-    "symlink-or-copy": "^1.2.0",
     "typescript-memoize": "^1.0.0-alpha.3",
     "walk-sync": "^0.3.3"
   },
   "devDependencies": {
     "@babel/plugin-syntax-typescript": "^7.14.5",
+    "@babel/plugin-transform-modules-amd": "^7.14.5",
     "@types/babel__core": "^7.0.4",
     "@types/babel__generator": "^7.0.1",
     "@types/babel__template": "^7.0.1",
@@ -82,6 +81,8 @@
     "@types/webpack": "^5.28.0",
     "broccoli": "^3.2.0",
     "broccoli-asset-rev": "^2.4.5",
+    "broccoli-babel-transpiler": "^7.8.0",
+    "broccoli-node-api": "^1.7.0",
     "broccoli-source": "^3.0.0",
     "ember-ajax": "^3.0.0",
     "ember-cli": "^3.6.0",
@@ -112,7 +113,7 @@
     "qunit": "^2.6.1",
     "qunit-assertions-extra": "^0.8.5",
     "scenario-tester": "^1.0.0",
-    "typescript": "^4.1.2",
+    "typescript": "4.3.5",
     "webpack": "^5.31.0"
   },
   "engines": {
@@ -121,10 +122,11 @@
   "ember-addon": {
     "configPath": "tests/dummy/config",
     "before": [
-      "ember-cli-babel",
-      "broccoli-asset-rev"
+      "broccoli-asset-rev",
+      "@embroider/macros"
     ],
     "after": [
+      "ember-cli-babel",
       "ember-cli-coffeescript",
       "ember-cli-typescript"
     ]

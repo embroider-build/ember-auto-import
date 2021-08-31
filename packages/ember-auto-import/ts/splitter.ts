@@ -1,10 +1,11 @@
 import makeDebug from 'debug';
 import Analyzer, { Import, LiteralImport, TemplateImport } from './analyzer';
-import Package from './package';
+import Package, { DepResolution } from './package';
 import { shallowEqual } from './util';
 import { flatten, partition } from 'lodash';
 import BundleConfig from './bundle-config';
 import { join } from 'path';
+import { satisfies } from 'semver';
 
 const debug = makeDebug('ember-auto-import:splitter');
 
@@ -103,7 +104,7 @@ export default class Splitter {
 
     let seenAlready = targets.get(imp.specifier);
     if (seenAlready) {
-      await this.assertSafeVersion(seenAlready.packageRoot, seenAlready.importedBy[0], imp, target.packageRoot);
+      await this.assertSafeVersion(seenAlready, imp, target);
       seenAlready.importedBy.push(imp);
     } else {
       targets.set(imp.specifier, {
@@ -144,7 +145,7 @@ export default class Splitter {
 
     let seenAlready = targets.get(specifierKey);
     if (seenAlready) {
-      await this.assertSafeVersion(seenAlready.packageRoot, seenAlready.importedBy[0], imp, target.packageRoot);
+      await this.assertSafeVersion(seenAlready, imp, target);
       seenAlready.importedBy.push(imp);
     } else {
       targets.set(specifierKey, {
@@ -169,26 +170,36 @@ export default class Splitter {
   }
 
   private async assertSafeVersion(
-    havePackageRoot: string,
-    prevImport: Import,
+    alreadyResolved: ResolvedImport | ResolvedTemplateImport,
     nextImport: Import,
-    packageRoot: string
+    nextTarget: DepResolution
   ) {
-    if (havePackageRoot === packageRoot) {
-      // both import statements are resolving to the exact same package --
-      // this is the normal and happy case
+    if (alreadyResolved.packageRoot === nextTarget.packageRoot) {
+      // the next import is resolving to the same copy of the package we are
+      // already using. This is the normal and happy case.
       return;
     }
 
-    let [haveVersion, nextVersion] = await Promise.all([
-      this.versionOfPackage(havePackageRoot),
-      this.versionOfPackage(packageRoot),
-    ]);
-    if (haveVersion !== nextVersion) {
+    let requestedRange = nextImport.package.requestedRange(nextTarget.packageName);
+    if (!requestedRange) {
+      // this is probably an error condition, but it's not the error condition
+      // that this particular assertion is checking. Our job is just to make
+      // sure nobody's requested semver ranges are violated. If you don't have
+      // any range, we can't violate it. In practice if you lacked a declared
+      // dependency, Package#resolve would have failed earlier than this because
+      // it ensures we only resolve declared dependencies.
+      return;
+    }
+
+    let haveVersion = await this.versionOfPackage(alreadyResolved.packageRoot);
+
+    if (!satisfies(haveVersion, requestedRange, { includePrerelease: true })) {
       throw new Error(
-        `${nextImport.package.name} and ${prevImport.package.name} are using different versions of ${
-          'specifier' in prevImport ? prevImport.specifier : prevImport.cookedQuasis[0]
-        } (${nextVersion} located at ${packageRoot} vs ${haveVersion} located at ${havePackageRoot})`
+        `${nextImport.package.name} needs ${
+          nextTarget.packageName
+        } satisfying ${requestedRange}, but we have version ${haveVersion} because of ${alreadyResolved.importedBy
+          .map(i => i.package.name)
+          .join(', ')}`
       );
     }
   }

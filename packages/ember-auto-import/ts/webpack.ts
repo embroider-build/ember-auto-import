@@ -6,7 +6,7 @@ import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies, ResolvedTemplateImport } from './splitter';
 import { BuildResult, Bundler, BundlerOptions } from './bundler';
-import { InputNode } from 'broccoli-node-api';
+import type { InputNode } from 'broccoli-node-api';
 import Plugin from 'broccoli-plugin';
 import { babelFilter, packageName } from '@embroider/shared-internals';
 import { Options } from './package';

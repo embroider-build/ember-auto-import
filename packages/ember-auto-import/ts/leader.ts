@@ -1,7 +1,7 @@
 import { gt, satisfies } from 'semver';
 import type AutoImport from './auto-import';
 import { Project, AddonInstance, isDeepAddonInstance } from '@embroider/shared-internals';
-import { Node } from 'broccoli-node-api';
+import type { Node } from 'broccoli-node-api';
 import makeDebug from 'debug';
 const debug = makeDebug('ember-auto-import:leader');
 
@@ -36,7 +36,7 @@ const protocolV1 = '__ember_auto_import_protocol_v1__';
 const protocolV2 = '__ember_auto_import_protocol_v2__';
 const protocolV3 = '__ember_auto_import_protocol_v3__';
 
-const g = (global as any) as {
+const g = global as any as {
   [protocolV1]: any;
   [protocolV2]: WeakMap<Project, LeaderChooser> | undefined;
   [protocolV3]: WeakMap<Project, LeaderChooser> | undefined;

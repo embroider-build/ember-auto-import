@@ -10,7 +10,7 @@ appScenarios
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.linkDependency('webpack', { baseDir: __dirname });
 
-    project.addDependency('inner-lib', '1.2.3');
+    project.addDependency('inner-lib', '1.2.3', { requestedRange: '^1.0.0' });
     merge(project.files, {
       app: {
         'app.js': `
@@ -24,7 +24,7 @@ appScenarios
 
     let addon = Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), { linkDeps: true });
     addon.linkDependency('ember-auto-import', { baseDir: __dirname });
-    addon.addDependency('inner-lib', '2.3.4');
+    addon.addDependency('inner-lib', '2.3.4', { requestedRange: '^2.0.0' });
     merge(addon.files, {
       addon: {
         'index.js': `
@@ -48,7 +48,7 @@ appScenarios
         let result = await app.execute('npm run build');
         assert.notEqual(result.exitCode, 0, result.output);
         assert.ok(
-          /((@ef4\/addon-template|@ef4\/app-template).*){2}.* are using different versions of inner-lib/.test(
+          /@ef4\/app-template needs inner-lib satisfying \^1.0.0, but we have version 2.3.4 because of @ef4\/addon-template/.test(
             result.stderr
           ),
           result.stderr
