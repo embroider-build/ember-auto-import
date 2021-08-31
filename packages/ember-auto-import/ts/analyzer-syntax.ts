@@ -20,7 +20,12 @@ export interface TemplateImportSyntax {
 
 export type ImportSyntax = LiteralImportSyntax | TemplateImportSyntax;
 
-const marker = 'eaimeta';
+// this should change if we ever change the implementation of the
+// serialize/deserialize below, so that babel caches will be invalidated.
+//
+// this needs to have enough entropy that is it unlikely to collide with
+// anything that appears earlier than it in the JS modules.
+export const MARKER = 'eaimeta@70e063a35619d71f';
 
 export function serialize(imports: ImportSyntax[]): string {
   let tokens = [];
@@ -34,7 +39,7 @@ export function serialize(imports: ImportSyntax[]): string {
       tokens.push(imp.expressionNameHints);
     }
   }
-  return `${marker}${JSON.stringify(tokens).slice(1, -1)}${marker}`;
+  return `${MARKER}${JSON.stringify(tokens).slice(1, -1)}${MARKER}`;
 }
 
 export function deserialize(source: ReadStream): Promise<ImportSyntax[]> {
@@ -112,7 +117,7 @@ class Deserializer {
     switch (state.type) {
       case 'finding-start':
         {
-          let start = chunk.indexOf(marker);
+          let start = chunk.indexOf(MARKER);
           if (start >= 0) {
             // found the start, enter finding-end state
             this.state = {
@@ -120,9 +125,9 @@ class Deserializer {
               meta: [],
             };
             // pass the rest of the chunk forward to the next state
-            return this.consumeChunk(chunk.slice(start + marker.length));
+            return this.consumeChunk(chunk.slice(start + MARKER.length));
           }
-          let partialMatch = matchesAtEnd(chunk, marker);
+          let partialMatch = matchesAtEnd(chunk, MARKER);
           if (partialMatch > 0) {
             this.state = {
               type: 'start-partial-match',
@@ -132,13 +137,13 @@ class Deserializer {
         }
         break;
       case 'start-partial-match':
-        if (chunk.startsWith(marker.slice(state.partialMatch))) {
+        if (chunk.startsWith(MARKER.slice(state.partialMatch))) {
           // completed partial match, go into finding-end state
           this.state = {
             type: 'finding-end',
             meta: [],
           };
-          return this.consumeChunk(chunk.slice(marker.length - state.partialMatch));
+          return this.consumeChunk(chunk.slice(MARKER.length - state.partialMatch));
         } else {
           // partial match failed to complete
           this.state = {
@@ -147,7 +152,7 @@ class Deserializer {
           return this.consumeChunk(chunk);
         }
       case 'finding-end': {
-        let endIndex = chunk.indexOf(marker);
+        let endIndex = chunk.indexOf(MARKER);
         if (endIndex >= 0) {
           // found the end
           this.state = {
@@ -155,7 +160,7 @@ class Deserializer {
             meta: [...state.meta, chunk.slice(0, endIndex)].join(''),
           };
         } else {
-          let partialMatch = matchesAtEnd(chunk, marker);
+          let partialMatch = matchesAtEnd(chunk, MARKER);
           if (partialMatch > 0) {
             this.state = {
               type: 'end-partial-match',
@@ -169,7 +174,7 @@ class Deserializer {
         break;
       }
       case 'end-partial-match':
-        if (chunk.startsWith(marker.slice(state.partialMatch))) {
+        if (chunk.startsWith(MARKER.slice(state.partialMatch))) {
           // completed partial match, go into finding-end state
           this.state = {
             type: 'done',

@@ -10,7 +10,7 @@ import Analyzer from '../analyzer';
 // @ts-ignore
 import broccoliBabel from 'broccoli-babel-transpiler';
 import type { TransformOptions } from '@babel/core';
-import { deserialize, ImportSyntax, serialize } from '../analyzer-syntax';
+import { deserialize, ImportSyntax, serialize, MARKER } from '../analyzer-syntax';
 import { ReadStream } from 'fs';
 
 const { module: Qmodule, test } = QUnit;
@@ -445,14 +445,20 @@ Qmodule('analyzer-deserialize', function () {
 
   test('meta spans two chunks', async function (assert) {
     let meta = serialize(sampleData());
-    let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, 10)}`, meta.slice(10)]));
+    let result = await deserialize(
+      source([`stuff stuff stuff ${meta.slice(0, MARKER.length + 2)}`, meta.slice(MARKER.length + 2)])
+    );
     assert.deepEqual(result, sampleData());
   });
 
   test('meta spans three chunks', async function (assert) {
     let meta = serialize(sampleData());
     let result = await deserialize(
-      source([`stuff stuff stuff ${meta.slice(0, 7)}`, meta.slice(7, 10), meta.slice(10)])
+      source([
+        `stuff stuff stuff ${meta.slice(0, MARKER.length + 2)}`,
+        meta.slice(MARKER.length + 2, MARKER.length + 5),
+        meta.slice(MARKER.length + 5),
+      ])
     );
     assert.deepEqual(result, sampleData());
   });

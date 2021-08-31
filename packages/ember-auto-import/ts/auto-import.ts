@@ -24,6 +24,7 @@ import type webpackType from 'webpack';
 import resolvePackagePath from 'resolve-package-path';
 import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
+import { MARKER } from './analyzer-syntax';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -169,12 +170,10 @@ export default class AutoImport implements AutoImportSharedAPI {
 
     let babelOptions: TransformOptions = (parent.options.babel = parent.options.babel || {});
     let babelPlugins = (babelOptions.plugins = babelOptions.plugins || []);
-    if (
-      !babelPlugins.some(
-        entry => typeof entry === 'string' && entry.endsWith('ember-auto-import/js/analyzer-plugin.js')
-      )
-    ) {
-      babelPlugins.unshift(require.resolve('./analyzer-plugin'));
+    if (!babelPlugins.some(isAnalyzerPlugin)) {
+      // the MARKER is included so that babel caches will invalidate if the
+      // MARKER changes
+      babelPlugins.unshift([require.resolve('./analyzer-plugin'), { MARKER }]);
     }
   }
 
@@ -203,4 +202,12 @@ function depsFor(allAppTree: Node, packages: Set<Package>) {
     }
   }
   return deps;
+}
+
+function isAnalyzerPlugin(entry: unknown) {
+  const suffix = 'ember-auto-import/js/analyzer-plugin.js';
+  return (
+    (typeof entry === 'string' && entry.endsWith(suffix)) ||
+    (Array.isArray(entry) && typeof entry[0] === 'string' && entry[0].endsWith(suffix))
+  );
 }
