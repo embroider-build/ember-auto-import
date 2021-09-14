@@ -101,11 +101,14 @@ export function supportMatrix(scenarios: Scenarios) {
 }
 
 export function baseApp() {
-  return Project.fromDir(dirname(require.resolve('@ef4/app-template/package.json')), { linkDeps: true });
+  return Project.fromDir(dirname(require.resolve('@ef4/app-template/package.json')), { linkDevDeps: true });
 }
 export const appScenarios = supportMatrix(Scenarios.fromProject(baseApp));
 
-export function baseAddon() {
-  return Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), { linkDeps: true });
+export function baseAddon(as: 'addon' | 'dummy-app' = 'addon') {
+  return Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), {
+    linkDeps: true,
+    linkDevDeps: as === 'dummy-app',
+  });
 }
-export const addonScenarios = supportMatrix(Scenarios.fromProject(baseAddon));
+export const addonScenarios = supportMatrix(Scenarios.fromProject(() => baseAddon('dummy-app')));

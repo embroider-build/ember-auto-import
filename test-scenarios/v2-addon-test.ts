@@ -1,8 +1,7 @@
 import merge from 'lodash/merge';
-import { appScenarios, baseApp } from './scenarios';
+import { appScenarios, baseAddon, baseApp } from './scenarios';
 import { PreparedApp, Project, Scenarios } from 'scenario-tester';
 import { setupFastboot } from './fastboot-helper';
-import { dirname } from 'path';
 import QUnit from 'qunit';
 const { module: Qmodule, test } = QUnit;
 
@@ -83,7 +82,7 @@ function buildV2Addon() {
 }
 
 function buildInnerV1Addon() {
-  let addon = Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), { linkDeps: true });
+  let addon = baseAddon();
   addon.name = 'inner-v1-addon';
   merge(addon.files, {
     addon: {
@@ -98,7 +97,7 @@ function buildInnerV1Addon() {
 }
 
 function buildIntermediateV1Addon() {
-  let addon = Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), { linkDeps: true });
+  let addon = baseAddon();
   addon.name = 'intermediate-v1-addon';
   merge(addon.files, {
     app: {
@@ -379,7 +378,7 @@ scenarios
 
 Scenarios.fromProject(baseApp)
   .map('shim-requires-auto-import', project => {
-    let v1Addon = Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), { linkDeps: true });
+    let v1Addon = baseAddon();
     v1Addon.name = 'my-v1-addon';
     v1Addon.addDependency(buildV2AddonWithExports('my-v2-addon'));
     project.addDependency(v1Addon);
