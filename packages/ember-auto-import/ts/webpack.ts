@@ -160,7 +160,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         },
       },
       resolve: {
-        extensions: ['.js', '.ts', '.json'],
+        extensions: ['.js', '.mjs', '.ts', '.json'],
         mainFields: ['browser', 'module', 'main'],
         alias: Object.assign({}, ...[...this.opts.packages].map(pkg => pkg.aliases).filter(Boolean)),
       },
