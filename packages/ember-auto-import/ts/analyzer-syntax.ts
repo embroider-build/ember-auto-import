@@ -181,10 +181,11 @@ class Deserializer {
             meta: state.meta.join(''),
           };
         } else {
-          // partial match failed to complete
+          // partial match failed to complete, so we need to replace the partial
+          // marker match we stripped off the last chunk
           this.state = {
             type: 'finding-end',
-            meta: state.meta,
+            meta: [...state.meta, MARKER.slice(0, state.partialMatch)],
           };
           return this.consumeChunk(chunk);
         }
