@@ -487,4 +487,17 @@ Qmodule('analyzer-deserialize', function () {
     let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, -2)}`, meta.slice(-2)]));
     assert.deepEqual(result, sampleData());
   });
+
+  test('false end marker at end of chunk', async function (assert) {
+    const meta = serialize(sampleData());
+    assert.ok(
+      meta.slice(MARKER.length, -MARKER.length).indexOf(MARKER[0]) > -1,
+      'serialized sample data must contain first character of MARKER somewhere between boundary markers for test to have meaning'
+    );
+    const slicePos = meta.slice(MARKER.length, -MARKER.length).indexOf(MARKER[0]) + MARKER.length + 1;
+    const result = await deserialize(
+      source([`stuff stuff stuff ${meta.slice(0, slicePos)}`, `${meta.slice(slicePos)} stuff stuff`])
+    );
+    assert.deepEqual(result, sampleData());
+  });
 });
