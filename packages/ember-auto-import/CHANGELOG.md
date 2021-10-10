@@ -1,5 +1,10 @@
 # Changelog
 
+### 2.2.1
+
+- BUGFIX: Prevent loss of characters in case of false end-partial-match by @timmorey
+- INTERNAL: Upgrade scenario-tester
+
 ### 2.2.0
 
 - ENHANCEMENT: significantly faster builds.
