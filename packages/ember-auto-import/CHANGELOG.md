@@ -1,5 +1,9 @@
 # Changelog
 
+### 2.2.2
+
+- BUGFIX: pass `styleLoaderOptions` and `cssLoaderOptions` correctly by @boris-petrov
+
 ### 2.2.1
 
 - BUGFIX: Prevent loss of characters in case of false end-partial-match by @timmorey
