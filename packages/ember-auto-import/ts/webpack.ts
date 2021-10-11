@@ -171,8 +171,14 @@ export default class WebpackBundler extends Plugin implements Bundler {
           {
             test: /\.css$/i,
             use: [
-              { loader: 'eai-style-loader', options: [...this.opts.packages].find(pkg => pkg.styleLoaderOptions) },
-              { loader: 'eai-css-loader', options: [...this.opts.packages].find(pkg => pkg.cssLoaderOptions) },
+              {
+                loader: 'eai-style-loader',
+                options: [...this.opts.packages].find(pkg => pkg.styleLoaderOptions)?.styleLoaderOptions,
+              },
+              {
+                loader: 'eai-css-loader',
+                options: [...this.opts.packages].find(pkg => pkg.cssLoaderOptions)?.cssLoaderOptions,
+              },
             ],
           },
         ],
