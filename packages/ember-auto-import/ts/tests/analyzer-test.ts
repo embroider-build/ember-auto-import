@@ -228,6 +228,21 @@ Qmodule('analyzer', function (hooks) {
     ]);
   });
 
+  test('dependency discovered from namespace reexport', async function (assert) {
+    let original = "export * from 'some-package';";
+    outputFileSync(join(upstream, 'sample.js'), original);
+    await builder.build();
+    assert.deepEqual(analyzer.imports, [
+      {
+        isDynamic: false,
+        specifier: 'some-package',
+        path: 'sample.js',
+        package: pack,
+        treeType: undefined,
+      },
+    ]);
+  });
+
   type LiteralExample = [string, string];
   type TemplateExample = [string, string[], string[]];
   function isLiteralExample(exp: LiteralExample | TemplateExample): exp is LiteralExample {
