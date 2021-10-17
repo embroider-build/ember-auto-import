@@ -15,7 +15,11 @@
     "test": "tests"
   },
   "main": "js/index.js",
-  "repository": "https://github.com/ef4/ember-auto-import",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ef4/ember-auto-import",
+    "directory": "packages/ember-auto-import"
+  },
   "scripts": {
     "compile": "tsc",
     "clean": "git clean -x -f",
