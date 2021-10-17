@@ -72,6 +72,13 @@ function analyzerPlugin(babel: typeof Babel) {
           specifier: path.node.source.value,
         });
       },
+      ExportAllDeclaration(path: NodePath<t.ExportAllDeclaration>, state: State) {
+        if (erasedExportKinds.has(path.node.exportKind)) return;
+        state.imports.push({
+          isDynamic: false,
+          specifier: path.node.source.value,
+        });
+      },
     },
   };
 }
