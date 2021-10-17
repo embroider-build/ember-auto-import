@@ -1,5 +1,9 @@
 # Changelog
 
+### 2.2.3
+
+- BUGFIX: `export * from` syntax was not detected.
+
 ### 2.2.2
 
 - BUGFIX: pass `styleLoaderOptions` and `cssLoaderOptions` correctly by @boris-petrov
