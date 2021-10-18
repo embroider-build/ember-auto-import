@@ -39,7 +39,7 @@
 
 ### 2.0.0
 
-- BREAKING: see the [upgrade guide to v2](./docs/upgrade-guide-2.0.md) for the complete list of breaking changes in 2.0 with explanations and instructions.
+- BREAKING: see the [upgrade guide to v2](../../docs/upgrade-guide-2.0.md) for the complete list of breaking changes in 2.0 with explanations and instructions.
 - BREAKING: webpack 5 upgrade by @gabrielcsapo and @ef4
 - BREAKING ENHANCEMENT: support embroider v2-formatted addons
 - BREAKING: drop support for babel 6
