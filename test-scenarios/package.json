@@ -1,6 +1,7 @@
 {
   "name": "@ef4/test-scenarios",
   "version": "0.0.0",
+  "private": true,
   "dependencies": {
     "@types/qunit": "^2.11.1",
     "qunit": "^2.6.1",
