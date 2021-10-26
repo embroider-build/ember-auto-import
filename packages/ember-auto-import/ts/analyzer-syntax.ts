@@ -83,6 +83,7 @@ class Deserializer {
   output: Promise<ImportSyntax[]>;
   private resolve: (result: ImportSyntax[]) => void;
   private reject: (err: any) => void;
+  private finished: boolean;
 
   constructor(private source: ReadStream) {
     let r: (result: ImportSyntax[]) => void, e: (err: any) => void;
@@ -92,6 +93,7 @@ class Deserializer {
     });
     this.resolve = r!;
     this.reject = e!;
+    this.finished = false;
     source.on('readable', this.run.bind(this));
     source.on('error', this.reject);
     source.on('close', this.finish.bind(this));
@@ -100,10 +102,6 @@ class Deserializer {
   // keeps consuming chunks until we read null (meaning no buffered data
   // available) or the state machine decides to stop
   private run() {
-    if (this.state.type === 'done') {
-      return;
-    }
-
     let chunk: string | null;
     // setting the read size bigger than the marker length is important. We can
     // deal with a marker split between two chunks, but not three or more.
@@ -205,45 +203,54 @@ class Deserializer {
   }
 
   private finish() {
-    if (this.state.type !== 'done') {
-      // we didn't find complete meta in this file, it must not have any
-      this.resolve([]);
+    if (this.finished) {
       return;
     }
-    let tokens = JSON.parse('[' + this.state.meta + ']');
+
     let syntax: ImportSyntax[] = [];
-    while (tokens.length > 0) {
-      let type = tokens.shift();
-      switch (type) {
-        case 0:
-          syntax.push({
-            isDynamic: false,
-            specifier: tokens.shift(),
-          });
-          break;
-        case 1:
-          syntax.push({
-            isDynamic: true,
-            specifier: tokens.shift(),
-          });
-          break;
-        case 2:
-          syntax.push({
-            isDynamic: false,
-            cookedQuasis: tokens.shift(),
-            expressionNameHints: tokens.shift(),
-          });
-          break;
-        case 3:
-          syntax.push({
-            isDynamic: true,
-            cookedQuasis: tokens.shift(),
-            expressionNameHints: tokens.shift(),
-          });
-          break;
+
+    if (this.state.type === 'done') {
+      let tokens = JSON.parse('[' + this.state.meta + ']');
+      while (tokens.length > 0) {
+        let type = tokens.shift();
+        switch (type) {
+          case 0:
+            syntax.push({
+              isDynamic: false,
+              specifier: tokens.shift(),
+            });
+            break;
+          case 1:
+            syntax.push({
+              isDynamic: true,
+              specifier: tokens.shift(),
+            });
+            break;
+          case 2:
+            syntax.push({
+              isDynamic: false,
+              cookedQuasis: tokens.shift(),
+              expressionNameHints: tokens.shift(),
+            });
+            break;
+          case 3:
+            syntax.push({
+              isDynamic: true,
+              cookedQuasis: tokens.shift(),
+              expressionNameHints: tokens.shift(),
+            });
+            break;
+        }
       }
     }
+
     this.resolve(syntax);
+    this.finished = true;
+
+    // Node <= 14 may throw EBADF during ReadStream close/destroy so stream
+    // destroy/close should happen after promise resolution.
+    // https://github.com/ef4/ember-auto-import/issues/464
+    this.source.destroy();
   }
 }
 
