@@ -100,13 +100,20 @@ class Deserializer {
   // keeps consuming chunks until we read null (meaning no buffered data
   // available) or the state machine decides to stop
   private run() {
+    if (this.state.type === 'done') {
+      return;
+    }
+
     let chunk: string | null;
     // setting the read size bigger than the marker length is important. We can
     // deal with a marker split between two chunks, but not three or more.
     while (null !== (chunk = this.source.read(1024))) {
       this.consumeChunk(chunk);
+
+      // False positive for TS2367, see https://github.com/microsoft/TypeScript/issues/9998
+      // @ts-ignore
       if (this.state.type === 'done') {
-        this.source.destroy();
+        this.finish();
         break;
       }
     }
