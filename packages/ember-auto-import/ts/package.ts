@@ -11,6 +11,7 @@ import {
 } from '@embroider/shared-internals';
 import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
+import { dependencySatisfies } from '@embroider/macros';
 
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
@@ -375,9 +376,16 @@ export default class Package {
   }
 
   get forbidsEval(): boolean {
-    // only apps (not addons) are allowed to set this, because it's motivated by
+    // Use explicit configuration given by application if present.
+    // Addons are not allowed to set this, because it's motivated by
     // the apps own Content Security Policy.
-    return Boolean(!this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval);
+    if (!this.isAddon && this.autoImportOptions?.forbidEval !== undefined) {
+      return Boolean(this.autoImportOptions.forbidEval);
+    }
+
+    // fallback to default value, which should be `true` unless application
+    // has ember-cli-content-security-policy dependency
+    return !dependencySatisfies('ember-cli-content-security-policy', '*');
   }
 
   get insertScriptsAt(): string | undefined {

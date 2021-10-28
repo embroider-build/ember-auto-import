@@ -32,10 +32,11 @@
   },
   "dependencies": {
     "@babel/core": "^7.1.6",
-    "@babel/plugin-proposal-decorators": "^7.13.5",
     "@babel/plugin-proposal-class-properties": "^7.13.0",
+    "@babel/plugin-proposal-decorators": "^7.13.5",
     "@babel/preset-env": "^7.10.2",
     "@babel/traverse": "^7.1.6",
+    "@embroider/macros": "^0.47.1",
     "@embroider/shared-internals": "^0.40.0",
     "babel-loader": "^8.0.6",
     "babel-plugin-ember-modules-api-polyfill": "^3.5.0",
@@ -119,6 +120,14 @@
     "scenario-tester": "^2.0.1",
     "typescript": "4.3.5",
     "webpack": "^5.31.0"
+  },
+  "peerDependencies": {
+    "ember-cli-content-security-policy": "*"
+  },
+  "peerDependenciesMeta": {
+    "ember-cli-content-security-policy": {
+      "optional": true
+    }
   },
   "engines": {
     "node": "12 || >= 14"
