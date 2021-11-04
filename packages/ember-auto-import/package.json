@@ -49,6 +49,8 @@
     "css-loader": "^5.2.0",
     "debug": "^4.3.1",
     "ember-cli-babel": "^7.0.0",
+    "esbuild": "0.13.12",
+    "esbuild-loader": "2.16.0",
     "fs-extra": "^6.0.1",
     "fs-tree-diff": "^2.0.0",
     "handlebars": "^4.3.1",

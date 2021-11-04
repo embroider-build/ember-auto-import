@@ -14,6 +14,8 @@ import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureSymlinkSync } from 'fs-extra';
+import { ESBuildMinifyPlugin } from 'esbuild-loader';
+import esbuild from 'esbuild';
 
 const debug = makeDebug('ember-auto-import:webpack');
 
@@ -148,6 +150,14 @@ export default class WebpackBundler extends Plugin implements Bundler {
         splitChunks: {
           chunks: 'all',
         },
+        minimizer: [
+          new ESBuildMinifyPlugin({
+            minify: this.opts.environment === 'production',
+            css: true,
+            // So we can control when esbuild updates
+            implementation: esbuild,
+          }),
+        ],
       },
       resolveLoader: {
         alias: {
