@@ -74,8 +74,11 @@ class Deserializer {
         partialMatch: number;
       }
     | {
-        type: 'done';
+        type: 'done-reading';
         meta: string;
+      }
+    | {
+        type: 'finished';
       } = {
     type: 'finding-start',
   };
@@ -83,7 +86,6 @@ class Deserializer {
   output: Promise<ImportSyntax[]>;
   private resolve: (result: ImportSyntax[]) => void;
   private reject: (err: any) => void;
-  private finished: boolean;
 
   constructor(private source: ReadStream) {
     let r: (result: ImportSyntax[]) => void, e: (err: any) => void;
@@ -93,7 +95,6 @@ class Deserializer {
     });
     this.resolve = r!;
     this.reject = e!;
-    this.finished = false;
     source.on('readable', this.run.bind(this));
     source.on('error', this.reject);
     source.on('close', this.finish.bind(this));
@@ -107,10 +108,7 @@ class Deserializer {
     // deal with a marker split between two chunks, but not three or more.
     while (null !== (chunk = this.source.read(1024))) {
       this.consumeChunk(chunk);
-
-      // False positive for TS2367, see https://github.com/microsoft/TypeScript/issues/9998
-      // @ts-ignore
-      if (this.state.type === 'done') {
+      if (this.state.type === 'done-reading') {
         this.finish();
         break;
       }
@@ -161,7 +159,7 @@ class Deserializer {
         if (endIndex >= 0) {
           // found the end
           this.state = {
-            type: 'done',
+            type: 'done-reading',
             meta: [...state.meta, chunk.slice(0, endIndex)].join(''),
           };
         } else {
@@ -182,7 +180,7 @@ class Deserializer {
         if (chunk.startsWith(MARKER.slice(state.partialMatch))) {
           // completed partial match, go into finding-end state
           this.state = {
-            type: 'done',
+            type: 'done-reading',
             meta: state.meta.join(''),
           };
         } else {
@@ -195,61 +193,63 @@ class Deserializer {
           return this.consumeChunk(chunk);
         }
         break;
-      case 'done':
+      case 'done-reading':
+      case 'finished':
         throw new Error(`bug: tried to consume more chunks when already done`);
       default:
         throw assertNever(state);
     }
   }
 
-  private finish() {
-    if (this.finished) {
-      return;
-    }
-
+  private convertTokens(meta: string) {
+    let tokens = JSON.parse('[' + meta + ']');
     let syntax: ImportSyntax[] = [];
-
-    if (this.state.type === 'done') {
-      let tokens = JSON.parse('[' + this.state.meta + ']');
-      while (tokens.length > 0) {
-        let type = tokens.shift();
-        switch (type) {
-          case 0:
-            syntax.push({
-              isDynamic: false,
-              specifier: tokens.shift(),
-            });
-            break;
-          case 1:
-            syntax.push({
-              isDynamic: true,
-              specifier: tokens.shift(),
-            });
-            break;
-          case 2:
-            syntax.push({
-              isDynamic: false,
-              cookedQuasis: tokens.shift(),
-              expressionNameHints: tokens.shift(),
-            });
-            break;
-          case 3:
-            syntax.push({
-              isDynamic: true,
-              cookedQuasis: tokens.shift(),
-              expressionNameHints: tokens.shift(),
-            });
-            break;
-        }
+    while (tokens.length > 0) {
+      let type = tokens.shift();
+      switch (type) {
+        case 0:
+          syntax.push({
+            isDynamic: false,
+            specifier: tokens.shift(),
+          });
+          break;
+        case 1:
+          syntax.push({
+            isDynamic: true,
+            specifier: tokens.shift(),
+          });
+          break;
+        case 2:
+          syntax.push({
+            isDynamic: false,
+            cookedQuasis: tokens.shift(),
+            expressionNameHints: tokens.shift(),
+          });
+          break;
+        case 3:
+          syntax.push({
+            isDynamic: true,
+            cookedQuasis: tokens.shift(),
+            expressionNameHints: tokens.shift(),
+          });
+          break;
       }
     }
+    return syntax;
+  }
 
+  private finish() {
+    if (this.state.type === 'finished') {
+      return;
+    }
+    let syntax: ImportSyntax[];
+    if (this.state.type === 'done-reading') {
+      syntax = this.convertTokens(this.state.meta);
+    } else {
+      syntax = [];
+    }
+    this.state = { type: 'finished' };
     this.resolve(syntax);
-    this.finished = true;
-
-    // Node <= 14 may throw EBADF during ReadStream close/destroy so stream
-    // destroy/close should happen after promise resolution.
-    // https://github.com/ef4/ember-auto-import/issues/464
     this.source.destroy();
   }
 }
