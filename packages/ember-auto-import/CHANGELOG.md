@@ -1,5 +1,13 @@
 # Changelog
 
+### 2.2.4
+
+- BUGFIX: Avoid EBADF on ReadStream early close in Node 12 by @maxfierke
+- BUGFIX: use junctions on windows as needed to avoid permissions problem
+- INTERNAL: mark test-scenarios package as private by @rwjblue
+- DOCS: fix link to upgrade guide in changelog by @ndekeister-us
+- METADATA: add `directory` metadata to package.json by @Turbo87
+
 ### 2.2.3
 
 - BUGFIX: `export * from` syntax was not detected.
