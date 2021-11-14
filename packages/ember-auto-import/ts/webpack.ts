@@ -13,7 +13,7 @@ import { Options } from './package';
 import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
-import { ensureSymlinkSync } from 'fs-extra';
+import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
 
 const debug = makeDebug('ember-auto-import:webpack');
 
@@ -363,7 +363,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private ensureLinked({ packageName, packageRoot }: { packageName: string; packageRoot: string }): void {
-    ensureSymlinkSync(packageRoot, join(this.stagingDir, 'node_modules', packageName), 'dir');
+    ensureDirSync(dirname(join(this.stagingDir, 'node_modules', packageName)));
+    if (!existsSync(join(this.stagingDir, 'node_modules', packageName))) {
+      symlinkSync(packageRoot, join(this.stagingDir, 'node_modules', packageName), 'junction');
+    }
   }
 
   private async runWebpack(): Promise<Required<Stats>> {
