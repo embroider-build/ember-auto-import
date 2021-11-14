@@ -74,8 +74,11 @@ class Deserializer {
         partialMatch: number;
       }
     | {
-        type: 'done';
+        type: 'done-reading';
         meta: string;
+      }
+    | {
+        type: 'finished';
       } = {
     type: 'finding-start',
   };
@@ -105,8 +108,8 @@ class Deserializer {
     // deal with a marker split between two chunks, but not three or more.
     while (null !== (chunk = this.source.read(1024))) {
       this.consumeChunk(chunk);
-      if (this.state.type === 'done') {
-        this.source.destroy();
+      if (this.state.type === 'done-reading') {
+        this.finish();
         break;
       }
     }
@@ -156,7 +159,7 @@ class Deserializer {
         if (endIndex >= 0) {
           // found the end
           this.state = {
-            type: 'done',
+            type: 'done-reading',
             meta: [...state.meta, chunk.slice(0, endIndex)].join(''),
           };
         } else {
@@ -177,7 +180,7 @@ class Deserializer {
         if (chunk.startsWith(MARKER.slice(state.partialMatch))) {
           // completed partial match, go into finding-end state
           this.state = {
-            type: 'done',
+            type: 'done-reading',
             meta: state.meta.join(''),
           };
         } else {
@@ -190,20 +193,16 @@ class Deserializer {
           return this.consumeChunk(chunk);
         }
         break;
-      case 'done':
+      case 'done-reading':
+      case 'finished':
         throw new Error(`bug: tried to consume more chunks when already done`);
       default:
         throw assertNever(state);
     }
   }
 
-  private finish() {
-    if (this.state.type !== 'done') {
-      // we didn't find complete meta in this file, it must not have any
-      this.resolve([]);
-      return;
-    }
-    let tokens = JSON.parse('[' + this.state.meta + ']');
+  private convertTokens(meta: string) {
+    let tokens = JSON.parse('[' + meta + ']');
     let syntax: ImportSyntax[] = [];
     while (tokens.length > 0) {
       let type = tokens.shift();
@@ -236,7 +235,22 @@ class Deserializer {
           break;
       }
     }
+    return syntax;
+  }
+
+  private finish() {
+    if (this.state.type === 'finished') {
+      return;
+    }
+    let syntax: ImportSyntax[];
+    if (this.state.type === 'done-reading') {
+      syntax = this.convertTokens(this.state.meta);
+    } else {
+      syntax = [];
+    }
+    this.state = { type: 'finished' };
     this.resolve(syntax);
+    this.source.destroy();
   }
 }
 

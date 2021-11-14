@@ -124,7 +124,11 @@ export default class Analyzer extends Funnel {
     let meta: ImportSyntax[];
     if (this.supportsFastAnalyzer) {
       debug(`updating imports for ${relativePath}`);
-      let stream = createReadStream(join(this.inputPaths[0], relativePath), { encoding: 'utf8' });
+      let stream = createReadStream(join(this.inputPaths[0], relativePath), {
+        encoding: 'utf8',
+        // @ts-ignore
+        emitClose: true, // Needs to be specified for Node 12, as default is false
+      });
       meta = await deserialize(stream);
     } else {
       debug(`updating imports (the slower way) for ${relativePath}`);
