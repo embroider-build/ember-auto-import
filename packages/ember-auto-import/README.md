@@ -127,7 +127,7 @@ Supported Options
 
 - `alias`: _object_, Map from imported names to substitute names that will be imported instead. This is a prefix match by default. To opt out of prefix-matching and only match exactly, add a `$` suffix to the pattern.
 - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
-- `forbidEval`: _boolean_, defaults to false. We use `eval` in development by default (because that is the fastest way to provide sourcemaps). If you need to comply with a strict Content Security Policy (CSP), you can set `forbidEval: true`. You will still get sourcemaps, they will just use a slower implementation.
+- `forbidEval`: _boolean_, controls if `eval` is used in development. It is used because that is the fastest way to provide sourcemaps. Defaults to `false` unless [ember-cli-content-security-policy](https://github.com/rwjblue/ember-cli-content-security-policy) is used.
 - `insertScriptsAt`: _string_, defaults to undefined. Optionally allows you to take manual control over where ember-auto-import's generated `<script>` tags will be inserted into your HTML and what attributes they will have. See "Customizing HTML Insertion" below.
 - `insertStylesAt`: _string_, defaults to undefined. Optionally allows you to take manual control over where ember-auto-import's generated `<link rel="stylesheet">` tags (if any) will be inserted into your HTML and what attributes they will have. See "Customizing HTML Insertion" below.
 - `publicAssetURL`: the public URL to your `/assets` directory on the web. Many apps won't need to set this because we try to detect it automatically, but you will need to set this explicitly if you're deploying your assets to a different origin than your app (for example, on a CDN) or if you are using `<script defer>` (which causes scripts to be unable to guess what origin they loaded from).
@@ -296,7 +296,9 @@ See [webpack's docs on Node polyfills](https://v4.webpack.js.org/configuration/n
 
 ### I use Content Security Policy (CSP) and it breaks ember-auto-import.
 
-See `forbidEval` above.
+Ember Auto Import uses `eval` in development if `forbidEval` is `false`. Recent versions detect if [ember-cli-content-security-policy](https://github.com/rwjblue/ember-cli-content-security-policy) is used. `forbidEval` default to `true` in that cases.
+
+If you use an older version or use Content Security Policy without that addon, you should set `forbidEval` option to `true` explicitly.
 
 ### I'm trying to load a jQuery plugin, but it doesn't attach itself to the copy of jQuery that's already in my Ember app.
 
