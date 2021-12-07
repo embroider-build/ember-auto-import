@@ -8,7 +8,7 @@ Just `import` from NPM, with zero configuration.
 npm install --save-dev ember-auto-import webpack
 ```
 
-If you're upgrading from 1.x to 2.x [see the upgrade guide](./docs/upgrade-guide-2.0.md).
+If you're upgrading from 1.x to 2.x [see the upgrade guide](./../../docs/upgrade-guide-2.0.md).
 
 ## Usage
 
