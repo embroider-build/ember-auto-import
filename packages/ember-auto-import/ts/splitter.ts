@@ -124,7 +124,7 @@ export default class Splitter {
 
     if (!target) {
       throw new Error(
-        `ember-auto-import is unable to handle ${leadingQuasi}. ` +
+        `ember-auto-import is unable to handle '${leadingQuasi}'. ` +
           `The attempted import of '${imp.cookedQuasis.join('')}' is located in ${imp.path}`
       );
     }
@@ -138,7 +138,7 @@ export default class Splitter {
 
     if (target.type === 'imprecise') {
       throw new Error(
-        `Dynamic imports must target unambiguous package names. ${leadingQuasi} is ambiguous. ` +
+        `Dynamic imports must target unambiguous package names. '${leadingQuasi}' is ambiguous. ` +
           `The attempted import of '${imp.cookedQuasis.join('')}' is located in ${imp.path}`
       );
     }
