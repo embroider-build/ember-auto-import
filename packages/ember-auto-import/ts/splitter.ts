@@ -125,21 +125,21 @@ export default class Splitter {
     if (!target) {
       throw new Error(
         `ember-auto-import is unable to handle ${leadingQuasi}. ` +
-          `The attempted import of ${imp.cookedQuasis.join('')} is located in ${imp.path}`
+          `The attempted import of '${imp.cookedQuasis.join('')}' is located in ${imp.path}`
       );
     }
 
     if (target.type === 'local') {
       throw new Error(
         `ember-auto-import does not support dynamic relative imports. "${leadingQuasi}" is relative. To make this work, you need to upgrade to Embroider. ` +
-          `The attempted import of ${imp.cookedQuasis.join('')} is located in ${imp.path}`
+          `The attempted import of '${imp.cookedQuasis.join('')}' is located in ${imp.path}`
       );
     }
 
     if (target.type === 'imprecise') {
       throw new Error(
         `Dynamic imports must target unambiguous package names. ${leadingQuasi} is ambiguous. ` +
-          `The attempted import of ${imp.cookedQuasis.join('')} is located in ${imp.path}`
+          `The attempted import of '${imp.cookedQuasis.join('')}' is located in ${imp.path}`
       );
     }
 
