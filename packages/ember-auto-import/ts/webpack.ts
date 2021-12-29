@@ -130,11 +130,11 @@ export default class WebpackBundler extends Plugin implements Bundler {
       mode: this.opts.environment === 'production' ? 'production' : 'development',
       entry,
       // Pursuant to the webpack docs (https://webpack.js.org/configuration/entry-context/#context),
-      // we follow the recommendation to set the context, i.e. the absolute path for resolving 
+      // we follow the recommendation to set the context, i.e. the absolute path for resolving
       // entry points and loaders from the configuration. By doing this, the config becomes
       // independent of the current working directory, and importantly ensures that we get DETERMINISTIC
       // builds (i.e. produced assets have invariant content across repeated identical builds).
-      // If we didn't do this, the module names that webpack considers for computing the deterministic 
+      // If we didn't do this, the module names that webpack considers for computing the deterministic
       // "moduleIds" (using the default moduleIds: "deterministic" option) would end up being
       // based on broccoli temp-directory paths, which aren't deterministic across builds, and would
       // hence cause output assets to also be non-deterministic.
