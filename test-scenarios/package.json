@@ -39,6 +39,7 @@
     "ember-source-beta": "npm:ember-source@beta",
     "ember-source-canary": "npm:ember-source@alpha",
     "ember-source-latest": "npm:ember-source@latest",
+    "ember-welcome-page5": "npm:ember-welcome-page@^5.0.0",
     "newer-resolver": "npm:ember-resolver@^8.0.0",
     "js-string-escape": "^1.0.1",
     "lodash": "^4.17.20",

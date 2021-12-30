@@ -59,6 +59,8 @@ async function lts(project: Project) {
         'app.js': olderAppJS('@ef4/app-template'),
       },
     });
+    // ember-welcome-page 6 doesn't support our oldest LTS
+    project.linkDevDependency('ember-welcome-page', { baseDir: __dirname, resolveName: 'ember-welcome-page5' });
   } else if (project.name === '@ef4/addon-template') {
     merge(project.files, {
       tests: {
