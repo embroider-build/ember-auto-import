@@ -7,12 +7,17 @@ import makeDebug from 'debug';
 import { join, extname } from 'path';
 import { isEqual, flatten } from 'lodash';
 import type Package from './package';
-import { deserialize, ImportSyntax, LiteralImportSyntax, TemplateImportSyntax } from './analyzer-syntax';
+import {
+  deserialize,
+  ImportSyntax,
+  LiteralImportSyntax,
+  TemplateImportSyntax,
+} from './analyzer-syntax';
 import { Memoize } from 'typescript-memoize';
 
 makeDebug.formatters.m = (modules: Import[]) => {
   return JSON.stringify(
-    modules.map(m => {
+    modules.map((m) => {
       if ('specifier' in m) {
         return {
           specifier: m.specifier,
@@ -39,7 +44,14 @@ makeDebug.formatters.m = (modules: Import[]) => {
 
 const debug = makeDebug('ember-auto-import:analyzer');
 
-export type TreeType = 'app' | 'addon' | 'addon-templates' | 'addon-test-support' | 'styles' | 'templates' | 'test';
+export type TreeType =
+  | 'app'
+  | 'addon'
+  | 'addon-templates'
+  | 'addon-test-support'
+  | 'styles'
+  | 'templates'
+  | 'test';
 
 interface PackageContext {
   path: string;
@@ -133,10 +145,13 @@ export default class Analyzer extends Funnel {
     } else {
       debug(`updating imports (the slower way) for ${relativePath}`);
       let parse = await this.parser();
-      meta = parse(readFileSync(join(this.inputPaths[0], relativePath), 'utf8'), relativePath);
+      meta = parse(
+        readFileSync(join(this.inputPaths[0], relativePath), 'utf8'),
+        relativePath
+      );
     }
 
-    let newImports = meta.map(m => ({
+    let newImports = meta.map((m) => ({
       path: relativePath,
       package: this.pack,
       treeType: this.treeType,
@@ -150,7 +165,9 @@ export default class Analyzer extends Funnel {
   }
 
   @Memoize()
-  async parser(): Promise<(source: string, relativePath: string) => ImportSyntax[]> {
+  async parser(): Promise<
+    (source: string, relativePath: string) => ImportSyntax[]
+  > {
     if (this.pack.babelMajorVersion !== 7) {
       throw new Error(
         `don't know how to setup a parser for Babel version ${this.pack.babelMajorVersion} (used by ${this.pack.name})`

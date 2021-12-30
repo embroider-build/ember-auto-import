@@ -123,11 +123,15 @@ export default class WebpackBundler extends Plugin implements Bundler {
     let stagingDir = realpathSync(this.cachePath!);
 
     let entry: { [name: string]: string[] } = {};
-    this.opts.bundles.names.forEach(bundle => {
-      entry[bundle] = [join(stagingDir, 'l.js'), join(stagingDir, `${bundle}.js`)];
+    this.opts.bundles.names.forEach((bundle) => {
+      entry[bundle] = [
+        join(stagingDir, 'l.js'),
+        join(stagingDir, `${bundle}.js`),
+      ];
     });
     let config: Configuration = {
-      mode: this.opts.environment === 'production' ? 'production' : 'development',
+      mode:
+        this.opts.environment === 'production' ? 'production' : 'development',
       entry,
       performance: {
         hints: false,
@@ -162,7 +166,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
       resolve: {
         extensions: ['.js', '.ts', '.json'],
         mainFields: ['browser', 'module', 'main'],
-        alias: Object.assign({}, ...[...this.opts.packages].map(pkg => pkg.aliases).filter(Boolean)),
+        alias: Object.assign(
+          {},
+          ...[...this.opts.packages].map((pkg) => pkg.aliases).filter(Boolean)
+        ),
       },
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.js'),
@@ -173,11 +180,15 @@ export default class WebpackBundler extends Plugin implements Bundler {
             use: [
               {
                 loader: 'eai-style-loader',
-                options: [...this.opts.packages].find(pkg => pkg.styleLoaderOptions)?.styleLoaderOptions,
+                options: [...this.opts.packages].find(
+                  (pkg) => pkg.styleLoaderOptions
+                )?.styleLoaderOptions,
               },
               {
                 loader: 'eai-css-loader',
-                options: [...this.opts.packages].find(pkg => pkg.cssLoaderOptions)?.cssLoaderOptions,
+                options: [...this.opts.packages].find(
+                  (pkg) => pkg.cssLoaderOptions
+                )?.cssLoaderOptions,
               },
             ],
           },
@@ -187,8 +198,11 @@ export default class WebpackBundler extends Plugin implements Bundler {
       externals: this.externalsHandler,
     };
 
-    mergeConfig(config, ...[...this.opts.packages].map(pkg => pkg.webpackConfig));
-    if ([...this.opts.packages].find(pkg => pkg.forbidsEval)) {
+    mergeConfig(
+      config,
+      ...[...this.opts.packages].map((pkg) => pkg.webpackConfig)
+    );
+    if ([...this.opts.packages].find((pkg) => pkg.forbidsEval)) {
       config.devtool = 'source-map';
     }
     debug('webpackConfig %j', config);
@@ -284,7 +298,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
     this.lastBuildResult = this.summarizeStats(stats, bundleDeps);
   }
 
-  private summarizeStats(_stats: Required<Stats>, bundleDeps: Map<string, BundleDependencies>): BuildResult {
+  private summarizeStats(
+    _stats: Required<Stats>,
+    bundleDeps: Map<string, BundleDependencies>
+  ): BuildResult {
     let { entrypoints, assets } = _stats.toJson();
 
     // webpack's types are written rather loosely, implying that these two
@@ -312,13 +329,16 @@ export default class WebpackBundler extends Plugin implements Bundler {
       // setup code in them, so they get a special check for non-emptiness.
       // Whereas any other bundle that was manually configured by the user
       // should always be emitted.
-      if (!this.opts.bundles.isBuiltInBundleName(id) || nonEmptyBundle(id, bundleDeps)) {
+      if (
+        !this.opts.bundles.isBuiltInBundleName(id) ||
+        nonEmptyBundle(id, bundleDeps)
+      ) {
         output.entrypoints.set(
           id,
-          entrypointAssets.map(a => 'assets/' + a.name)
+          entrypointAssets.map((a) => 'assets/' + a.name)
         );
       }
-      entrypointAssets.forEach(asset => nonLazyAssets.add(asset.name));
+      entrypointAssets.forEach((asset) => nonLazyAssets.add(asset.name));
     }
     for (let asset of assets!) {
       if (!nonLazyAssets.has(asset.name)) {
@@ -334,8 +354,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
       entryTemplate({
         staticImports: deps.staticImports,
         dynamicImports: deps.dynamicImports,
-        dynamicTemplateImports: deps.dynamicTemplateImports.map(mapTemplateImports),
-        staticTemplateImports: deps.staticTemplateImports.map(mapTemplateImports),
+        dynamicTemplateImports:
+          deps.dynamicTemplateImports.map(mapTemplateImports),
+        staticTemplateImports:
+          deps.staticTemplateImports.map(mapTemplateImports),
         publicAssetURL: this.opts.publicAssetURL,
       })
     );
@@ -362,10 +384,20 @@ export default class WebpackBundler extends Plugin implements Bundler {
     }
   }
 
-  private ensureLinked({ packageName, packageRoot }: { packageName: string; packageRoot: string }): void {
+  private ensureLinked({
+    packageName,
+    packageRoot,
+  }: {
+    packageName: string;
+    packageRoot: string;
+  }): void {
     ensureDirSync(dirname(join(this.stagingDir, 'node_modules', packageName)));
     if (!existsSync(join(this.stagingDir, 'node_modules', packageName))) {
-      symlinkSync(packageRoot, join(this.stagingDir, 'node_modules', packageName), 'junction');
+      symlinkSync(
+        packageRoot,
+        join(this.stagingDir, 'node_modules', packageName),
+        'junction'
+      );
     }
   }
 
@@ -450,7 +482,10 @@ function mapTemplateImports(imp: ResolvedTemplateImport) {
   };
 }
 
-function nonEmptyBundle(name: string, bundleDeps: Map<string, BundleDependencies>): boolean {
+function nonEmptyBundle(
+  name: string,
+  bundleDeps: Map<string, BundleDependencies>
+): boolean {
   let deps = bundleDeps.get(name);
   if (!deps) {
     return false;

@@ -1,6 +1,10 @@
 import { gt, satisfies } from 'semver';
 import type AutoImport from './auto-import';
-import { Project, AddonInstance, isDeepAddonInstance } from '@embroider/shared-internals';
+import {
+  Project,
+  AddonInstance,
+  isDeepAddonInstance,
+} from '@embroider/shared-internals';
 import type { Node } from 'broccoli-node-api';
 import makeDebug from 'debug';
 const debug = makeDebug('ember-auto-import:leader');
@@ -75,29 +79,47 @@ export class LeaderChooser {
     return chooser;
   }
 
-  private addonCandidates: { create: () => AutoImport; version: string; parentName: string }[] = [];
-  private appCandidate: { create: () => AutoImport; version: string; range: string } | undefined;
+  private addonCandidates: {
+    create: () => AutoImport;
+    version: string;
+    parentName: string;
+  }[] = [];
+  private appCandidate:
+    | { create: () => AutoImport; version: string; range: string }
+    | undefined;
   private locked: AutoImport | undefined;
 
   register(addon: AddonInstance, create: () => AutoImport) {
     if (this.locked) {
       throw new Error(`bug: LeaderChooser already locked`);
     }
-    if (!satisfies(addon.pkg.version, '>=2.0.0-alpha.0', { includePrerelease: true })) {
+    if (
+      !satisfies(addon.pkg.version, '>=2.0.0-alpha.0', {
+        includePrerelease: true,
+      })
+    ) {
       // versions older than 2.0 are not eligible to lead
       return;
     }
 
     if (isDeepAddonInstance(addon)) {
-      this.addonCandidates.push({ create, version: addon.pkg.version, parentName: addon.parent.name });
+      this.addonCandidates.push({
+        create,
+        version: addon.pkg.version,
+        parentName: addon.parent.name,
+      });
     } else {
       let { dependencies, devDependencies } = addon.project.pkg;
-      let range = dependencies?.['ember-auto-import'] ?? devDependencies?.['ember-auto-import'];
+      let range =
+        dependencies?.['ember-auto-import'] ??
+        devDependencies?.['ember-auto-import'];
       if (!range && addon.project.pkg.name === 'ember-auto-import') {
         range = addon.project.pkg.version;
       }
       if (!range) {
-        throw new Error(`ember-auto-import cannot find itself in the app's package.json`);
+        throw new Error(
+          `ember-auto-import cannot find itself in the app's package.json`
+        );
       }
       this.appCandidate = { create, version: addon.pkg.version, range };
     }
@@ -108,13 +130,15 @@ export class LeaderChooser {
       if (!this.appCandidate) {
         throw new Error(
           `To use these addons, your app needs ember-auto-import >= 2: ${this.addonCandidates
-            .map(c => c.parentName)
+            .map((c) => c.parentName)
             .sort()
             .join(', ')}`
         );
       }
-      let eligible = [this.appCandidate, ...this.addonCandidates].filter(c =>
-        satisfies(c.version, this.appCandidate!.range, { includePrerelease: true })
+      let eligible = [this.appCandidate, ...this.addonCandidates].filter((c) =>
+        satisfies(c.version, this.appCandidate!.range, {
+          includePrerelease: true,
+        })
       );
       if (eligible.length === 0) {
         throw new Error(
@@ -173,7 +197,9 @@ class V1Placeholder {
   let v1 = g[protocolV1];
   if (v1) {
     if (!v1.isV1Placeholder) {
-      throw new Error(`bug: an old version of ember-auto-import has already taken over. This is unexpected.`);
+      throw new Error(
+        `bug: an old version of ember-auto-import has already taken over. This is unexpected.`
+      );
     }
   } else {
     g[protocolV1] = new V1Placeholder();
