@@ -1,9 +1,12 @@
 import { PreparedApp } from 'scenario-tester';
 import { join } from 'path';
 import resolve from 'resolve';
+import { realpathSync } from 'fs';
 
 export async function setupFastboot(app: PreparedApp, environment = 'development') {
-  let result = await app.execute(`${process.execPath} node_modules/ember-cli/bin/ember build --environment=${environment}`);
+  let result = await app.execute(
+    `${process.execPath} node_modules/ember-cli/bin/ember build --environment=${environment}`
+  );
   if (result.exitCode !== 0) {
     throw new Error(`failed to build app for fastboot: ${result.output}`);
   }
@@ -13,7 +16,9 @@ export async function setupFastboot(app: PreparedApp, environment = 'development
 export async function launchFastboot(dir: string) {
   let logs: any[] = [];
 
-  const FastBoot = require(resolve.sync('fastboot', { basedir: resolve.sync('ember-cli-fastboot', { basedir: dir }) }));
+  const FastBoot = require(resolve.sync('fastboot', {
+    basedir: realpathSync(resolve.sync('ember-cli-fastboot', { basedir: dir })),
+  }));
 
   let sandboxGlobals = {
     console: {
