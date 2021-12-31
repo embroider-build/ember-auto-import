@@ -457,7 +457,7 @@ function stubAddonInstance(
   baseDir: string,
   autoImport: Options
 ): AddonInstance {
-  let project: EmberCLIProject = {
+  let project = {
     root: baseDir,
     targets: {},
     ui: {} as any,
@@ -476,15 +476,15 @@ function stubAddonInstance(
     name() {
       return 'my-project';
     },
-  };
-  let app: AppInstance = {
+  } as EmberCLIProject;
+  let app = {
     env: 'development',
     project,
     options: {
       autoImport,
     },
     addonPostprocessTree: {} as any,
-  };
+  } as AppInstance;
   return {
     name: 'ember-auto-import',
     parent: project,
@@ -501,5 +501,5 @@ function stubAddonInstance(
     _findHost() {
       throw new Error('unimplemented');
     },
-  };
+  } as unknown as AddonInstance;
 }
