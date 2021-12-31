@@ -3,7 +3,13 @@ import 'qunit-assertions-extra';
 import broccoli, { Builder } from 'broccoli';
 import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
-import { ensureDirSync, readFileSync, outputFileSync, removeSync, readJSONSync } from 'fs-extra';
+import {
+  ensureDirSync,
+  readFileSync,
+  outputFileSync,
+  removeSync,
+  readJSONSync,
+} from 'fs-extra';
 import { join } from 'path';
 import { Inserter } from '../inserter';
 import BundleConfig from '../bundle-config';
@@ -20,11 +26,16 @@ Qmodule('inserter', function (hooks) {
   let insertStylesAt: string | undefined;
 
   async function build() {
-    let inserter = new Inserter(new UnwatchedDir(upstream), { buildResult } as Bundler, bundleConfig, {
-      publicAssetURL,
-      insertScriptsAt,
-      insertStylesAt,
-    });
+    let inserter = new Inserter(
+      new UnwatchedDir(upstream),
+      { buildResult } as Bundler,
+      bundleConfig,
+      {
+        publicAssetURL,
+        insertScriptsAt,
+        insertStylesAt,
+      }
+    );
     builder = new broccoli.Builder(inserter);
     await builder.build();
   }
@@ -73,7 +84,10 @@ Qmodule('inserter', function (hooks) {
       await build();
       throw new Error('should not get here');
     } catch (err: any) {
-      assert.contains(err.message, 'ember-auto-import could not find a place to insert app scripts in index.html');
+      assert.contains(
+        err.message,
+        'ember-auto-import could not find a place to insert app scripts in index.html'
+      );
     }
   });
 
@@ -84,7 +98,10 @@ Qmodule('inserter', function (hooks) {
       await build();
       throw new Error('should not get here');
     } catch (err: any) {
-      assert.contains(err.message, 'ember-auto-import could not find a place to insert app styles in index.html');
+      assert.contains(
+        err.message,
+        'ember-auto-import could not find a place to insert app styles in index.html'
+      );
     }
   });
 
@@ -92,7 +109,10 @@ Qmodule('inserter', function (hooks) {
     buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
     writeIndex(`<script src="/assets/vendor.js"></script>`);
     await build();
-    assert.equal(readIndex(), `<script src="/assets/vendor.js"></script>\n<script src="/assets/chunk.1.js"></script>`);
+    assert.equal(
+      readIndex(),
+      `<script src="/assets/vendor.js"></script>\n<script src="/assets/chunk.1.js"></script>`
+    );
   });
 
   test('inserts fastboot scripts when using newer fastboot manifest', async function (assert) {
@@ -130,12 +150,19 @@ Qmodule('inserter', function (hooks) {
       })
     );
     await build();
-    assert.equal(readIndex(), `<script src="/assets/vendor.js"></script>\n<script src="/assets/chunk.1.js"></script>`);
+    assert.equal(
+      readIndex(),
+      `<script src="/assets/vendor.js"></script>\n<script src="/assets/chunk.1.js"></script>`
+    );
     assert.deepEqual(readJSONSync(join(builder.outputPath, 'package.json')), {
       fastboot: {
         schemaVersion: 3,
         manifest: {
-          vendorFiles: ['something.js', 'assets/chunk.1.js', 'assets/chunk.2.js'],
+          vendorFiles: [
+            'something.js',
+            'assets/chunk.1.js',
+            'assets/chunk.2.js',
+          ],
         },
       },
     });
@@ -161,7 +188,10 @@ Qmodule('inserter', function (hooks) {
     buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
     writeIndex(`<script src="/assets/rodnev.js"></script>`);
     await build();
-    assert.equal(readIndex(), `<script src="/assets/rodnev.js"></script>\n<script src="/assets/chunk.1.js"></script>`);
+    assert.equal(
+      readIndex(),
+      `<script src="/assets/rodnev.js"></script>\n<script src="/assets/chunk.1.js"></script>`
+    );
   });
 
   test('inserts app styles after customized vendor.css', async function (assert) {
@@ -205,9 +235,14 @@ Qmodule('inserter', function (hooks) {
   test('can customize script insertion location', async function (assert) {
     buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
     insertScriptsAt = 'auto-import-script';
-    writeIndex(`<auto-import-script entrypoint="app"></auto-import-script>\n<script src="/assets/vendor.js"></script>`);
+    writeIndex(
+      `<auto-import-script entrypoint="app"></auto-import-script>\n<script src="/assets/vendor.js"></script>`
+    );
     await build();
-    assert.equal(readIndex(), `<script src="/assets/chunk.1.js"></script>\n<script src="/assets/vendor.js"></script>`);
+    assert.equal(
+      readIndex(),
+      `<script src="/assets/chunk.1.js"></script>\n<script src="/assets/vendor.js"></script>`
+    );
   });
 
   test('customized script insertion supports fastboot-script', async function (assert) {
@@ -235,9 +270,14 @@ Qmodule('inserter', function (hooks) {
   test('can customize attributes on inserted script', async function (assert) {
     buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
     insertScriptsAt = 'auto-import-script';
-    writeIndex(`<div><auto-import-script entrypoint="app" defer data-foo="bar"></auto-import-script></div>`);
+    writeIndex(
+      `<div><auto-import-script entrypoint="app" defer data-foo="bar"></auto-import-script></div>`
+    );
     await build();
-    assert.equal(readIndex(), `<div><script src="/assets/chunk.1.js" defer data-foo="bar"></script></div>`);
+    assert.equal(
+      readIndex(),
+      `<div><script src="/assets/chunk.1.js" defer data-foo="bar"></script></div>`
+    );
   });
 
   test('removes unused custom script element', async function (assert) {
@@ -246,7 +286,10 @@ Qmodule('inserter', function (hooks) {
       `<div><auto-import-script entrypoint="app"></auto-import-script></div><script src="/assets/vendor.js"></script>`
     );
     await build();
-    assert.equal(readIndex(), `<div></div><script src="/assets/vendor.js"></script>`);
+    assert.equal(
+      readIndex(),
+      `<div></div><script src="/assets/vendor.js"></script>`
+    );
   });
 
   test('errors when custom script element is missing entrypoint', async function (assert) {
@@ -272,7 +315,10 @@ Qmodule('inserter', function (hooks) {
       await build();
       throw new Error('should not get here');
     } catch (err: any) {
-      assert.contains(err.message, 'ember-auto-import cannot find <auto-import-script entrypoint="app"> in index.html');
+      assert.contains(
+        err.message,
+        'ember-auto-import cannot find <auto-import-script entrypoint="app"> in index.html'
+      );
     }
   });
 
@@ -292,9 +338,14 @@ Qmodule('inserter', function (hooks) {
   test('can customize attributes on inserted style', async function (assert) {
     buildResult.entrypoints.set('app', ['assets/chunk.1.css']);
     insertScriptsAt = 'auto-import-style';
-    writeIndex(`<div><auto-import-style entrypoint="app" data-baz data-foo="bar"></auto-import-style></div>`);
+    writeIndex(
+      `<div><auto-import-style entrypoint="app" data-baz data-foo="bar"></auto-import-style></div>`
+    );
     await build();
-    assert.equal(readIndex(), `<div><link rel="stylesheet" href="/assets/chunk.1.css" data-baz data-foo="bar"/></div>`);
+    assert.equal(
+      readIndex(),
+      `<div><link rel="stylesheet" href="/assets/chunk.1.css" data-baz data-foo="bar"/></div>`
+    );
   });
 
   test('removes unused custom style element', async function (assert) {
@@ -303,7 +354,10 @@ Qmodule('inserter', function (hooks) {
       `<div><auto-import-style entrypoint="app"></auto-import-style></div><link rel="styleshee" href="/assets/vendor.css"/>`
     );
     await build();
-    assert.equal(readIndex(), `<div></div><link rel="styleshee" href="/assets/vendor.css"/>`);
+    assert.equal(
+      readIndex(),
+      `<div></div><link rel="styleshee" href="/assets/vendor.css"/>`
+    );
   });
 
   test('errors when custom style element is missing entrypoint', async function (assert) {

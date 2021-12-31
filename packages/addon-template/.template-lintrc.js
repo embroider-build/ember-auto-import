@@ -1,5 +1,6 @@
 'use strict';
 
 module.exports = {
-  extends: 'octane',
+  extends: 'recommended',
+  name: require('./package').name,
 };

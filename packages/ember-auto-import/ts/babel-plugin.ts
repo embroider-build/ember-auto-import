@@ -15,14 +15,18 @@ function emberAutoImport(babel: typeof Babel) {
         if (arg.type === 'StringLiteral') {
           let cat = Package.categorize(arg.value);
           if (cat === 'dep') {
-            call.replaceWith(t.callExpression(t.identifier('emberAutoImportDynamic'), [arg]));
+            call.replaceWith(
+              t.callExpression(t.identifier('emberAutoImportDynamic'), [arg])
+            );
           }
         } else if (arg.type === 'TemplateLiteral') {
           let cat = Package.categorize(arg.quasis[0].value.cooked!, true);
           if (cat === 'dep') {
             call.replaceWith(
               t.callExpression(t.identifier('emberAutoImportDynamic'), [
-                t.stringLiteral(arg.quasis.map(q => q.value.cooked).join('${e}')),
+                t.stringLiteral(
+                  arg.quasis.map((q) => q.value.cooked).join('${e}')
+                ),
                 ...(arg.expressions as t.Expression[]),
               ])
             );
@@ -32,7 +36,10 @@ function emberAutoImport(babel: typeof Babel) {
       CallExpression(path: NodePath<t.CallExpression>) {
         let callee = path.get('callee');
 
-        if (callee.isIdentifier() && callee.referencesImport('@embroider/macros', 'importSync')) {
+        if (
+          callee.isIdentifier() &&
+          callee.referencesImport('@embroider/macros', 'importSync')
+        ) {
           let arg = path.node.arguments[0];
           if (arg.type === 'StringLiteral') {
             let cat = Package.categorize(arg.value);
@@ -47,7 +54,9 @@ function emberAutoImport(babel: typeof Babel) {
             }
             path.replaceWith(
               t.callExpression(t.identifier('emberAutoImportSync'), [
-                t.stringLiteral(arg.quasis.map(q => q.value.cooked).join('${e}')),
+                t.stringLiteral(
+                  arg.quasis.map((q) => q.value.cooked).join('${e}')
+                ),
                 ...(arg.expressions as t.Expression[]),
               ])
             );

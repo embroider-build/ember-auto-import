@@ -65,7 +65,7 @@ appScenarios
           `,
         },
         templates: {
-          'application.hbs': `<div data-test-import-result>{{result}}</div>`,
+          'application.hbs': `<div data-test-import-result>{{this.result}}</div>`,
         },
       },
       tests: {
