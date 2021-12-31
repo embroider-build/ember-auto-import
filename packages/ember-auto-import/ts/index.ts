@@ -23,10 +23,19 @@ module.exports = {
     // it will see all the consumer app or addon's javascript
     registry.add('js', {
       name: 'ember-auto-import-analyzer',
-      toTree: (tree: Node, _inputPath: string, _outputPath: string, options: any) => {
+      toTree: (
+        tree: Node,
+        _inputPath: string,
+        _outputPath: string,
+        options: any
+      ) => {
         let treeType;
 
-        if (typeof options === 'object' && options !== null && options.treeType) {
+        if (
+          typeof options === 'object' &&
+          options !== null &&
+          options.treeType
+        ) {
           treeType = options.treeType;
         }
 

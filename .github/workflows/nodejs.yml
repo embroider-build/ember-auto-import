@@ -32,7 +32,7 @@ jobs:
         working-directory: test-scenarios
         run: echo "::set-output name=matrix::$(npm run --silent test:list -- --matrix 'npm run test -- --filter %s:')"
 
-  build:
+  scenarios:
     needs: discover_matrix
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
@@ -55,6 +55,25 @@ jobs:
         run: ${{ matrix.command }}
         working-directory: test-scenarios
 
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: rwjblue/setup-volta@v1
+        with:
+          node-version: '14'
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - run: npm install
+      - name: test
+        run: npm run test:node
+        working-directory: packages/ember-auto-import
+
   ie:
     name: ie11 safety
     runs-on: windows-latest
@@ -71,5 +90,5 @@ jobs:
             ${{ runner.os }}-node-
       - run: npm install
       - name: test
-        run: 'npm run test -- --filter targets-transpiled:'
+        run: 'npm run test -- --filter browser-targets-transpiled:'
         working-directory: test-scenarios

@@ -59,8 +59,8 @@ Once you're setup, you can use dynamic `import()` and it will result in loading 
 export default Route.extend({
   model({ id }) {
     return Promise.all([
-      fetch(`/data-for-chart/${id}`).then(response => response.json()),
-      import('highcharts').then(module => module.default),
+      fetch(`/data-for-chart/${id}`).then((response) => response.json()),
+      import('highcharts').then((module) => module.default),
     ]).then(([dataPoints, highcharts]) => {
       return { dataPoints, highcharts };
     });

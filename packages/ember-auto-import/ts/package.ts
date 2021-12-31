@@ -59,7 +59,11 @@ interface ImpreciseResolution {
   type: 'imprecise';
 }
 
-type Resolution = DepResolution | LocalResolution | URLResolution | ImpreciseResolution;
+type Resolution =
+  | DepResolution
+  | LocalResolution
+  | URLResolution
+  | ImpreciseResolution;
 
 export default class Package {
   public name: string;
@@ -116,7 +120,10 @@ export default class Package {
     if (this._hasBabelDetails) {
       return;
     }
-    let { babelOptions, extensions, version } = this.buildBabelOptions(this._parent, this._options);
+    let { babelOptions, extensions, version } = this.buildBabelOptions(
+      this._parent,
+      this._options
+    );
     this._emberCLIBabelExtensions = extensions;
     this._babelOptions = babelOptions;
     this._babelMajorVersion = version;
@@ -137,7 +144,7 @@ export default class Package {
   get isFastBootEnabled() {
     return (
       process.env.FASTBOOT_DISABLED !== 'true' &&
-      !!this._parent.addons.find(addon => addon.name === 'ember-cli-fastboot')
+      !!this._parent.addons.find((addon) => addon.name === 'ember-cli-fastboot')
     );
   }
 
@@ -145,7 +152,9 @@ export default class Package {
     // Generate the same babel options that the package (meaning app or addon)
     // is using. We will use these so we can configure our parser to
     // match.
-    let babelAddon = instance.addons.find(addon => addon.name === 'ember-cli-babel') as any;
+    let babelAddon = instance.addons.find(
+      (addon) => addon.name === 'ember-cli-babel'
+    ) as any;
     let version = parseInt(babelAddon.pkg.version.split('.')[0], 10);
     let babelOptions, extensions;
 
@@ -158,17 +167,24 @@ export default class Package {
     delete babelOptions.filterExtensions;
 
     if (babelOptions.plugins) {
-      babelOptions.plugins = babelOptions.plugins.filter((p: any) => !p._parallelBabel);
+      babelOptions.plugins = babelOptions.plugins.filter(
+        (p: any) => !p._parallelBabel
+      );
     }
 
     return { babelOptions, extensions, version };
   }
 
   private get pkg() {
-    if (!this.pkgCache || (this.isDeveloping && pkgGeneration !== this.pkgGeneration)) {
+    if (
+      !this.pkgCache ||
+      (this.isDeveloping && pkgGeneration !== this.pkgGeneration)
+    ) {
       // avoiding `require` here because we don't want to go through the
       // require cache.
-      this.pkgCache = JSON.parse(readFileSync(join(this.root, 'package.json'), 'utf-8'));
+      this.pkgCache = JSON.parse(
+        readFileSync(join(this.root, 'package.json'), 'utf-8')
+      );
       this.pkgGeneration = pkgGeneration;
     }
     return this.pkgCache;
@@ -200,12 +216,20 @@ export default class Package {
   // package.json
   requestedRange(packageName: string): string | undefined {
     let { pkg } = this;
-    return pkg.dependencies?.[packageName] || pkg.devDependencies?.[packageName] || pkg.peerDependencies?.[packageName];
+    return (
+      pkg.dependencies?.[packageName] ||
+      pkg.devDependencies?.[packageName] ||
+      pkg.peerDependencies?.[packageName]
+    );
   }
 
   private hasNonDevDependency(name: string): boolean {
     let pkg = this.pkg;
-    return Boolean(pkg.dependencies?.[name] || pkg.peerDependencies?.[name] || this.magicDeps?.has(name));
+    return Boolean(
+      pkg.dependencies?.[name] ||
+        pkg.peerDependencies?.[name] ||
+        this.magicDeps?.has(name)
+    );
   }
 
   static categorize(importedPath: string, partial = false) {
@@ -223,13 +247,25 @@ export default class Package {
     return 'dep';
   }
 
-  resolve(importedPath: string, fromPath: string): DepResolution | LocalResolution | URLResolution | undefined;
+  resolve(
+    importedPath: string,
+    fromPath: string
+  ): DepResolution | LocalResolution | URLResolution | undefined;
   resolve(
     importedPath: string,
     fromPath: string,
     partial: true
-  ): DepResolution | LocalResolution | URLResolution | ImpreciseResolution | undefined;
-  resolve(importedPath: string, fromPath: string, partial = false): Resolution | undefined {
+  ):
+    | DepResolution
+    | LocalResolution
+    | URLResolution
+    | ImpreciseResolution
+    | undefined;
+  resolve(
+    importedPath: string,
+    fromPath: string,
+    partial = false
+  ): Resolution | undefined {
     switch (Package.categorize(importedPath, partial)) {
       case 'url':
         return { type: 'url', url: importedPath };
@@ -312,7 +348,9 @@ export default class Package {
 
   private excludesDependency(name: string): boolean {
     return Boolean(
-      this.autoImportOptions && this.autoImportOptions.exclude && this.autoImportOptions.exclude.includes(name)
+      this.autoImportOptions &&
+        this.autoImportOptions.exclude &&
+        this.autoImportOptions.exclude.includes(name)
     );
   }
 
@@ -341,7 +379,9 @@ export default class Package {
     if (exactMatch) {
       return exactMatch;
     }
-    let prefixMatch = Object.keys(alias).find(pattern => name.startsWith(pattern));
+    let prefixMatch = Object.keys(alias).find((pattern) =>
+      name.startsWith(pattern)
+    );
     if (prefixMatch && alias[prefixMatch]) {
       return alias[prefixMatch] + name.slice(prefixMatch.length);
     }
@@ -360,13 +400,16 @@ export default class Package {
       throw new Error(`bug: only the app should control publicAssetURL`);
     }
     return ensureTrailingSlash(
-      this.autoImportOptions?.publicAssetURL ?? ensureTrailingSlash((this._parent as any).config().rootURL) + 'assets/'
+      this.autoImportOptions?.publicAssetURL ??
+        ensureTrailingSlash((this._parent as any).config().rootURL) + 'assets/'
     );
   }
 
   get styleLoaderOptions(): Record<string, unknown> | undefined {
     // only apps (not addons) are allowed to set this
-    return this.isAddon ? undefined : this.autoImportOptions?.styleLoaderOptions;
+    return this.isAddon
+      ? undefined
+      : this.autoImportOptions?.styleLoaderOptions;
   }
 
   get cssLoaderOptions(): Record<string, unknown> | undefined {
@@ -377,7 +420,11 @@ export default class Package {
   get forbidsEval(): boolean {
     // only apps (not addons) are allowed to set this, because it's motivated by
     // the apps own Content Security Policy.
-    return Boolean(!this.isAddon && this.autoImportOptions && this.autoImportOptions.forbidEval);
+    return Boolean(
+      !this.isAddon &&
+        this.autoImportOptions &&
+        this.autoImportOptions.forbidEval
+    );
   }
 
   get insertScriptsAt(): string | undefined {
@@ -398,7 +445,7 @@ export default class Package {
     // only apps (not addons) are allowed to set this
     if (!this.isAddon && this.autoImportOptions?.watchDependencies) {
       return this.autoImportOptions.watchDependencies
-        .map(nameOrNames => {
+        .map((nameOrNames) => {
           let names: string[];
           if (typeof nameOrNames === 'string') {
             names = [nameOrNames];
@@ -426,16 +473,26 @@ export default class Package {
     // cast here is safe because we just checked isAddon is false
     let parent = this._parent as Project;
 
-    let emberSource = parent.addons.find(addon => addon.name === 'ember-source');
+    let emberSource = parent.addons.find(
+      (addon) => addon.name === 'ember-source'
+    );
     if (!emberSource) {
       throw new Error(`failed to find ember-source in addons of ${this.name}`);
     }
-    let ensureModuleApiPolyfill = semver.satisfies(emberSource.pkg.version, '<3.27.0', { includePrerelease: true });
-    let templateCompilerPath: string = (emberSource as any).absolutePaths.templateCompiler;
+    let ensureModuleApiPolyfill = semver.satisfies(
+      emberSource.pkg.version,
+      '<3.27.0',
+      { includePrerelease: true }
+    );
+    let templateCompilerPath: string = (emberSource as any).absolutePaths
+      .templateCompiler;
 
     let plugins = [
       [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
-      [require.resolve('@babel/plugin-proposal-class-properties'), { loose: false }],
+      [
+        require.resolve('@babel/plugin-proposal-class-properties'),
+        { loose: false },
+      ],
       [
         require.resolve('babel-plugin-htmlbars-inline-precompile'),
         {
@@ -455,7 +512,9 @@ export default class Package {
     ];
 
     if (ensureModuleApiPolyfill) {
-      plugins.push([require.resolve('babel-plugin-ember-modules-api-polyfill')]);
+      plugins.push([
+        require.resolve('babel-plugin-ember-modules-api-polyfill'),
+      ]);
     }
 
     return {
@@ -506,7 +565,9 @@ function isV1EmberAddonDependency(packageRoot: string): boolean {
   if (cached === undefined) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     let packageJSON = require(join(packageRoot, 'package.json'));
-    let answer = packageJSON.keywords?.includes('ember-addon') && (packageJSON['ember-addon']?.version ?? 1) < 2;
+    let answer =
+      packageJSON.keywords?.includes('ember-addon') &&
+      (packageJSON['ember-addon']?.version ?? 1) < 2;
     isAddonCache.set(packageRoot, answer);
     return answer;
   } else {

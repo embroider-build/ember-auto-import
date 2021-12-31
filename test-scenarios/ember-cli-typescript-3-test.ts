@@ -5,7 +5,10 @@ import QUnit from 'qunit';
 const { module: Qmodule, test } = QUnit;
 
 appScenarios
-  .skip('lts')
+  // Not testing our oldest LTS because e-c-typescript 3 doesn't support it. Not
+  // testing ember >= 4 because e-c-typescript 3 requires an older e-c-babel
+  // that doesn't work in ember 4. That leaves only the "ember3" scenario.
+  .only('ember3')
   .map('ember-cli-typescript-3', project => {
     let aDependency = new Project({
       files: {

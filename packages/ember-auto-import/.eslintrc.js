@@ -1,8 +1,10 @@
+'use strict';
+
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    ecmaVersion: 2017,
+    ecmaVersion: 2018,
     sourceType: 'module',
   },
   plugins: ['ember', '@typescript-eslint', 'prettier'],
@@ -41,7 +43,12 @@ module.exports = {
         'babel-plugin/**.js',
         '.eslintrc.js',
       ],
-      excludedFiles: ['addon/**', 'addon-test-support/**', 'app/**', 'tests/dummy/app/**'],
+      excludedFiles: [
+        'addon/**',
+        'addon-test-support/**',
+        'app/**',
+        'tests/dummy/app/**',
+      ],
       parserOptions: {
         sourceType: 'script',
         ecmaVersion: 2018,
@@ -51,11 +58,15 @@ module.exports = {
         node: true,
       },
       plugins: ['node'],
-      rules: Object.assign({}, require('eslint-plugin-node').configs.recommended.rules, {
-        // add your custom rules and overrides for node files here
-        'no-var': 'error',
-        '@typescript-eslint/no-var-requires': 'off',
-      }),
+      rules: Object.assign(
+        {},
+        require('eslint-plugin-node').configs.recommended.rules,
+        {
+          // add your custom rules and overrides for node files here
+          'no-var': 'error',
+          '@typescript-eslint/no-var-requires': 'off',
+        }
+      ),
     },
   ],
 };

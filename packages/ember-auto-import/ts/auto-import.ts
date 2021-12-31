@@ -7,7 +7,12 @@ import { buildDebugCallback } from 'broccoli-debug';
 import BundleConfig from './bundle-config';
 import type { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
-import { AddonInstance, AppInstance, findTopmostAddon, isDeepAddonInstance } from '@embroider/shared-internals';
+import {
+  AddonInstance,
+  AppInstance,
+  findTopmostAddon,
+  isDeepAddonInstance,
+} from '@embroider/shared-internals';
 import WebpackBundler from './webpack';
 import { Memoize } from 'typescript-memoize';
 import { WatchedDir } from 'broccoli-source';
@@ -27,7 +32,12 @@ const debugTree = buildDebugCallback('ember-auto-import');
 // what you're doing.
 export interface AutoImportSharedAPI {
   isPrimary(addonInstance: AddonInstance): boolean;
-  analyze(tree: Node, addon: AddonInstance, treeType?: TreeType, supportsFastAnalyzer?: true): Node;
+  analyze(
+    tree: Node,
+    addon: AddonInstance,
+    treeType?: TreeType,
+    supportsFastAnalyzer?: true
+  ): Node;
   included(addonInstance: AddonInstance): void;
   addTo(tree: Node): Node;
   registerV2Addon(packageName: string, packageRoot: string): void;
@@ -71,7 +81,12 @@ export default class AutoImport implements AutoImportSharedAPI {
     return false;
   }
 
-  analyze(tree: Node, addon: AddonInstance, treeType?: TreeType, supportsFastAnalyzer?: true) {
+  analyze(
+    tree: Node,
+    addon: AddonInstance,
+    treeType?: TreeType,
+    supportsFastAnalyzer?: true
+  ) {
     let pack = Package.lookupParentOf(addon);
     this.packages.add(pack);
     let analyzer = new Analyzer(
@@ -112,7 +127,9 @@ export default class AutoImport implements AutoImportSharedAPI {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     if (pkg && semver.satisfies(require(pkg).version, '^5.0.0')) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      webpack = require(resolve.sync('webpack', { basedir: this.rootPackage.root })) as typeof webpackType;
+      webpack = require(resolve.sync('webpack', {
+        basedir: this.rootPackage.root,
+      })) as typeof webpackType;
     } else {
       throw new Error(
         `[ember-auto-import] this version of ember-auto-import requires the app to have a dependency on webpack 5`
@@ -136,9 +153,11 @@ export default class AutoImport implements AutoImportSharedAPI {
 
   @Memoize()
   private get rootPackage(): Package {
-    let rootPackage = [...this.packages.values()].find(pkg => !pkg.isAddon);
+    let rootPackage = [...this.packages.values()].find((pkg) => !pkg.isAddon);
     if (!rootPackage) {
-      throw new Error(`bug in ember-auto-import, there should always be a Package representing the app`);
+      throw new Error(
+        `bug in ember-auto-import, there should always be a Package representing the app`
+      );
     }
     return rootPackage;
   }
@@ -173,7 +192,8 @@ export default class AutoImport implements AutoImportSharedAPI {
       parent = addonInstance.app;
     }
 
-    let babelOptions: TransformOptions = (parent.options.babel = parent.options.babel || {});
+    let babelOptions: TransformOptions = (parent.options.babel =
+      parent.options.babel || {});
     let babelPlugins = (babelOptions.plugins = babelOptions.plugins || []);
     if (!babelPlugins.some(isAnalyzerPlugin)) {
       // the MARKER is included so that babel caches will invalidate if the
@@ -203,7 +223,7 @@ function depsFor(allAppTree: Node, packages: Set<Package>) {
   for (let pkg of packages) {
     let watched = pkg.watchedDirectories;
     if (watched) {
-      deps = deps.concat(watched.map(dir => new WatchedDir(dir)));
+      deps = deps.concat(watched.map((dir) => new WatchedDir(dir)));
     }
   }
   return deps;
@@ -213,6 +233,8 @@ function isAnalyzerPlugin(entry: unknown) {
   const suffix = 'ember-auto-import/js/analyzer-plugin.js';
   return (
     (typeof entry === 'string' && entry.endsWith(suffix)) ||
-    (Array.isArray(entry) && typeof entry[0] === 'string' && entry[0].endsWith(suffix))
+    (Array.isArray(entry) &&
+      typeof entry[0] === 'string' &&
+      entry[0].endsWith(suffix))
   );
 }
