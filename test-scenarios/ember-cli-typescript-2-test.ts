@@ -35,7 +35,7 @@ appScenarios
           'application.ts': APPLICATION_TS,
         },
         templates: {
-          'application.hbs': '<div data-test-import-result>{{result}}</div>',
+          'application.hbs': '<div data-test-import-result>{{this.result}}</div>',
         },
         config: {
           'environment.d.ts': ENVIROMENT_D_TS,
