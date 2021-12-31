@@ -117,7 +117,7 @@ function projectFiles() {
           {{from-sample-addon}}
         `,
         'dep-check.hbs': `
-          <div data-test="lib2-status">{{#if hasLib2}}yes{{else}}no{{/if}}</div>
+          <div data-test="lib2-status">{{#if this.hasLib2}}yes{{else}}no{{/if}}</div>
         `,
       },
       controllers: {

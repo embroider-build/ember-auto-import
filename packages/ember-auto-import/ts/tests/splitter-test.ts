@@ -10,7 +10,11 @@ import Splitter from '../splitter';
 import BundleConfig from '../bundle-config';
 import { Project } from 'scenario-tester';
 import { merge } from 'lodash';
-import { AddonInstance, AppInstance, Project as EmberCLIProject } from '@embroider/shared-internals';
+import {
+  AddonInstance,
+  AppInstance,
+  Project as EmberCLIProject,
+} from '@embroider/shared-internals';
 // @ts-ignore
 import broccoliBabel from 'broccoli-babel-transpiler';
 
@@ -94,7 +98,10 @@ Qmodule('splitter', function (hooks) {
 
   type Example = [
     string,
-    { specifier: string; packageName: string } | { quasis: string[]; expressions: string[]; packageName: string }
+    (
+      | { specifier: string; packageName: string }
+      | { quasis: string[]; expressions: string[]; packageName: string }
+    )
   ];
 
   let handledImportCallExamples: Example[] = [
@@ -103,25 +110,70 @@ Qmodule('splitter', function (hooks) {
     ['`alpha`', { specifier: 'alpha', packageName: 'alpha' }],
     ['`@beta/thing`', { specifier: '@beta/thing', packageName: '@beta/thing' }],
     ["'alpha/mod'", { specifier: 'alpha/mod', packageName: 'alpha' }],
-    ["'@beta/thing/mod'", { specifier: '@beta/thing/mod', packageName: '@beta/thing' }],
+    [
+      "'@beta/thing/mod'",
+      { specifier: '@beta/thing/mod', packageName: '@beta/thing' },
+    ],
     ['`alpha/mod`', { specifier: 'alpha/mod', packageName: 'alpha' }],
-    ['`@beta/thing/mod`', { specifier: '@beta/thing/mod', packageName: '@beta/thing' }],
-    ['`alpha/${foo}`', { quasis: ['alpha/', ''], expressions: ['foo'], packageName: 'alpha' }],
-    ['`alpha/in${foo}`', { quasis: ['alpha/in', ''], expressions: ['foo'], packageName: 'alpha' }],
-    ['`@beta/thing/${foo}`', { quasis: ['@beta/thing/', ''], expressions: ['foo'], packageName: '@beta/thing' }],
-    ['`@beta/thing/in${foo}`', { quasis: ['@beta/thing/in', ''], expressions: ['foo'], packageName: '@beta/thing' }],
-    ['`alpha/${foo}/component`', { quasis: ['alpha/', '/component'], expressions: ['foo'], packageName: 'alpha' }],
+    [
+      '`@beta/thing/mod`',
+      { specifier: '@beta/thing/mod', packageName: '@beta/thing' },
+    ],
+    [
+      '`alpha/${foo}`',
+      { quasis: ['alpha/', ''], expressions: ['foo'], packageName: 'alpha' },
+    ],
+    [
+      '`alpha/in${foo}`',
+      { quasis: ['alpha/in', ''], expressions: ['foo'], packageName: 'alpha' },
+    ],
+    [
+      '`@beta/thing/${foo}`',
+      {
+        quasis: ['@beta/thing/', ''],
+        expressions: ['foo'],
+        packageName: '@beta/thing',
+      },
+    ],
+    [
+      '`@beta/thing/in${foo}`',
+      {
+        quasis: ['@beta/thing/in', ''],
+        expressions: ['foo'],
+        packageName: '@beta/thing',
+      },
+    ],
+    [
+      '`alpha/${foo}/component`',
+      {
+        quasis: ['alpha/', '/component'],
+        expressions: ['foo'],
+        packageName: 'alpha',
+      },
+    ],
     [
       '`@beta/thing/${foo}/component`',
-      { quasis: ['@beta/thing/', '/component'], expressions: ['foo'], packageName: '@beta/thing' },
+      {
+        quasis: ['@beta/thing/', '/component'],
+        expressions: ['foo'],
+        packageName: '@beta/thing',
+      },
     ],
     [
       '`alpha/${foo}/component/${bar}`',
-      { quasis: ['alpha/', '/component/', ''], expressions: ['foo', 'bar'], packageName: 'alpha' },
+      {
+        quasis: ['alpha/', '/component/', ''],
+        expressions: ['foo', 'bar'],
+        packageName: 'alpha',
+      },
     ],
     [
       '`@beta/thing/${foo}/component/${bar}`',
-      { quasis: ['@beta/thing/', '/component/', ''], expressions: ['foo', 'bar'], packageName: '@beta/thing' },
+      {
+        quasis: ['@beta/thing/', '/component/', ''],
+        expressions: ['foo', 'bar'],
+        packageName: '@beta/thing',
+      },
     ],
   ];
 
@@ -138,9 +190,18 @@ Qmodule('splitter', function (hooks) {
         assert.deepEqual(deps.get('app')?.dynamicImports, []);
         let dynamicTemplateImports = deps.get('app')?.dynamicTemplateImports;
         assert.equal(dynamicTemplateImports?.length, 1);
-        assert.deepEqual(dynamicTemplateImports?.[0].cookedQuasis, example[1].quasis);
-        assert.deepEqual(dynamicTemplateImports?.[0].expressionNameHints, example[1].expressions);
-        assert.equal(dynamicTemplateImports?.[0].packageName, example[1].packageName);
+        assert.deepEqual(
+          dynamicTemplateImports?.[0].cookedQuasis,
+          example[1].quasis
+        );
+        assert.deepEqual(
+          dynamicTemplateImports?.[0].expressionNameHints,
+          example[1].expressions
+        );
+        assert.equal(
+          dynamicTemplateImports?.[0].packageName,
+          example[1].packageName
+        );
         assert.equal(
           dynamicTemplateImports?.[0].packageRoot,
           join(project.baseDir, 'node_modules', example[1].packageName)
@@ -151,7 +212,10 @@ Qmodule('splitter', function (hooks) {
         assert.equal(dynamicImports?.length, 1);
         assert.equal(dynamicImports?.[0].specifier, example[1].specifier);
         assert.equal(dynamicImports?.[0].packageName, example[1].packageName);
-        assert.equal(dynamicImports?.[0].packageRoot, join(project.baseDir, 'node_modules', example[1].packageName));
+        assert.equal(
+          dynamicImports?.[0].packageRoot,
+          join(project.baseDir, 'node_modules', example[1].packageName)
+        );
       }
     });
   }
@@ -172,9 +236,18 @@ Qmodule('splitter', function (hooks) {
         assert.deepEqual(deps.get('app')?.staticImports, []);
         let staticTemplateImports = deps.get('app')?.staticTemplateImports;
         assert.equal(staticTemplateImports?.length, 1);
-        assert.deepEqual(staticTemplateImports?.[0].cookedQuasis, example[1].quasis);
-        assert.deepEqual(staticTemplateImports?.[0].expressionNameHints, example[1].expressions);
-        assert.equal(staticTemplateImports?.[0].packageName, example[1].packageName);
+        assert.deepEqual(
+          staticTemplateImports?.[0].cookedQuasis,
+          example[1].quasis
+        );
+        assert.deepEqual(
+          staticTemplateImports?.[0].expressionNameHints,
+          example[1].expressions
+        );
+        assert.equal(
+          staticTemplateImports?.[0].packageName,
+          example[1].packageName
+        );
         assert.equal(
           staticTemplateImports?.[0].packageRoot,
           join(project.baseDir, 'node_modules', example[1].packageName)
@@ -185,7 +258,10 @@ Qmodule('splitter', function (hooks) {
         assert.equal(staticImports?.length, 1);
         assert.equal(staticImports?.[0].specifier, example[1].specifier);
         assert.equal(staticImports?.[0].packageName, example[1].packageName);
-        assert.equal(staticImports?.[0].packageRoot, join(project.baseDir, 'node_modules', example[1].packageName));
+        assert.equal(
+          staticImports?.[0].packageRoot,
+          join(project.baseDir, 'node_modules', example[1].packageName)
+        );
       }
     });
   }
@@ -228,7 +304,10 @@ Qmodule('splitter', function (hooks) {
       await splitter.deps();
       throw new Error(`expected not to get here, build was supposed to fail`);
     } catch (err) {
-      assert.contains(err.message, 'Dynamic imports must target unambiguous package names');
+      assert.contains(
+        err.message,
+        'Dynamic imports must target unambiguous package names'
+      );
     }
   });
 
@@ -241,7 +320,10 @@ Qmodule('splitter', function (hooks) {
       await splitter.deps();
       throw new Error(`expected not to get here, build was supposed to fail`);
     } catch (err) {
-      assert.contains(err.message, 'Dynamic imports must target unambiguous package names');
+      assert.contains(
+        err.message,
+        'Dynamic imports must target unambiguous package names'
+      );
     }
   });
 
@@ -289,7 +371,7 @@ Qmodule('splitter', function (hooks) {
     await builder.build();
     let deps = await splitter.deps();
     assert.deepEqual(
-      deps.get('app')?.staticImports.map(i => ({
+      deps.get('app')?.staticImports.map((i) => ({
         packageName: i.packageName,
         packageRoot: i.packageRoot,
         specifier: i.specifier,
@@ -297,7 +379,11 @@ Qmodule('splitter', function (hooks) {
       [
         {
           packageName: 'aliasing-example',
-          packageRoot: join(project.baseDir, 'node_modules', 'aliasing-example'),
+          packageRoot: join(
+            project.baseDir,
+            'node_modules',
+            'aliasing-example'
+          ),
           specifier: 'my-aliased-package',
         },
       ]
@@ -316,7 +402,7 @@ Qmodule('splitter', function (hooks) {
     await builder.build();
     let deps = await splitter.deps();
     assert.deepEqual(
-      deps.get('app')?.staticImports.map(i => ({
+      deps.get('app')?.staticImports.map((i) => ({
         packageName: i.packageName,
         packageRoot: i.packageRoot,
         specifier: i.specifier,
@@ -324,7 +410,11 @@ Qmodule('splitter', function (hooks) {
       [
         {
           packageName: 'aliasing-example',
-          packageRoot: join(project.baseDir, 'node_modules', 'aliasing-example'),
+          packageRoot: join(
+            project.baseDir,
+            'node_modules',
+            'aliasing-example'
+          ),
           specifier: 'my-aliased-package/inside',
         },
       ]
@@ -343,7 +433,7 @@ Qmodule('splitter', function (hooks) {
     await builder.build();
     let deps = await splitter.deps();
     assert.deepEqual(
-      deps.get('app')?.staticImports.map(i => ({
+      deps.get('app')?.staticImports.map((i) => ({
         packageName: i.packageName,
         packageRoot: i.packageRoot,
         specifier: i.specifier,
@@ -351,7 +441,11 @@ Qmodule('splitter', function (hooks) {
       [
         {
           packageName: 'aliasing-example',
-          packageRoot: join(project.baseDir, 'node_modules', 'aliasing-example'),
+          packageRoot: join(
+            project.baseDir,
+            'node_modules',
+            'aliasing-example'
+          ),
           specifier: 'aliasing-example',
         },
       ]
@@ -359,8 +453,11 @@ Qmodule('splitter', function (hooks) {
   });
 });
 
-function stubAddonInstance(baseDir: string, autoImport: Options): AddonInstance {
-  let project: EmberCLIProject = {
+function stubAddonInstance(
+  baseDir: string,
+  autoImport: Options
+): AddonInstance {
+  let project = {
     root: baseDir,
     targets: {},
     ui: {} as any,
@@ -379,15 +476,15 @@ function stubAddonInstance(baseDir: string, autoImport: Options): AddonInstance 
     name() {
       return 'my-project';
     },
-  };
-  let app: AppInstance = {
+  } as EmberCLIProject;
+  let app = {
     env: 'development',
     project,
     options: {
       autoImport,
     },
     addonPostprocessTree: {} as any,
-  };
+  } as AppInstance;
   return {
     name: 'ember-auto-import',
     parent: project,
@@ -404,5 +501,5 @@ function stubAddonInstance(baseDir: string, autoImport: Options): AddonInstance 
     _findHost() {
       throw new Error('unimplemented');
     },
-  };
+  } as unknown as AddonInstance;
 }

@@ -53,7 +53,9 @@ export default class Splitter {
   }
 
   private importsChanged(): boolean {
-    let imports = [...this.options.analyzers.keys()].map(analyzer => analyzer.imports);
+    let imports = [...this.options.analyzers.keys()].map(
+      (analyzer) => analyzer.imports
+    );
     if (!this.lastImports || !shallowEqual(this.lastImports, imports)) {
       this.lastImports = imports;
       return true;
@@ -64,9 +66,11 @@ export default class Splitter {
   private async computeTargets(analyzers: Map<Analyzer, Package>) {
     let targets: Map<string, ResolvedImport> = new Map();
     let templateTargets: Map<string, ResolvedTemplateImport> = new Map();
-    let imports = flatten([...analyzers.keys()].map(analyzer => analyzer.imports));
+    let imports = flatten(
+      [...analyzers.keys()].map((analyzer) => analyzer.imports)
+    );
     await Promise.all(
-      imports.map(async imp => {
+      imports.map(async (imp) => {
         if ('specifier' in imp) {
           await this.handleLiteralImport(imp, targets);
         } else {
@@ -77,7 +81,10 @@ export default class Splitter {
     return { targets, templateTargets };
   }
 
-  private async handleLiteralImport(imp: LiteralImport, targets: Map<string, ResolvedImport>) {
+  private async handleLiteralImport(
+    imp: LiteralImport,
+    targets: Map<string, ResolvedImport>
+  ) {
     let target = imp.package.resolve(imp.specifier, imp.path);
 
     if (!target) {
@@ -116,7 +123,10 @@ export default class Splitter {
     }
   }
 
-  private async handleTemplateImport(imp: TemplateImport, targets: Map<string, ResolvedTemplateImport>) {
+  private async handleTemplateImport(
+    imp: TemplateImport,
+    targets: Map<string, ResolvedTemplateImport>
+  ) {
     let [leadingQuasi] = imp.cookedQuasis;
 
     let target = imp.package.resolve(leadingQuasi, imp.path, true);
@@ -131,7 +141,9 @@ export default class Splitter {
     }
 
     if (target.type === 'imprecise') {
-      throw new Error(`Dynamic imports must target unambiguous package names. ${leadingQuasi} is ambiguous`);
+      throw new Error(
+        `Dynamic imports must target unambiguous package names. ${leadingQuasi} is ambiguous`
+      );
     }
 
     if (target.type === 'url') {
@@ -152,7 +164,9 @@ export default class Splitter {
         packageName: target.packageName,
         packageRoot: target.packageRoot,
         cookedQuasis: imp.cookedQuasis,
-        expressionNameHints: imp.expressionNameHints.map((hint, index) => hint || `arg${index}`),
+        expressionNameHints: imp.expressionNameHints.map(
+          (hint, index) => hint || `arg${index}`
+        ),
         importedBy: [imp],
       });
     }
@@ -180,7 +194,9 @@ export default class Splitter {
       return;
     }
 
-    let requestedRange = nextImport.package.requestedRange(nextTarget.packageName);
+    let requestedRange = nextImport.package.requestedRange(
+      nextTarget.packageName
+    );
     if (!requestedRange) {
       // this is probably an error condition, but it's not the error condition
       // that this particular assertion is checking. Our job is just to make
@@ -198,17 +214,19 @@ export default class Splitter {
         `${nextImport.package.name} needs ${
           nextTarget.packageName
         } satisfying ${requestedRange}, but we have version ${haveVersion} because of ${alreadyResolved.importedBy
-          .map(i => i.package.name)
+          .map((i) => i.package.name)
           .join(', ')}`
       );
     }
   }
 
-  private async computeDeps(analyzers: SplitterOptions['analyzers']): Promise<Map<string, BundleDependencies>> {
+  private async computeDeps(
+    analyzers: SplitterOptions['analyzers']
+  ): Promise<Map<string, BundleDependencies>> {
     let targets = await this.computeTargets(analyzers);
     let deps: Map<string, BundleDependencies> = new Map();
 
-    this.options.bundles.names.forEach(bundleName => {
+    this.options.bundles.names.forEach((bundleName) => {
       deps.set(bundleName, {
         staticImports: [],
         staticTemplateImports: [],
@@ -218,7 +236,10 @@ export default class Splitter {
     });
 
     for (let target of targets.targets.values()) {
-      let [dynamicUses, staticUses] = partition(target.importedBy, imp => imp.isDynamic);
+      let [dynamicUses, staticUses] = partition(
+        target.importedBy,
+        (imp) => imp.isDynamic
+      );
       if (staticUses.length > 0) {
         let bundleName = this.chooseBundle(staticUses);
         deps.get(bundleName)!.staticImports.push(target);
@@ -230,7 +251,10 @@ export default class Splitter {
     }
 
     for (let target of targets.templateTargets.values()) {
-      let [dynamicUses, staticUses] = partition(target.importedBy, imp => imp.isDynamic);
+      let [dynamicUses, staticUses] = partition(
+        target.importedBy,
+        (imp) => imp.isDynamic
+      );
       if (staticUses.length > 0) {
         let bundleName = this.chooseBundle(staticUses);
         deps.get(bundleName)!.staticTemplateImports.push(target);
@@ -254,23 +278,28 @@ export default class Splitter {
 
   private sortBundle(bundle: BundleDependencies) {
     bundle.staticImports.sort((a, b) => a.specifier.localeCompare(b.specifier));
-    bundle.dynamicImports.sort((a, b) => a.specifier.localeCompare(b.specifier));
-    bundle.dynamicTemplateImports.sort((a, b) => a.cookedQuasis[0].localeCompare(b.cookedQuasis[0]));
+    bundle.dynamicImports.sort((a, b) =>
+      a.specifier.localeCompare(b.specifier)
+    );
+    bundle.dynamicTemplateImports.sort((a, b) =>
+      a.cookedQuasis[0].localeCompare(b.cookedQuasis[0])
+    );
   }
 
   // given that a module is imported by the given list of paths, which
   // bundle should it go in?
   private chooseBundle(importedBy: Import[]) {
     let usedInBundles = {} as { [bundleName: string]: boolean };
-    importedBy.forEach(usage => {
+    importedBy.forEach((usage) => {
       usedInBundles[this.bundleFor(usage)] = true;
     });
-    return this.options.bundles.names.find(bundle => usedInBundles[bundle])!;
+    return this.options.bundles.names.find((bundle) => usedInBundles[bundle])!;
   }
 
   private bundleFor(usage: Import) {
     let bundleName =
-      usage.treeType === undefined || typeof this.options.bundles.bundleForTreeType !== 'function'
+      usage.treeType === undefined ||
+      typeof this.options.bundles.bundleForTreeType !== 'function'
         ? this.options.bundles.bundleForPath(usage.path)
         : this.options.bundles.bundleForTreeType(usage.treeType);
 
@@ -278,7 +307,9 @@ export default class Splitter {
       throw new Error(
         `bundleForPath("${
           usage.path
-        }") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.names.join(',')}`
+        }") returned ${bundleName}" but the only configured bundle names are ${this.options.bundles.names.join(
+          ','
+        )}`
       );
     }
     debug('bundleForPath("%s")=%s', usage.path, bundleName);
@@ -314,11 +345,16 @@ class LazyPrintDeps {
 
   toString() {
     let output = {} as { [bundle: string]: any };
-    for (let [bundle, { staticImports, dynamicImports, dynamicTemplateImports }] of this.deps.entries()) {
+    for (let [
+      bundle,
+      { staticImports, dynamicImports, dynamicTemplateImports },
+    ] of this.deps.entries()) {
       output[bundle] = {
         static: staticImports.map(this.describeResolvedImport.bind(this)),
         dynamic: dynamicImports.map(this.describeResolvedImport.bind(this)),
-        dynamicTemplate: dynamicTemplateImports.map(this.describeTemplateImport.bind(this)),
+        dynamicTemplate: dynamicTemplateImports.map(
+          this.describeTemplateImport.bind(this)
+        ),
       };
     }
     return JSON.stringify(output, null, 2);

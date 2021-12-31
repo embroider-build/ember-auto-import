@@ -146,7 +146,9 @@ class Deserializer {
             type: 'finding-end',
             meta: [],
           };
-          return this.consumeChunk(chunk.slice(MARKER.length - state.partialMatch));
+          return this.consumeChunk(
+            chunk.slice(MARKER.length - state.partialMatch)
+          );
         } else {
           // partial match failed to complete
           this.state = {

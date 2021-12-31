@@ -14,10 +14,15 @@ interface State {
 // output.
 // TypeScript: `import type foo from 'foo'`
 // Flow: `import typeof foo from 'foo'`
-const erasedImportKinds: Set<t.ImportDeclaration['importKind']> = new Set(['type', 'typeof']);
+const erasedImportKinds: Set<t.ImportDeclaration['importKind']> = new Set([
+  'type',
+  'typeof',
+]);
 // TypeScript: `export type foo from 'foo'`
 // Flow: doesn't have type-only exports
-const erasedExportKinds: Set<t.ExportNamedDeclaration['exportKind']> = new Set(['type']);
+const erasedExportKinds: Set<t.ExportNamedDeclaration['exportKind']> = new Set([
+  'type',
+]);
 
 export = analyzerPlugin;
 function analyzerPlugin(babel: typeof Babel) {
@@ -52,7 +57,10 @@ function analyzerPlugin(babel: typeof Babel) {
         if (callee.type === 'Import') {
           state.imports.push(processImportCallExpression(path, true));
           state.handled.add(path.node);
-        } else if (callee.isIdentifier() && callee.referencesImport('@embroider/macros', 'importSync')) {
+        } else if (
+          callee.isIdentifier() &&
+          callee.referencesImport('@embroider/macros', 'importSync')
+        ) {
           state.imports.push(processImportCallExpression(path, false));
           state.handled.add(path.node);
         }
@@ -64,7 +72,10 @@ function analyzerPlugin(babel: typeof Babel) {
           specifier: path.node.source.value,
         });
       },
-      ExportNamedDeclaration(path: NodePath<t.ExportNamedDeclaration>, state: State) {
+      ExportNamedDeclaration(
+        path: NodePath<t.ExportNamedDeclaration>,
+        state: State
+      ) {
         if (!path.node.source) return;
         if (erasedExportKinds.has(path.node.exportKind)) return;
         state.imports.push({
@@ -72,7 +83,10 @@ function analyzerPlugin(babel: typeof Babel) {
           specifier: path.node.source.value,
         });
       },
-      ExportAllDeclaration(path: NodePath<t.ExportAllDeclaration>, state: State) {
+      ExportAllDeclaration(
+        path: NodePath<t.ExportAllDeclaration>,
+        state: State
+      ) {
         if (erasedExportKinds.has(path.node.exportKind)) return;
         state.imports.push({
           isDynamic: false,
@@ -83,7 +97,10 @@ function analyzerPlugin(babel: typeof Babel) {
   };
 }
 
-function processImportCallExpression(path: NodePath<t.CallExpression>, isDynamic: boolean): ImportSyntax {
+function processImportCallExpression(
+  path: NodePath<t.CallExpression>,
+  isDynamic: boolean
+): ImportSyntax {
   // it's a syntax error to have anything other than exactly one
   // argument, so we can just assume this exists
   let argument = path.node.arguments[0];
@@ -103,12 +120,16 @@ function processImportCallExpression(path: NodePath<t.CallExpression>, isDynamic
       } else {
         return {
           isDynamic,
-          cookedQuasis: argument.quasis.map(templateElement => templateElement.value.cooked!),
+          cookedQuasis: argument.quasis.map(
+            (templateElement) => templateElement.value.cooked!
+          ),
           expressionNameHints: [...argument.expressions].map(inferNameHint),
         };
       }
     default:
-      throw path.buildCodeFrameError('import() is only allowed to contain string literals or template string literals');
+      throw path.buildCodeFrameError(
+        'import() is only allowed to contain string literals or template string literals'
+      );
   }
 }
 

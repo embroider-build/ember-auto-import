@@ -27,20 +27,21 @@
     "leader-v2": "npm:ember-auto-import@1.11",
     "old-analyzer": "npm:ember-auto-import@2.1.0",
     "ember-cli-babel-older": "npm:ember-cli-babel@7.11.1",
+    "ember-cli-3": "npm:ember-cli@^3.0.0",
     "ember-cli-lts": "npm:ember-cli@~3.4.0",
     "ember-cli-latest": "npm:ember-cli@latest",
     "ember-cli-beta": "npm:ember-cli@beta",
     "ember-cli": "git+https://github.com/ember-cli/ember-cli#master",
-    "ember-cli-fastboot": "^2.2.3",
-    "ember-cli-fastboot3": "npm:ember-cli-fastboot@3.2.0-beta.2",
+    "ember-cli-fastboot": "npm:ember-cli-fastboot@3.2.0-beta.5",
     "ember-cli-typescript-2": "npm:ember-cli-typescript@^2.0.0-beta.3",
     "ember-cli-typescript-3": "npm:ember-cli-typescript@^3.0.0",
     "ember-cli-typescript-4": "npm:ember-cli-typescript@^4.0.0-alpha.1",
+    "ember-source-3": "npm:ember-source@^3.0.0",
     "ember-source-lts": "npm:ember-source@~3.4.0",
     "ember-source-beta": "npm:ember-source@beta",
     "ember-source-canary": "npm:ember-source@alpha",
     "ember-source-latest": "npm:ember-source@latest",
-    "newer-resolver": "npm:ember-resolver@^8.0.0",
+    "ember-welcome-page5": "npm:ember-welcome-page@^5.0.0",
     "js-string-escape": "^1.0.1",
     "lodash": "^4.17.20",
     "lodash-es": "^4.17.10",
@@ -50,6 +51,6 @@
   },
   "volta": {
     "node": "14.16.0",
-    "npm": "7.6.1"
+    "npm": "8.3.0"
   }
 }

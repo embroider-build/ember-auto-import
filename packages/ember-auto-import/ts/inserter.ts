@@ -90,45 +90,82 @@ export class Inserter extends Plugin {
     let stringInserter = new StringInserter(html);
 
     if (this.options.insertScriptsAt) {
-      debug(`looking for custom script element: %s`, this.options.insertScriptsAt);
+      debug(
+        `looking for custom script element: %s`,
+        this.options.insertScriptsAt
+      );
     } else {
-      debug(`looking for scripts with src: %s`, targets.scripts.map(s => s.afterFile).filter(Boolean));
+      debug(
+        `looking for scripts with src: %s`,
+        targets.scripts.map((s) => s.afterFile).filter(Boolean)
+      );
     }
 
     if (this.options.insertStylesAt) {
-      debug(`looking for custom style element: %s`, this.options.insertStylesAt);
+      debug(
+        `looking for custom style element: %s`,
+        this.options.insertStylesAt
+      );
     } else {
-      debug(`looking for link with href: %s`, targets.styles.map(s => s.afterFile).filter(Boolean));
+      debug(
+        `looking for link with href: %s`,
+        targets.styles.map((s) => s.afterFile).filter(Boolean)
+      );
     }
 
-    traverse(ast, element => {
+    traverse(ast, (element) => {
       if (this.options.insertScriptsAt) {
         if (element.tagName === this.options.insertScriptsAt) {
-          let entrypoint = element.attrs.find(a => a.name === 'entrypoint');
+          let entrypoint = element.attrs.find((a) => a.name === 'entrypoint');
           if (!entrypoint) {
-            throw new Error(`<${element.tagName}/> element in ${filename} is missing required entrypoint attribute`);
+            throw new Error(
+              `<${element.tagName}/> element in ${filename} is missing required entrypoint attribute`
+            );
           }
-          this.replaceCustomScript(targets, fastbootInfo, stringInserter, element, entrypoint.value);
+          this.replaceCustomScript(
+            targets,
+            fastbootInfo,
+            stringInserter,
+            element,
+            entrypoint.value
+          );
         }
       } else if (element.tagName === 'script') {
-        let src = element.attrs.find(a => a.name === 'src')?.value;
+        let src = element.attrs.find((a) => a.name === 'src')?.value;
         if (src) {
           debug(`found script with src=%s`, src);
-          this.insertScripts(targets, fastbootInfo, stringInserter, element, src);
+          this.insertScripts(
+            targets,
+            fastbootInfo,
+            stringInserter,
+            element,
+            src
+          );
         }
       }
 
       if (this.options.insertStylesAt) {
         if (element.tagName === this.options.insertStylesAt) {
-          let entrypoint = element.attrs.find(a => a.name === 'entrypoint');
+          let entrypoint = element.attrs.find((a) => a.name === 'entrypoint');
           if (!entrypoint) {
-            throw new Error(`<${element.tagName}/> element in ${filename} is missing required entrypoint attribute`);
+            throw new Error(
+              `<${element.tagName}/> element in ${filename} is missing required entrypoint attribute`
+            );
           }
-          this.replaceCustomStyle(targets, stringInserter, element, entrypoint.value);
+          this.replaceCustomStyle(
+            targets,
+            stringInserter,
+            element,
+            entrypoint.value
+          );
         }
       } else if (element.tagName === 'link') {
-        if (element.attrs.some(a => a.name === 'rel' && a.value === 'stylesheet')) {
-          let href = element.attrs.find(a => a.name === 'href')?.value;
+        if (
+          element.attrs.some(
+            (a) => a.name === 'rel' && a.value === 'stylesheet'
+          )
+        ) {
+          let href = element.attrs.find((a) => a.name === 'href')?.value;
           if (href) {
             debug(`found stylesheet with href=%s`, href);
             this.insertStyles(targets, stringInserter, element, href);
@@ -137,29 +174,41 @@ export class Inserter extends Plugin {
       }
     });
 
-    let appScripts = [...targets.scripts].find(entry => entry.bundleName === 'app');
+    let appScripts = [...targets.scripts].find(
+      (entry) => entry.bundleName === 'app'
+    );
     if (appScripts && !appScripts.inserted) {
       if (this.options.insertScriptsAt) {
         throw new Error(
           `ember-auto-import cannot find <${this.options.insertScriptsAt} entrypoint="${appScripts.bundleName}"> in ${filename}.`
         );
       } else {
-        throw new Error(`ember-auto-import could not find a place to insert app scripts in ${filename}.`);
+        throw new Error(
+          `ember-auto-import could not find a place to insert app scripts in ${filename}.`
+        );
       }
     }
 
-    let appStyles = [...targets.styles.values()].find(entry => entry.bundleName === 'app');
+    let appStyles = [...targets.styles.values()].find(
+      (entry) => entry.bundleName === 'app'
+    );
     if (appStyles && !appStyles.inserted) {
       if (this.options.insertStylesAt) {
         throw new Error(
           `ember-auto-import cannot find <${this.options.insertStylesAt} entrypoint="${appStyles.bundleName}"> in ${filename}.`
         );
       } else {
-        throw new Error(`ember-auto-import could not find a place to insert app styles in ${filename}.`);
+        throw new Error(
+          `ember-auto-import could not find a place to insert app styles in ${filename}.`
+        );
       }
     }
 
-    outputFileSync(join(this.outputPath, filename), stringInserter.serialize(), 'utf8');
+    outputFileSync(
+      join(this.outputPath, filename),
+      stringInserter.serialize(),
+      'utf8'
+    );
   }
 
   private insertScripts(
@@ -174,7 +223,9 @@ export class Inserter extends Plugin {
         let { scriptChunks, bundleName } = entry;
         entry.inserted = true;
         debug(`inserting %s`, scriptChunks);
-        let insertedSrc = scriptChunks.map(chunk => `\n<script src="${this.chunkURL(chunk)}"></script>`).join('');
+        let insertedSrc = scriptChunks
+          .map((chunk) => `\n<script src="${this.chunkURL(chunk)}"></script>`)
+          .join('');
         if (fastbootInfo?.readsHTML && bundleName === 'app') {
           // lazy chunks are eager in fastboot because webpack's lazy
           // loading doesn't work in fastboot, because we share a single
@@ -183,10 +234,18 @@ export class Inserter extends Plugin {
           // them eager on the server anyway, so they're handled as part
           // of server startup.
           insertedSrc += this.bundler.buildResult.lazyAssets
-            .map(chunk => `\n<fastboot-script src="${this.chunkURL(chunk)}"></fastboot-script>`)
+            .map(
+              (chunk) =>
+                `\n<fastboot-script src="${this.chunkURL(
+                  chunk
+                )}"></fastboot-script>`
+            )
             .join('');
         }
-        stringInserter.insert(element.sourceCodeLocation!.endOffset, insertedSrc);
+        stringInserter.insert(
+          element.sourceCodeLocation!.endOffset,
+          insertedSrc
+        );
       }
     }
   }
@@ -207,7 +266,9 @@ export class Inserter extends Plugin {
       let { scriptChunks } = entry;
       entry.inserted = true;
       debug(`inserting %s`, scriptChunks);
-      let tags = scriptChunks.map(chunk => this.scriptFromCustomElement(element, chunk));
+      let tags = scriptChunks.map((chunk) =>
+        this.scriptFromCustomElement(element, chunk)
+      );
       if (fastbootInfo?.readsHTML && bundleName === 'app') {
         // lazy chunks are eager in fastboot because webpack's lazy
         // loading doesn't work in fastboot, because we share a single
@@ -216,7 +277,7 @@ export class Inserter extends Plugin {
         // them eager on the server anyway, so they're handled as part
         // of server startup.
         tags = tags.concat(
-          this.bundler.buildResult.lazyAssets.map(chunk =>
+          this.bundler.buildResult.lazyAssets.map((chunk) =>
             this.scriptFromCustomElement(element, chunk, 'fastboot-script')
           )
         );
@@ -240,12 +301,18 @@ export class Inserter extends Plugin {
       let { styleChunks } = entry;
       entry.inserted = true;
       debug(`inserting %s`, styleChunks);
-      let tags = styleChunks.map(chunk => this.styleFromCustomElement(element, chunk));
+      let tags = styleChunks.map((chunk) =>
+        this.styleFromCustomElement(element, chunk)
+      );
       stringInserter.insert(loc.endOffset, tags.join('\n'));
     }
   }
 
-  private scriptFromCustomElement(element: parse5.Element, chunk: string, tag = 'script') {
+  private scriptFromCustomElement(
+    element: parse5.Element,
+    chunk: string,
+    tag = 'script'
+  ) {
     let output = `<${tag} src="${this.chunkURL(chunk)}"`;
     for (let { name, value } of element.attrs) {
       if (name !== 'entrypoint') {
@@ -273,7 +340,12 @@ export class Inserter extends Plugin {
     return output;
   }
 
-  private insertStyles(targets: Targets, stringInserter: StringInserter, element: parse5.Element, href: string) {
+  private insertStyles(
+    targets: Targets,
+    stringInserter: StringInserter,
+    element: parse5.Element,
+    href: string
+  ) {
     for (let entry of targets.styles) {
       if (entry.afterFile && href.endsWith(entry.afterFile)) {
         let { styleChunks } = entry;
@@ -281,7 +353,12 @@ export class Inserter extends Plugin {
         debug(`inserting %s`, styleChunks);
         stringInserter.insert(
           element.sourceCodeLocation!.endOffset,
-          styleChunks.map(chunk => `\n<link rel="stylesheet" href="${this.chunkURL(chunk)}"/>`).join('')
+          styleChunks
+            .map(
+              (chunk) =>
+                `\n<link rel="stylesheet" href="${this.chunkURL(chunk)}"/>`
+            )
+            .join('')
         );
       }
     }
@@ -310,9 +387,15 @@ export class Inserter extends Plugin {
       return { readsHTML: true };
     } else {
       if (!pkg.fastboot.manifest?.vendorFiles) {
-        throw new Error(`bug: ember-auto-import can't find the fastboot manifest vendorFiles`);
+        throw new Error(
+          `bug: ember-auto-import can't find the fastboot manifest vendorFiles`
+        );
       }
-      return { pkg, readsHTML: false, vendorFiles: pkg.fastboot.manifest.vendorFiles };
+      return {
+        pkg,
+        readsHTML: false,
+        vendorFiles: pkg.fastboot.manifest.vendorFiles,
+      };
     }
   }
 
@@ -320,7 +403,7 @@ export class Inserter extends Plugin {
     let scripts: ScriptTarget[] = [];
     let styles: StyleTarget[] = [];
     for (let [bundleName, assets] of this.bundler.buildResult.entrypoints) {
-      let scriptChunks = assets.filter(a => a.endsWith('.js'));
+      let scriptChunks = assets.filter((a) => a.endsWith('.js'));
       if (scriptChunks.length > 0) {
         let afterFile: string | undefined;
         if (this.config.isBuiltInBundleName(bundleName)) {
@@ -333,7 +416,7 @@ export class Inserter extends Plugin {
           inserted: false,
         });
       }
-      let styleChunks = assets.filter(a => a.endsWith('.css'));
+      let styleChunks = assets.filter((a) => a.endsWith('.css'));
       if (styleChunks.length > 0) {
         let afterFile: string | undefined;
         if (this.config.isBuiltInBundleName(bundleName)) {
@@ -373,7 +456,9 @@ class StringInserter {
   }
   serialize(): string {
     let output: string[] = [];
-    let mutations = this.mutations.slice().sort((a, b) => a.location - b.location);
+    let mutations = this.mutations
+      .slice()
+      .sort((a, b) => a.location - b.location);
     let cursor = 0;
     while (mutations.length > 0) {
       let nextMutation = mutations.shift()!;

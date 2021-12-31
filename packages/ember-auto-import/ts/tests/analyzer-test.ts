@@ -3,14 +3,25 @@ import 'qunit-assertions-extra';
 import broccoli, { Builder } from 'broccoli';
 import { UnwatchedDir } from 'broccoli-source';
 import quickTemp from 'quick-temp';
-import { ensureDirSync, readFileSync, outputFileSync, removeSync, existsSync } from 'fs-extra';
+import {
+  ensureDirSync,
+  readFileSync,
+  outputFileSync,
+  removeSync,
+  existsSync,
+} from 'fs-extra';
 import { join } from 'path';
 import type Package from '../package';
 import Analyzer from '../analyzer';
 // @ts-ignore
 import broccoliBabel from 'broccoli-babel-transpiler';
 import type { TransformOptions } from '@babel/core';
-import { deserialize, ImportSyntax, serialize, MARKER } from '../analyzer-syntax';
+import {
+  deserialize,
+  ImportSyntax,
+  serialize,
+  MARKER,
+} from '../analyzer-syntax';
 import { ReadStream } from 'fs';
 
 const { module: Qmodule, test } = QUnit;
@@ -57,7 +68,10 @@ Qmodule('analyzer', function (hooks) {
     outputFileSync(join(upstream, 'sample.js'), original);
     await builder.build();
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.ok(content.endsWith(original), `${content} should end with ${original}`);
+    assert.ok(
+      content.endsWith(original),
+      `${content} should end with ${original}`
+    );
   });
 
   test('created file passes through', async function (assert) {
@@ -66,7 +80,10 @@ Qmodule('analyzer', function (hooks) {
     outputFileSync(join(upstream, 'sample.js'), original);
     await builder.build();
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.ok(content.endsWith(original), `${content} should end with ${original}`);
+    assert.ok(
+      content.endsWith(original),
+      `${content} should end with ${original}`
+    );
   });
 
   test('updated file passes through', async function (assert) {
@@ -79,7 +96,10 @@ Qmodule('analyzer', function (hooks) {
     await builder.build();
 
     let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
-    assert.ok(content.endsWith(updated), `${content} should end with ${updated}`);
+    assert.ok(
+      content.endsWith(updated),
+      `${content} should end with ${updated}`
+    );
   });
 
   test('deleted file passes through', async function (assert) {
@@ -90,7 +110,10 @@ Qmodule('analyzer', function (hooks) {
     removeSync(join(upstream, 'sample.js'));
     await builder.build();
 
-    assert.ok(!existsSync(join(builder.outputPath, 'sample.js')), 'should not exist');
+    assert.ok(
+      !existsSync(join(builder.outputPath, 'sample.js')),
+      'should not exist'
+    );
   });
 
   test('imports discovered in created file', async function (assert) {
@@ -212,7 +235,10 @@ Qmodule('analyzer', function (hooks) {
     babelConfig.plugins!.push(
       // this is here because Ember does this and we want to make sure we
       // coexist with it
-      [require.resolve('@babel/plugin-transform-modules-amd'), { noInterop: true }]
+      [
+        require.resolve('@babel/plugin-transform-modules-amd'),
+        { noInterop: true },
+      ]
     );
     let original = "export { default } from 'some-package';";
     outputFileSync(join(upstream, 'sample.js'), original);
@@ -245,7 +271,9 @@ Qmodule('analyzer', function (hooks) {
 
   type LiteralExample = [string, string];
   type TemplateExample = [string, string[], string[]];
-  function isLiteralExample(exp: LiteralExample | TemplateExample): exp is LiteralExample {
+  function isLiteralExample(
+    exp: LiteralExample | TemplateExample
+  ): exp is LiteralExample {
     return exp.length === 2;
   }
 
@@ -272,15 +300,35 @@ Qmodule('analyzer', function (hooks) {
     ['import(`https://example.com`);', 'https://example.com'],
     ['import(`//example.com`);', '//example.com'],
     ['import(`http://${domain}`);', ['http://', ''], ['domain']],
-    ['import(`https://example.com/${path}`);', ['https://example.com/', ''], ['path']],
-    ['import(`data:application/javascript;base64,${code}`);', ['data:application/javascript;base64,', ''], ['code']],
+    [
+      'import(`https://example.com/${path}`);',
+      ['https://example.com/', ''],
+      ['path'],
+    ],
+    [
+      'import(`data:application/javascript;base64,${code}`);',
+      ['data:application/javascript;base64,', ''],
+      ['code'],
+    ],
     ['import(`//${domain}`);', ['//', ''], ['domain']],
     ['import(`alpha/${foo}`);', ['alpha/', ''], ['foo']],
     ['import(`@beta/thing/${foo}`);', ['@beta/thing/', ''], ['foo']],
     ['import(`alpha/${foo}/component`);', ['alpha/', '/component'], ['foo']],
-    ['import(`@beta/thing/${foo}/component`);', ['@beta/thing/', '/component'], ['foo']],
-    ['import(`alpha/${foo}/component/${bar}`);', ['alpha/', '/component/', ''], ['foo', 'bar']],
-    ['import(`@beta/thing/${foo}/component/${bar}`);', ['@beta/thing/', '/component/', ''], ['foo', 'bar']],
+    [
+      'import(`@beta/thing/${foo}/component`);',
+      ['@beta/thing/', '/component'],
+      ['foo'],
+    ],
+    [
+      'import(`alpha/${foo}/component/${bar}`);',
+      ['alpha/', '/component/', ''],
+      ['foo', 'bar'],
+    ],
+    [
+      'import(`@beta/thing/${foo}/component/${bar}`);',
+      ['@beta/thing/', '/component/', ''],
+      ['foo', 'bar'],
+    ],
   ];
 
   for (let example of legalDynamicExamples) {
@@ -324,16 +372,35 @@ Qmodule('analyzer', function (hooks) {
     ['importSync(`@theta/thing/mod`);', '@theta/thing/mod'],
     ['importSync(`alpha/${foo}`);', ['alpha/', ''], ['foo']],
     ['importSync(`@beta/thing/${foo}`);', ['@beta/thing/', ''], ['foo']],
-    ['importSync(`alpha/${foo}/component`);', ['alpha/', '/component'], ['foo']],
-    ['importSync(`@beta/thing/${foo}/component`);', ['@beta/thing/', '/component'], ['foo']],
-    ['importSync(`alpha/${foo}/component/${bar}`);', ['alpha/', '/component/', ''], ['foo', 'bar']],
-    ['importSync(`@beta/thing/${foo}/component/${bar}`);', ['@beta/thing/', '/component/', ''], ['foo', 'bar']],
+    [
+      'importSync(`alpha/${foo}/component`);',
+      ['alpha/', '/component'],
+      ['foo'],
+    ],
+    [
+      'importSync(`@beta/thing/${foo}/component`);',
+      ['@beta/thing/', '/component'],
+      ['foo'],
+    ],
+    [
+      'importSync(`alpha/${foo}/component/${bar}`);',
+      ['alpha/', '/component/', ''],
+      ['foo', 'bar'],
+    ],
+    [
+      'importSync(`@beta/thing/${foo}/component/${bar}`);',
+      ['@beta/thing/', '/component/', ''],
+      ['foo', 'bar'],
+    ],
   ];
 
   for (let example of legalImportSyncExamples) {
     let [src] = example;
     test(`importSync example: ${src}`, async function (assert) {
-      outputFileSync(join(upstream, 'sample.js'), `import { importSync } from '@embroider/macros'; ${src}`);
+      outputFileSync(
+        join(upstream, 'sample.js'),
+        `import { importSync } from '@embroider/macros'; ${src}`
+      );
       await builder.build();
       if (isLiteralExample(example)) {
         assert.deepEqual(analyzer.imports, [
@@ -386,7 +453,10 @@ Qmodule('analyzer', function (hooks) {
       await builder.build();
       throw new Error(`expected not to get here, build was supposed to fail`);
     } catch (err) {
-      assert.contains(err.message, 'import() is only allowed to contain string literals or template string literals');
+      assert.contains(
+        err.message,
+        'import() is only allowed to contain string literals or template string literals'
+      );
     }
   });
 });
@@ -454,14 +524,19 @@ Qmodule('analyzer-deserialize', function () {
   });
 
   test('meta found in one chunk', async function (assert) {
-    let result = await deserialize(source(['stuff stuff stuff ' + serialize(sampleData())]));
+    let result = await deserialize(
+      source(['stuff stuff stuff ' + serialize(sampleData())])
+    );
     assert.deepEqual(result, sampleData());
   });
 
   test('meta spans two chunks', async function (assert) {
     let meta = serialize(sampleData());
     let result = await deserialize(
-      source([`stuff stuff stuff ${meta.slice(0, MARKER.length + 2)}`, meta.slice(MARKER.length + 2)])
+      source([
+        `stuff stuff stuff ${meta.slice(0, MARKER.length + 2)}`,
+        meta.slice(MARKER.length + 2),
+      ])
     );
     assert.deepEqual(result, sampleData());
   });
@@ -479,7 +554,10 @@ Qmodule('analyzer-deserialize', function () {
   });
 
   test('leaves remaining chunks unconsumed after finding meta', async function (assert) {
-    let s = source([`stuff stuff stuff ${serialize(sampleData())} other stuff`, 'extra']);
+    let s = source([
+      `stuff stuff stuff ${serialize(sampleData())} other stuff`,
+      'extra',
+    ]);
     let result = await deserialize(s);
     assert.deepEqual(result, sampleData());
     assert.equal((s as any).chunksRemaining, 1);
@@ -487,19 +565,25 @@ Qmodule('analyzer-deserialize', function () {
 
   test('start marker split between chunks', async function (assert) {
     let meta = serialize(sampleData());
-    let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, 2)}`, meta.slice(2)]));
+    let result = await deserialize(
+      source([`stuff stuff stuff ${meta.slice(0, 2)}`, meta.slice(2)])
+    );
     assert.deepEqual(result, sampleData());
   });
 
   test('false start marker at end of chunk', async function (assert) {
     let meta = serialize(sampleData());
-    let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, 2)}`, `other${meta}`]));
+    let result = await deserialize(
+      source([`stuff stuff stuff ${meta.slice(0, 2)}`, `other${meta}`])
+    );
     assert.deepEqual(result, sampleData());
   });
 
   test('end marker split between chunks', async function (assert) {
     let meta = serialize(sampleData());
-    let result = await deserialize(source([`stuff stuff stuff ${meta.slice(0, -2)}`, meta.slice(-2)]));
+    let result = await deserialize(
+      source([`stuff stuff stuff ${meta.slice(0, -2)}`, meta.slice(-2)])
+    );
     assert.deepEqual(result, sampleData());
   });
 
@@ -509,9 +593,15 @@ Qmodule('analyzer-deserialize', function () {
       meta.slice(MARKER.length, -MARKER.length).indexOf(MARKER[0]) > -1,
       'serialized sample data must contain first character of MARKER somewhere between boundary markers for test to have meaning'
     );
-    const slicePos = meta.slice(MARKER.length, -MARKER.length).indexOf(MARKER[0]) + MARKER.length + 1;
+    const slicePos =
+      meta.slice(MARKER.length, -MARKER.length).indexOf(MARKER[0]) +
+      MARKER.length +
+      1;
     const result = await deserialize(
-      source([`stuff stuff stuff ${meta.slice(0, slicePos)}`, `${meta.slice(slicePos)} stuff stuff`])
+      source([
+        `stuff stuff stuff ${meta.slice(0, slicePos)}`,
+        `${meta.slice(slicePos)} stuff stuff`,
+      ])
     );
     assert.deepEqual(result, sampleData());
   });

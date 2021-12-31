@@ -38,7 +38,7 @@ appScenarios
           'application.js': APPLICATION_JS,
         },
         templates: {
-          'application.hbs': '<div data-test-import-result>{{moduleResult}}</div>',
+          'application.hbs': '<div data-test-import-result>{{this.moduleResult}}</div>',
         },
       },
       tests: {
