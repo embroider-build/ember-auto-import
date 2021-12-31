@@ -71,7 +71,7 @@ appScenarios
         templates: {
           components: {
             'sample-addon-inner-lib.hbs': `
-              <div data-test="sample-addon-inner-lib">{{message}}</div>
+              <div data-test="sample-addon-inner-lib">{{this.message}}</div>
             `,
           },
         },
@@ -140,9 +140,9 @@ appScenarios
         },
         templates: {
           'index.hbs': `
-            <div data-test="own-inner-lib">{{ownInnerLib}}</div>
-            <div data-test="own-inner-lib2">{{ownInnerLib2}}</div>
-            <div data-test="own-inner-lib2-named">{{ownInnerLib2Named}}</div>
+            <div data-test="own-inner-lib">{{this.ownInnerLib}}</div>
+            <div data-test="own-inner-lib2">{{this.ownInnerLib2}}</div>
+            <div data-test="own-inner-lib2-named">{{this.ownInnerLib2Named}}</div>
             {{sample-addon-inner-lib}}
           `,
         },

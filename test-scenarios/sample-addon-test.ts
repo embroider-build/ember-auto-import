@@ -40,10 +40,10 @@ addonScenarios
         templates: {
           components: {
             'from-sample-addon.hbs': `
-              <div data-test="from-sample-addon">{{message}}</div>
+              <div data-test="from-sample-addon">{{this.message}}</div>
             `,
             'sample-addon-inner-lib.hbs': `
-              <div data-test="sample-addon-inner-lib">{{message}}</div>
+              <div data-test="sample-addon-inner-lib">{{this.message}}</div>
             `,
           },
         },
@@ -97,7 +97,7 @@ addonScenarios
             },
             templates: {
               'index.hbs': `
-                <div data-test="dummy-app-message">{{message}}</div>
+                <div data-test="dummy-app-message">{{this.message}}</div>
               `,
             },
           },

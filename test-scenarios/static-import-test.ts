@@ -74,10 +74,10 @@ function staticImportTest(project: Project) {
         'application.hbs': `{{hello-world}}`,
         components: {
           'hello-world.hbs': `
-              <div class="hello-world">{{formattedDate}}</div>
+              <div class="hello-world">{{this.formattedDate}}</div>
               <div class="lodash">{{#if lodashPresent}}yes{{else}}no{{/if}}</div>
-              <div class="aliased">{{aliasedResult}}</div>
-              <div class="scoped">{{fromScoped}}</div>
+              <div class="aliased">{{this.aliasedResult}}</div>
+              <div class="scoped">{{this.fromScoped}}</div>
             `,
         },
       },
