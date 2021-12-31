@@ -16,7 +16,7 @@ supportMatrix(Scenarios.fromDir(dirname(require.resolve('ember-auto-import/packa
         app = await scenario.prepare();
       });
       test('npm run test', async function (assert) {
-        let result = await app.execute('npm run test');
+        let result = await app.execute('npm run test:ember');
         assert.equal(result.exitCode, 0, result.output);
       });
       test('npm run node:test', async function (assert) {
