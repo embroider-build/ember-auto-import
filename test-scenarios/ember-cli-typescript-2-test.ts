@@ -5,6 +5,11 @@ import QUnit from 'qunit';
 const { module: Qmodule, test } = QUnit;
 
 appScenarios
+  // this gets tested only on the old "lts" scenario and the "ember3" scenario
+  // because these dependencies don't work on ember >= 4
+  .skip('release')
+  .skip('beta')
+  .skip('canary')
   .map('ember-cli-typescript-2', project => {
     let aDependency = new Project({
       files: {

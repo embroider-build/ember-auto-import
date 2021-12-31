@@ -25,6 +25,7 @@ if (
   );
 }
 
+// this scenario represents the oldest Ember LTS we support
 async function lts(project: Project) {
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-lts' });
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-lts' });
@@ -74,6 +75,13 @@ async function lts(project: Project) {
   }
 }
 
+// this scenario represents the last Ember 3.x release
+async function ember3(project: Project) {
+  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-3' });
+  project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-3' });
+}
+
+// the current ember release
 async function release(project: Project) {
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-latest' });
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-latest' });
@@ -95,6 +103,7 @@ async function release(project: Project) {
 export function supportMatrix(scenarios: Scenarios) {
   return scenarios.expand({
     lts,
+    ember3,
     release,
     // temporarily disabling beta and canary
     // beta,
