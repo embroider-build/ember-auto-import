@@ -87,27 +87,25 @@ async function release(project: Project) {
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-latest' });
 }
 
-// async function beta(project: Project) {
-//   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-beta' });
-//   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-beta' });
-// }
+async function beta(project: Project) {
+  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-beta' });
+  project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-beta' });
+}
 
-// async function canary(project: Project) {
-//   // ember-cli canary is not aliased in our package.json, because NPM doesn't support
-//   // aliasing of non-registry deps
-//   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli' });
-//   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-canary' });
-//   project.linkDevDependency('ember-resolver', { baseDir: __dirname, resolveName: 'newer-resolver' });
-// }
+async function canary(project: Project) {
+  // ember-cli canary is not aliased in our package.json, because NPM doesn't support
+  // aliasing of non-registry deps
+  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli' });
+  project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-canary' });
+}
 
 export function supportMatrix(scenarios: Scenarios) {
   return scenarios.expand({
     lts,
     ember3,
     release,
-    // temporarily disabling beta and canary
-    // beta,
-    // canary,
+    beta,
+    canary,
   });
 }
 
