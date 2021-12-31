@@ -71,5 +71,5 @@ jobs:
             ${{ runner.os }}-node-
       - run: npm install
       - name: test
-        run: 'npm run test -- --filter targets-transpiled:'
+        run: 'npm run test -- --filter browser-targets-transpiled:'
         working-directory: test-scenarios

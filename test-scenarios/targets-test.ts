@@ -1,10 +1,11 @@
 import merge from 'lodash/merge';
-import { baseApp } from './scenarios';
-import { PreparedApp, Scenarios } from 'scenario-tester';
+import { appScenarios } from './scenarios';
+import { PreparedApp } from 'scenario-tester';
 import QUnit from 'qunit';
 const { module: Qmodule, test } = QUnit;
 
-Scenarios.fromProject(baseApp)
+appScenarios
+  .only('ember3')
   .map('browser-targets', project => {
     project.addDevDependency('needs-babel', {
       files: {
