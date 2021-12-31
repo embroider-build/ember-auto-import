@@ -75,7 +75,7 @@ function staticImportTest(project: Project) {
         components: {
           'hello-world.hbs': `
               <div class="hello-world">{{this.formattedDate}}</div>
-              <div class="lodash">{{#if lodashPresent}}yes{{else}}no{{/if}}</div>
+              <div class="lodash">{{#if this.lodashPresent}}yes{{else}}no{{/if}}</div>
               <div class="aliased">{{this.aliasedResult}}</div>
               <div class="scoped">{{this.fromScoped}}</div>
             `,
