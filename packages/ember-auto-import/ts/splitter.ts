@@ -130,19 +130,31 @@ export default class Splitter {
     let [leadingQuasi] = imp.cookedQuasis;
 
     let target = imp.package.resolve(leadingQuasi, imp.path, true);
+
     if (!target) {
-      throw new Error(`ember-auto-import is unable to handle ${leadingQuasi}`);
+      throw new Error(
+        `ember-auto-import is unable to handle '${leadingQuasi}'. ` +
+          `The attempted import of '${imp.cookedQuasis.join(
+            ''
+          )}' is located in ${imp.path}`
+      );
     }
 
     if (target.type === 'local') {
       throw new Error(
-        `ember-auto-import does not support dynamic relative imports. "${leadingQuasi}" is relative. To make this work, you need to upgrade to Embroider.`
+        `ember-auto-import does not support dynamic relative imports. "${leadingQuasi}" is relative. To make this work, you need to upgrade to Embroider. ` +
+          `The attempted import of '${imp.cookedQuasis.join(
+            ''
+          )}' is located in ${imp.path}`
       );
     }
 
     if (target.type === 'imprecise') {
       throw new Error(
-        `Dynamic imports must target unambiguous package names. ${leadingQuasi} is ambiguous`
+        `Dynamic imports must target unambiguous package names. '${leadingQuasi}' is ambiguous. ` +
+          `The attempted import of '${imp.cookedQuasis.join(
+            ''
+          )}' is located in ${imp.path}`
       );
     }
 
