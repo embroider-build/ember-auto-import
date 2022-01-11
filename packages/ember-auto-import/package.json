@@ -37,7 +37,7 @@
     "@babel/plugin-proposal-class-properties": "^7.16.7",
     "@babel/plugin-proposal-decorators": "^7.16.7",
     "@babel/preset-env": "^7.16.7",
-    "@embroider/shared-internals": "^0.49.0",
+    "@embroider/shared-internals": "^0.50.0",
     "babel-loader": "^8.0.6",
     "babel-plugin-ember-modules-api-polyfill": "^3.5.0",
     "babel-plugin-htmlbars-inline-precompile": "^5.2.1",
