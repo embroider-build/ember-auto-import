@@ -11,6 +11,7 @@ import {
 } from '@embroider/shared-internals';
 import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
+import { MacrosConfig } from '@embroider/macros/src/node';
 
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
@@ -79,6 +80,7 @@ export default class Package {
   private isDeveloping: boolean;
   private pkgGeneration: number;
   private pkgCache: any;
+  private macrosConfig: MacrosConfig | undefined;
 
   static lookupParentOf(child: AddonInstance): Package {
     if (!parentCache.has(child)) {
@@ -105,6 +107,7 @@ export default class Package {
       this.isAddon = false;
       this.isDeveloping = true;
       this._options = child.app.options;
+      this.macrosConfig = MacrosConfig.for(child.app);
     }
 
     this._parent = child.parent;
@@ -470,8 +473,9 @@ export default class Package {
     if (this.isAddon) {
       throw new Error(`Only the app can generate auto-import's babel config`);
     }
-    // cast here is safe because we just checked isAddon is false
+    // casts here are safe because we just checked isAddon is false
     let parent = this._parent as Project;
+    let macrosConfig = this.macrosConfig!;
 
     let emberSource = parent.addons.find(
       (addon) => addon.name === 'ember-source'
@@ -509,6 +513,7 @@ export default class Package {
           },
         },
       ],
+      ...macrosConfig.babelPluginConfig(),
     ];
 
     if (ensureModuleApiPolyfill) {

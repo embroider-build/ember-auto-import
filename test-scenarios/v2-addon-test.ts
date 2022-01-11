@@ -184,12 +184,64 @@ function buildInnerV2Addon(name: string) {
   return addon;
 }
 
+function buildV2AddonWithMacros() {
+  let addon = new Project('macro-using-addon', {
+    files: {
+      'addon-main.js': `
+        const { addonV1Shim } = require('@embroider/addon-shim');
+        module.exports = addonV1Shim(__dirname);
+      `,
+      dist: {
+        'index.js': `
+          import { getOwnConfig } from '@embroider/macros';
+          export function macroExample() {
+            return getOwnConfig().message;
+          }
+        `,
+      },
+    },
+  });
+  addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  addon.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.js',
+  };
+  addon.pkg.exports = {
+    '.': './dist/index.js',
+  };
+  return addon;
+}
+
 let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
   project.addDevDependency(buildV2Addon());
   project.addDevDependency(buildIntermediateV1Addon());
   project.addDevDependency(buildV2AddonWithExports('fourth-v2-addon'));
+  project.addDevDependency(buildV2AddonWithMacros());
+
+  // apps don't necessarily need a directly dependency on @embroider/macros just
+  // because they have a v2 addon that contains some macros, but in this test
+  // the app is going to explicitly pass some macro config, which is why it
+  // needs this dependency.
+  project.linkDevDependency('@embroider/macros', { baseDir: __dirname });
 
   merge(project.files, {
+    'ember-cli-build.js': `
+      const EmberApp = require('ember-cli/lib/broccoli/ember-app');
+      module.exports = function (defaults) {
+        let app = new EmberApp(defaults, {
+          '@embroider/macros': {
+            setConfig: {
+              'macro-using-addon': {
+                message: 'hello from the app',
+              }
+            }
+          }
+        });
+        return app.toTree();
+      };
+    `,
     app: {
       lib: {
         'exercise.js': `
@@ -200,6 +252,7 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
               return helloUtil();
             }
             export { usePlainDep, useInnerV1Addon, useInnerV2Addon, fourthMain, fourthSecondary };
+            export { macroExample } from 'macro-using-addon';
           `,
       },
       helpers: {
@@ -309,6 +362,15 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
               });
             });
           `,
+        'macro-using-test.js': `
+          import { macroExample } from '@ef4/app-template/lib/exercise';
+          import { module, test } from 'qunit';
+          module('Unit | v2-addon with macros', function () {
+            test('the addon successully ran the macros', function(assert) {
+              assert.deepEqual(macroExample(), 'hello from the app');
+            });
+          });
+        `,
       },
     },
   });
