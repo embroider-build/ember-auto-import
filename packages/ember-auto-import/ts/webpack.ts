@@ -1,7 +1,7 @@
 import type { Configuration, Compiler, RuleSetRule, Stats } from 'webpack';
 import { join, dirname } from 'path';
 import { mergeWith, flatten, zip } from 'lodash';
-import { writeFileSync, realpathSync } from 'fs';
+import { writeFileSync, realpathSync, readFileSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies, ResolvedTemplateImport } from './splitter';
@@ -14,6 +14,7 @@ import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
+// import VirtualModulesPlugin from 'webpack-virtual-modules';
 
 const debug = makeDebug('ember-auto-import:webpack');
 
@@ -124,11 +125,23 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
     let entry: { [name: string]: string[] } = {};
     this.opts.bundles.names.forEach((bundle) => {
+      // Struggling to know what I'm supposed to be doing in here:
+      // "bundle" seems to just be a name, like "app", and seems to come
+      // console.log(`l: ${readFileSync(join(stagingDir, )).length}`);
+      // console.log(`${bundle}: ${readFileSync(join(stagingDir, `${bundle}.js`)).length}`);
+      // console.log(`l: ${readFileSync('l.js').length}`);
+      console.log(`${bundle}: ${readFileSync(`./${bundle}.js`).length}`);
       entry[bundle] = [
         join(stagingDir, 'l.js'),
         join(stagingDir, `${bundle}.js`),
       ];
     });
+
+    // let virtualModules = new VirtualModulesPlugin({
+    //   'node_modules/module-foo.js': 'module.exports = { foo: "foo" };',
+    //   'node_modules/module-bar.js': 'module.exports = { bar: "bar" };'
+    // });
+
     let config: Configuration = {
       mode:
         this.opts.environment === 'production' ? 'production' : 'development',
@@ -142,7 +155,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       // "moduleIds" (using the default moduleIds: "deterministic" option) would end up being
       // based on broccoli temp-directory paths, which aren't deterministic across builds, and would
       // hence cause output assets to also be non-deterministic.
-      context: stagingDir,
+      // context: stagingDir,
       performance: {
         hints: false,
       },
@@ -206,6 +219,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
       },
       node: false,
       externals: this.externalsHandler,
+      plugins: [
+        // virtualModules
+      ]
     };
 
     mergeConfig(
