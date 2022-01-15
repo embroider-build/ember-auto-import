@@ -1,7 +1,7 @@
 import type { Configuration, Compiler, RuleSetRule, Stats } from 'webpack';
 import { join, dirname } from 'path';
 import { mergeWith, flatten, zip } from 'lodash';
-import { writeFileSync, realpathSync, readFileSync } from 'fs';
+import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies, ResolvedTemplateImport } from './splitter';
@@ -134,8 +134,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
       // console.log(`l: ${readFileSync('l.js').length}`);
       // console.log(`${bundle}: ${readFileSync(`./${bundle}.js`).length}`);
       entry[bundle] = [
-        `./__ember_auto_import__/l.js`,
-        `./__ember_auto_import__/${bundle}.js`,
+        join(stagingDir, 'l.js'),
+        join(stagingDir, `${bundle}.js`),
+        // `./__ember_auto_import__/l.js`,
+        // `./__ember_auto_import__/${bundle}.js`,
       ];
     });
     let config: Configuration = {
@@ -215,9 +217,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
       },
       node: false,
       externals: this.externalsHandler,
-      plugins: [
-        this.virtualModules
-      ]
+      // plugins: [
+      //   this.virtualModules
+      // ]
     };
 
     mergeConfig(
@@ -319,35 +321,24 @@ export default class WebpackBundler extends Plugin implements Bundler {
     // });
 
     for (let [bundle, deps] of bundleDeps.entries()) {
-      virtualModulesHash[`./__ember_auto_import__/${bundle}.js`] = entryTemplate({
-        staticImports: deps.staticImports,
-        dynamicImports: deps.dynamicImports,
-        dynamicTemplateImports:
-          deps.dynamicTemplateImports.map(mapTemplateImports),
-        staticTemplateImports:
-          deps.staticTemplateImports.map(mapTemplateImports),
-        publicAssetURL: this.opts.publicAssetURL,
-      });
+      // virtualModulesHash[`./__ember_auto_import__/${bundle}.js`] = entryTemplate({
+      //   staticImports: deps.staticImports,
+      //   dynamicImports: deps.dynamicImports,
+      //   dynamicTemplateImports:
+      //     deps.dynamicTemplateImports.map(mapTemplateImports),
+      //   staticTemplateImports:
+      //     deps.staticTemplateImports.map(mapTemplateImports),
+      //   publicAssetURL: this.opts.publicAssetURL,
+      // });
 
-      // join(this.stagingDir, `${bundle}.js`),
-      //   entryTemplate({
-      //     staticImports: deps.staticImports,
-      //     dynamicImports: deps.dynamicImports,
-      //     dynamicTemplateImports:
-      //       deps.dynamicTemplateImports.map(mapTemplateImports),
-      //     staticTemplateImports:
-      //       deps.staticTemplateImports.map(mapTemplateImports),
-      //     publicAssetURL: this.opts.publicAssetURL,
-      //   })
-
-      // this.writeEntryFile(bundle, deps);
+      this.writeEntryFile(bundle, deps);
     }
 
-    virtualModulesHash[`./__ember_auto_import__/l.js`] = loader;
+    // virtualModulesHash[`./__ember_auto_import__/l.js`] = loader;
+    this.writeLoaderFile();
 
-    this.virtualModules = new VirtualModulesPlugin(virtualModulesHash);
+    // this.virtualModules = new VirtualModulesPlugin(virtualModulesHash);
 
-    // this.writeLoaderFile();
     this.linkDeps(bundleDeps);
     let stats = await this.runWebpack();
     this.lastBuildResult = this.summarizeStats(stats, bundleDeps);
