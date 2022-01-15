@@ -142,6 +142,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       splitter,
       environment: this.env,
       packages: this.packages,
+      appRoot: this.rootPackage.root,
       consoleWrite: this.consoleWrite,
       bundles: this.bundles,
       babelConfig: this.rootPackage.cleanBabelConfig(),

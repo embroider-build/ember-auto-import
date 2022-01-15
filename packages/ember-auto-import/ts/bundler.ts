@@ -14,6 +14,7 @@ export interface BundlerOptions {
   environment: 'development' | 'test' | 'production';
   splitter: Splitter;
   packages: Set<Package>;
+  appRoot: string;
   bundles: BundleConfig;
   babelConfig: TransformOptions;
   publicAssetURL: string | undefined;
