@@ -14,6 +14,7 @@ import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
+import VirtualModulesPlugin from 'webpack-virtual-modules';
 
 const debug = makeDebug('ember-auto-import:webpack');
 
@@ -88,6 +89,8 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   private lastBuildResult: BuildResult | undefined;
 
+  private virtualModules;
+
   constructor(priorTrees: InputNode[], private opts: BundlerOptions) {
     super(priorTrees, {
       persistentOutput: true,
@@ -127,8 +130,12 @@ export default class WebpackBundler extends Plugin implements Bundler {
       entry[bundle] = [
         join(stagingDir, 'l.js'),
         join(stagingDir, `${bundle}.js`),
+        // If I understand correctly, our virtual modules will need to go in here...
+        // `./__ember_auto_import__/l.js`,
+        // `./__ember_auto_import__/${bundle}.js`,
       ];
     });
+
     let config: Configuration = {
       mode:
         this.opts.environment === 'production' ? 'production' : 'development',
@@ -172,7 +179,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
         ),
       },
       module: {
-        noParse: (file: string) => file === join(stagingDir, 'l.js'),
+        // I guess webpack should also be prevented from parsing our virtual modules, so presumably we could
+        // filter them out like this?
+        noParse: (file: string) => file === join(stagingDir, 'l.js') || file === `./__ember_auto_import__/l.js`,
         rules: [
           this.babelRule(stagingDir),
           {
@@ -196,6 +205,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
       },
       node: false,
       externals: this.externalsHandler,
+      // Here we add our virtual modules as per https://github.com/sysgears/webpack-virtual-modules
+      plugins: [
+        this.virtualModules
+      ]
     };
 
     mergeConfig(
@@ -232,7 +245,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
         //
         // And we otherwise defer to the `skipBabel` setting as implemented by
         // `@embroider/shared-internals`.
-        return dirname(filename) !== stagingDir && shouldTranspile(filename);
+        return dirname(filename) !== stagingDir
+          // I presume we also don't want to apply babel to our virtual modules, which I guess could be done as follows...
+          && filename.indexOf('/__ember_auto_import__/')<0
+          && shouldTranspile(filename);
       },
       use: {
         loader: 'babel-loader-8',
@@ -292,10 +308,27 @@ export default class WebpackBundler extends Plugin implements Bundler {
   async build(): Promise<void> {
     let bundleDeps = await this.opts.splitter.deps();
 
+    // Build our virtual modules which we'll pass into the webpack plugins array
+    let virtualModulesHash = {};
+    for (let [bundle, deps] of bundleDeps.entries()) {
+      virtualModulesHash[`./__ember_auto_import__/${bundle}.js`] = entryTemplate({
+        staticImports: deps.staticImports,
+        dynamicImports: deps.dynamicImports,
+        dynamicTemplateImports:
+          deps.dynamicTemplateImports.map(mapTemplateImports),
+        staticTemplateImports:
+          deps.staticTemplateImports.map(mapTemplateImports),
+        publicAssetURL: this.opts.publicAssetURL,
+      });
+    }
+    virtualModulesHash[`./__ember_auto_import__/l.js`] = loader;
+    this.virtualModules = new VirtualModulesPlugin(virtualModulesHash);
+
     for (let [bundle, deps] of bundleDeps.entries()) {
       this.writeEntryFile(bundle, deps);
     }
     this.writeLoaderFile();
+
     this.linkDeps(bundleDeps);
     let stats = await this.runWebpack();
     this.lastBuildResult = this.summarizeStats(stats, bundleDeps);
@@ -394,6 +427,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
     packageName: string;
     packageRoot: string;
   }): void {
+    // I guess this is "part 2" of what stagingDir is being used for. Not yet sure how to replace this part...
     ensureDirSync(dirname(join(this.stagingDir, 'node_modules', packageName)));
     if (!existsSync(join(this.stagingDir, 'node_modules', packageName))) {
       symlinkSync(
