@@ -222,7 +222,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private babelRule(stagingDir: string): RuleSetRule {
-    let shouldTranspile = babelFilter(this.skipBabel());
+    let shouldTranspile = babelFilter(this.skipBabel(), this.opts.appRoot);
 
     return {
       test(filename: string) {
@@ -243,7 +243,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   @Memoize()
   private get externalsHandler(): Configuration['externals'] {
-    let packageCache = PackageCache.shared('ember-auto-import');
+    let packageCache = PackageCache.shared(
+      'ember-auto-import',
+      this.opts.appRoot
+    );
     return function (params, callback) {
       let { context, request } = params;
       if (!context || !request) {

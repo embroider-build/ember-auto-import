@@ -107,7 +107,7 @@ export default class Package {
       this.isAddon = false;
       this.isDeveloping = true;
       this._options = child.app.options;
-      this.macrosConfig = MacrosConfig.for(child.app);
+      this.macrosConfig = MacrosConfig.for(child.app, this.root);
     }
 
     this._parent = child.parent;
