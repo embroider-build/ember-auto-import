@@ -14,7 +14,7 @@ import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
-// import VirtualModulesPlugin from 'webpack-virtual-modules';
+import VirtualModulesPlugin from 'webpack-virtual-modules';
 
 const debug = makeDebug('ember-auto-import:webpack');
 
@@ -89,6 +89,8 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   private lastBuildResult: BuildResult | undefined;
 
+  private virtualModules;
+
   constructor(priorTrees: InputNode[], private opts: BundlerOptions) {
     super(priorTrees, {
       persistentOutput: true,
@@ -130,18 +132,12 @@ export default class WebpackBundler extends Plugin implements Bundler {
       // console.log(`l: ${readFileSync(join(stagingDir, )).length}`);
       // console.log(`${bundle}: ${readFileSync(join(stagingDir, `${bundle}.js`)).length}`);
       // console.log(`l: ${readFileSync('l.js').length}`);
-      console.log(`${bundle}: ${readFileSync(`./${bundle}.js`).length}`);
+      // console.log(`${bundle}: ${readFileSync(`./${bundle}.js`).length}`);
       entry[bundle] = [
-        join(stagingDir, 'l.js'),
-        join(stagingDir, `${bundle}.js`),
+        `./__ember_auto_import__/l.js`,
+        `./__ember_auto_import__/${bundle}.js`,
       ];
     });
-
-    // let virtualModules = new VirtualModulesPlugin({
-    //   'node_modules/module-foo.js': 'module.exports = { foo: "foo" };',
-    //   'node_modules/module-bar.js': 'module.exports = { bar: "bar" };'
-    // });
-
     let config: Configuration = {
       mode:
         this.opts.environment === 'production' ? 'production' : 'development',
@@ -220,7 +216,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       node: false,
       externals: this.externalsHandler,
       plugins: [
-        // virtualModules
+        this.virtualModules
       ]
     };
 
@@ -315,10 +311,43 @@ export default class WebpackBundler extends Plugin implements Bundler {
   async build(): Promise<void> {
     let bundleDeps = await this.opts.splitter.deps();
 
+    let virtualModulesHash = {};
+
+    // let virtualModules = new VirtualModulesPlugin({
+    //   'node_modules/module-foo.js': 'module.exports = { foo: "foo" };',
+    //   'node_modules/module-bar.js': 'module.exports = { bar: "bar" };'
+    // });
+
     for (let [bundle, deps] of bundleDeps.entries()) {
-      this.writeEntryFile(bundle, deps);
+      virtualModulesHash[`./__ember_auto_import__/${bundle}.js`] = entryTemplate({
+        staticImports: deps.staticImports,
+        dynamicImports: deps.dynamicImports,
+        dynamicTemplateImports:
+          deps.dynamicTemplateImports.map(mapTemplateImports),
+        staticTemplateImports:
+          deps.staticTemplateImports.map(mapTemplateImports),
+        publicAssetURL: this.opts.publicAssetURL,
+      });
+
+      // join(this.stagingDir, `${bundle}.js`),
+      //   entryTemplate({
+      //     staticImports: deps.staticImports,
+      //     dynamicImports: deps.dynamicImports,
+      //     dynamicTemplateImports:
+      //       deps.dynamicTemplateImports.map(mapTemplateImports),
+      //     staticTemplateImports:
+      //       deps.staticTemplateImports.map(mapTemplateImports),
+      //     publicAssetURL: this.opts.publicAssetURL,
+      //   })
+
+      // this.writeEntryFile(bundle, deps);
     }
-    this.writeLoaderFile();
+
+    virtualModulesHash[`./__ember_auto_import__/l.js`] = loader;
+
+    this.virtualModules = new VirtualModulesPlugin(virtualModulesHash);
+
+    // this.writeLoaderFile();
     this.linkDeps(bundleDeps);
     let stats = await this.runWebpack();
     this.lastBuildResult = this.summarizeStats(stats, bundleDeps);
