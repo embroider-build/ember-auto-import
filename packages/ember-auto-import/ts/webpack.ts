@@ -14,9 +14,11 @@ import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
-import VirtualModulesPlugin from 'webpack-virtual-modules';
 
 const debug = makeDebug('ember-auto-import:webpack');
+
+var VirtualModulesPlugin = require('webpack-virtual-modules');
+var webpack = require('webpack');
 
 registerHelper('js-string-escape', jsStringEscape);
 registerHelper('join', function (list, connector) {
@@ -127,33 +129,19 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
     let entry: { [name: string]: string[] } = {};
     this.opts.bundles.names.forEach((bundle) => {
-      // Struggling to know what I'm supposed to be doing in here:
-      // "bundle" seems to just be a name, like "app", and seems to come
-      // console.log(`l: ${readFileSync(join(stagingDir, )).length}`);
-      // console.log(`${bundle}: ${readFileSync(join(stagingDir, `${bundle}.js`)).length}`);
-      // console.log(`l: ${readFileSync('l.js').length}`);
-      // console.log(`${bundle}: ${readFileSync(`./${bundle}.js`).length}`);
       entry[bundle] = [
         join(stagingDir, 'l.js'),
         join(stagingDir, `${bundle}.js`),
+        // If I understand correctly, our virtual modules will need to go in here...
         // `./__ember_auto_import__/l.js`,
         // `./__ember_auto_import__/${bundle}.js`,
       ];
     });
+
     let config: Configuration = {
       mode:
         this.opts.environment === 'production' ? 'production' : 'development',
       entry,
-      // Pursuant to the webpack docs (https://webpack.js.org/configuration/entry-context/#context),
-      // we follow the recommendation to set the context, i.e. the absolute path for resolving
-      // entry points and loaders from the configuration. By doing this, the config becomes
-      // independent of the current working directory, and importantly ensures that we get DETERMINISTIC
-      // builds (i.e. produced assets have invariant content across repeated identical builds).
-      // If we didn't do this, the module names that webpack considers for computing the deterministic
-      // "moduleIds" (using the default moduleIds: "deterministic" option) would end up being
-      // based on broccoli temp-directory paths, which aren't deterministic across builds, and would
-      // hence cause output assets to also be non-deterministic.
-      // context: stagingDir,
       performance: {
         hints: false,
       },
@@ -193,7 +181,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         ),
       },
       module: {
-        noParse: (file: string) => file === join(stagingDir, 'l.js'),
+        noParse: (file: string) => file === join(stagingDir, 'l.js') || file === `./__ember_auto_import__/l.js`,
         rules: [
           this.babelRule(stagingDir),
           {
@@ -217,9 +205,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
       },
       node: false,
       externals: this.externalsHandler,
-      // plugins: [
-      //   this.virtualModules
-      // ]
+      plugins: [
+        this.virtualModules
+      ]
     };
 
     mergeConfig(
@@ -256,7 +244,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
         //
         // And we otherwise defer to the `skipBabel` setting as implemented by
         // `@embroider/shared-internals`.
-        return dirname(filename) !== stagingDir && shouldTranspile(filename);
+        return dirname(filename) !== stagingDir
+          && filename.indexOf('/__ember_auto_import__/')<0
+          && shouldTranspile(filename);
       },
       use: {
         loader: 'babel-loader-8',
@@ -311,33 +301,30 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   async build(): Promise<void> {
+    // This runs BEFORE our setup() method above
+
     let bundleDeps = await this.opts.splitter.deps();
 
+    // Build our virtual modules which we'll pass into the webpack plugins array
     let virtualModulesHash = {};
-
-    // let virtualModules = new VirtualModulesPlugin({
-    //   'node_modules/module-foo.js': 'module.exports = { foo: "foo" };',
-    //   'node_modules/module-bar.js': 'module.exports = { bar: "bar" };'
-    // });
+    for (let [bundle, deps] of bundleDeps.entries()) {
+      virtualModulesHash[`./__ember_auto_import__/${bundle}.js`] = entryTemplate({
+        staticImports: deps.staticImports,
+        dynamicImports: deps.dynamicImports,
+        dynamicTemplateImports:
+          deps.dynamicTemplateImports.map(mapTemplateImports),
+        staticTemplateImports:
+          deps.staticTemplateImports.map(mapTemplateImports),
+        publicAssetURL: this.opts.publicAssetURL,
+      });
+    }
+    virtualModulesHash[`./__ember_auto_import__/l.js`] = loader;
+    this.virtualModules = new VirtualModulesPlugin(virtualModulesHash);
 
     for (let [bundle, deps] of bundleDeps.entries()) {
-      // virtualModulesHash[`./__ember_auto_import__/${bundle}.js`] = entryTemplate({
-      //   staticImports: deps.staticImports,
-      //   dynamicImports: deps.dynamicImports,
-      //   dynamicTemplateImports:
-      //     deps.dynamicTemplateImports.map(mapTemplateImports),
-      //   staticTemplateImports:
-      //     deps.staticTemplateImports.map(mapTemplateImports),
-      //   publicAssetURL: this.opts.publicAssetURL,
-      // });
-
       this.writeEntryFile(bundle, deps);
     }
-
-    // virtualModulesHash[`./__ember_auto_import__/l.js`] = loader;
     this.writeLoaderFile();
-
-    // this.virtualModules = new VirtualModulesPlugin(virtualModulesHash);
 
     this.linkDeps(bundleDeps);
     let stats = await this.runWebpack();
@@ -437,6 +424,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
     packageName: string;
     packageRoot: string;
   }): void {
+    // I guess this is "part 2" of what stagingDir is being used for. Not yet sure how to replace this part...
     ensureDirSync(dirname(join(this.stagingDir, 'node_modules', packageName)));
     if (!existsSync(join(this.stagingDir, 'node_modules', packageName))) {
       symlinkSync(
