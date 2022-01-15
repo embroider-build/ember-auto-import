@@ -14,11 +14,9 @@ import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
+import VirtualModulesPlugin from 'webpack-virtual-modules';
 
 const debug = makeDebug('ember-auto-import:webpack');
-
-var VirtualModulesPlugin = require('webpack-virtual-modules');
-var webpack = require('webpack');
 
 registerHelper('js-string-escape', jsStringEscape);
 registerHelper('join', function (list, connector) {
@@ -181,6 +179,8 @@ export default class WebpackBundler extends Plugin implements Bundler {
         ),
       },
       module: {
+        // I guess webpack should also be prevented from parsing our virtual modules, so presumably we could
+        // filter them out like this?
         noParse: (file: string) => file === join(stagingDir, 'l.js') || file === `./__ember_auto_import__/l.js`,
         rules: [
           this.babelRule(stagingDir),
@@ -205,6 +205,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       },
       node: false,
       externals: this.externalsHandler,
+      // Here we add our virtual modules as per https://github.com/sysgears/webpack-virtual-modules
       plugins: [
         this.virtualModules
       ]
@@ -245,6 +246,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         // And we otherwise defer to the `skipBabel` setting as implemented by
         // `@embroider/shared-internals`.
         return dirname(filename) !== stagingDir
+          // I presume we also don't want to apply babel to our virtual modules, which I guess could be done as follows...
           && filename.indexOf('/__ember_auto_import__/')<0
           && shouldTranspile(filename);
       },
@@ -301,8 +303,6 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   async build(): Promise<void> {
-    // This runs BEFORE our setup() method above
-
     let bundleDeps = await this.opts.splitter.deps();
 
     // Build our virtual modules which we'll pass into the webpack plugins array
