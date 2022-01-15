@@ -1,5 +1,11 @@
 # Changelog
 
+### 2.3.0
+
+- INTERNAL update to latest @embroider/internals
+- ENHANCEMENT support v2 addons that contain @embroider/macros
+- ENHANCEMENT better error messages by @NullVoxPopuli
+
 ### 2.2.4
 
 - BUGFIX: Avoid EBADF on ReadStream early close in Node 12 by @maxfierke
