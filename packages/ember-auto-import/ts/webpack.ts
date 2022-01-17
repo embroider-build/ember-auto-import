@@ -1,4 +1,10 @@
-import type { Configuration, Compiler, RuleSetRule, Stats } from 'webpack';
+import type {
+  Configuration,
+  Compiler,
+  RuleSetRule,
+  Stats,
+  ExternalItem,
+} from 'webpack';
 import { join, dirname } from 'path';
 import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
@@ -195,7 +201,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         ],
       },
       node: false,
-      externals: this.externalsHandler,
+      externals: [this.externalsHandler],
     };
 
     mergeConfig(
@@ -242,7 +248,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   @Memoize()
-  private get externalsHandler(): Configuration['externals'] {
+  private get externalsHandler(): ExternalItem {
     let packageCache = PackageCache.shared(
       'ember-auto-import',
       this.opts.appRoot
@@ -435,6 +441,14 @@ export function mergeConfig(dest: Configuration, ...srcs: Configuration[]) {
 function combine(objValue: any, srcValue: any, key: string) {
   if (key === 'noParse') {
     return eitherPattern(objValue, srcValue);
+  }
+
+  if (key === 'externals') {
+    if (typeof objValue === 'undefined') {
+      return [srcValue];
+    } else if (!Array.isArray(srcValue)) {
+      return [...objValue, srcValue];
+    }
   }
 
   // arrays concat
