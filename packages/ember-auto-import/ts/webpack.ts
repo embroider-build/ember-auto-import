@@ -1,10 +1,4 @@
-import type {
-  Configuration,
-  Compiler,
-  RuleSetRule,
-  Stats,
-  ExternalItem,
-} from 'webpack';
+import type { Configuration, Compiler, RuleSetRule, Stats } from 'webpack';
 import { join, dirname } from 'path';
 import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
@@ -248,7 +242,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   @Memoize()
-  private get externalsHandler(): ExternalItem {
+  private get externalsHandler(): Extract<
+    Configuration['externals'],
+    (params: any, callback: any) => void
+  > {
     let packageCache = PackageCache.shared(
       'ember-auto-import',
       this.opts.appRoot
