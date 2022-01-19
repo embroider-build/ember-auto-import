@@ -1,12 +1,16 @@
 {
   "include": ["./ts/**/*.ts"],
   "compilerOptions": {
-    "lib": ["es7", "dom"],
+    "lib": ["es2020", "dom"],
     "target": "es6",
     "module": "commonjs",
     "declaration": true,
     "outDir": "./js",
-    "typeRoots": ["node_modules/@types", "../../types", "../../node_modules/@types"],
+    "typeRoots": [
+      "node_modules/@types",
+      "../../types",
+      "../../node_modules/@types"
+    ],
     "esModuleInterop": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

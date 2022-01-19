@@ -195,7 +195,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         ],
       },
       node: false,
-      externals: [this.externalsHandler],
+      externals: this.externalsHandler,
     };
 
     mergeConfig(
@@ -242,10 +242,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   @Memoize()
-  private get externalsHandler(): Extract<
-    Configuration['externals'],
-    (params: any, callback: any) => void
-  > {
+  private get externalsHandler(): Configuration['externals'] {
     let packageCache = PackageCache.shared(
       'ember-auto-import',
       this.opts.appRoot
@@ -441,11 +438,7 @@ function combine(objValue: any, srcValue: any, key: string) {
   }
 
   if (key === 'externals') {
-    if (typeof objValue === 'undefined') {
-      return [srcValue];
-    } else if (!Array.isArray(srcValue)) {
-      return [...objValue, srcValue];
-    }
+    return [srcValue, objValue].flat();
   }
 
   // arrays concat
