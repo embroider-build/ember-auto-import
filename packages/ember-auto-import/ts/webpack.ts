@@ -8,7 +8,7 @@ import { BundleDependencies, ResolvedImport, sharedResolverOptions } from './spl
 import { BundlerHook, BuildResult } from './bundler';
 import BundleConfig from './bundle-config';
 import { ensureDirSync } from 'fs-extra';
-import { babelFilter } from '@embroider/core';
+import { babelFilter } from '@embroider/shared-internals';
 import { Options } from './package';
 
 registerHelper('js-string-escape', jsStringEscape);
@@ -91,7 +91,8 @@ export default class WebpackBundler implements BundlerHook {
     private publicAssetURL: string | undefined,
     private skipBabel: Required<Options>['skipBabel'],
     private babelTargets: unknown,
-    tempArea: string
+    tempArea: string,
+    private appRoot: string
   ) {
     // resolve the real path, because we're going to do path comparisons later
     // that could fail if this is not canonical.
@@ -148,7 +149,7 @@ export default class WebpackBundler implements BundlerHook {
   }
 
   private babelRule(): webpack.Rule {
-    let shouldTranspile = babelFilter(this.skipBabel);
+    let shouldTranspile = babelFilter(this.skipBabel, this.appRoot);
     let stagingDir = this.stagingDir;
     return {
       test(filename: string) {
