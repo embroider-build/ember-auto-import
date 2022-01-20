@@ -1,14 +1,13 @@
-import { appScenarios } from './scenarios';
-import { PreparedApp } from 'scenario-tester';
+import { baseApp } from './scenarios';
+import { PreparedApp, Scenarios } from 'scenario-tester';
 import QUnit from 'qunit';
 import merge from 'lodash/merge';
 const { module: Qmodule, test } = QUnit;
 
-// this scenario tests that users can customize webpack's noParse and their
-// customization takes effect *without* breaking our own internal use of
-// noParse.
-appScenarios
-  .map('noparse', project => {
+// this scenario tests that users can customize parts of the webpack config that
+// we also use
+Scenarios.fromProject(baseApp)
+  .map('webpack-config', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.linkDependency('webpack', { baseDir: __dirname });
     project.addDependency('noparsed-dependency', {
@@ -27,6 +26,16 @@ appScenarios
         `,
       },
     });
+    project.addDependency('uses-custom-external', {
+      files: {
+        'index.js': `
+          import thing from 'custom-external';
+          export default function() {
+            return "the thing is " + thing;
+          }
+        `,
+      },
+    });
     merge(project.files, {
       'ember-cli-build.js': `
         'use strict';
@@ -39,6 +48,9 @@ appScenarios
               webpack: {
                 module: {
                   noParse: /\\bnoparsed-dependency\\b/
+                },
+                externals: {
+                  'custom-external': '"CustomExternal"'
                 }
               }
             }
@@ -74,6 +86,7 @@ appScenarios
             import { module, test } from 'qunit';
             import { visit } from '@ember/test-helpers';
             import { setupApplicationTest } from 'ember-qunit';
+            import example from 'uses-custom-external';
 
             module('Acceptance | basic', function(hooks) {
               setupApplicationTest(hooks);
@@ -81,6 +94,10 @@ appScenarios
               test('the noparsed-dep loads correctly', async function(assert) {
                 await visit('/');
                 assert.equal(document.querySelector('[data-test-import-result]').textContent.trim(), 'ember-auto-import-noparsed-dependency');
+              });
+
+              test('custom-external works', async function(assert) {
+                assert.equal(example(), 'the thing is CustomExternal');
               });
             });
           `,
