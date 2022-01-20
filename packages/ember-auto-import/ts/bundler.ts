@@ -98,7 +98,8 @@ export default class Bundler extends Plugin {
         this.publicAssetURL,
         this.skipBabel,
         this.options.targets,
-        this.cachePath! // cast is OK because we passed needsCache: true to super constructor
+        this.cachePath!, // cast is OK because we passed needsCache: true to super constructor
+        this.rootPackage.root
       );
     }
     return this.cachedBundlerHook;
