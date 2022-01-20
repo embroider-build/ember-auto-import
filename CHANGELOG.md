@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.12.1
+
+- COMPAT upgraded to `@embroider/shared-internals` 1.0 so that apps can avoid redundant copies
+
 ### 1.12.0
 
 - FEATURE: We now properly optimize TypeScript's `import type` syntax, meaning
