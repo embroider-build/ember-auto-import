@@ -149,6 +149,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       browserslist: this.rootPackage.browserslist(),
       publicAssetURL: this.rootPackage.publicAssetURL(),
       webpack,
+      hasFastboot: this.rootPackage.isFastBootEnabled,
     });
   }
 

@@ -1,4 +1,11 @@
-import type { Configuration, Compiler, RuleSetRule, Stats } from 'webpack';
+import type {
+  Configuration,
+  Compiler,
+  RuleSetRule,
+  Stats,
+  RuleSetUseItem,
+  WebpackPluginInstance,
+} from 'webpack';
 import { join, dirname } from 'path';
 import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
@@ -14,6 +21,7 @@ import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 
 const debug = makeDebug('ember-auto-import:webpack');
 
@@ -129,6 +137,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
         join(stagingDir, `${bundle}.js`),
       ];
     });
+
+    let { plugin: stylePlugin, loader: styleLoader } = this.setupStyleLoader();
+
     let config: Configuration = {
       mode:
         this.opts.environment === 'production' ? 'production' : 'development',
@@ -168,9 +179,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
         mainFields: ['browser', 'module', 'main'],
         alias: Object.assign(
           {},
-          ...[...this.opts.packages].map((pkg) => pkg.aliases).filter(Boolean)
+          ...removeUndefined([...this.opts.packages].map((pkg) => pkg.aliases))
         ),
       },
+      plugins: removeUndefined([stylePlugin]),
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.js'),
         rules: [
@@ -178,12 +190,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           {
             test: /\.css$/i,
             use: [
-              {
-                loader: 'eai-style-loader',
-                options: [...this.opts.packages].find(
-                  (pkg) => pkg.styleLoaderOptions
-                )?.styleLoaderOptions,
-              },
+              styleLoader,
               {
                 loader: 'eai-css-loader',
                 options: [...this.opts.packages].find(
@@ -208,6 +215,30 @@ export default class WebpackBundler extends Plugin implements Bundler {
     debug('webpackConfig %j', config);
     this.state = { webpack: this.opts.webpack(config), stagingDir };
     return this.state;
+  }
+
+  private setupStyleLoader(): {
+    loader: RuleSetUseItem;
+    plugin: WebpackPluginInstance | undefined;
+  } {
+    if (this.opts.environment === 'production' || this.opts.hasFastboot) {
+      return {
+        loader: MiniCssExtractPlugin.loader,
+        plugin: new MiniCssExtractPlugin(
+          [...this.opts.packages].find(
+            (pkg) => pkg.miniCssExtractPluginOptions
+          )?.miniCssExtractPluginOptions
+        ),
+      };
+    } else
+      return {
+        loader: {
+          loader: 'eai-style-loader',
+          options: [...this.opts.packages].find((pkg) => pkg.styleLoaderOptions)
+            ?.styleLoaderOptions,
+        },
+        plugin: undefined,
+      };
   }
 
   private skipBabel(): Required<Options>['skipBabel'] {
@@ -503,4 +534,10 @@ function nonEmptyBundle(
     deps.dynamicImports.length > 0 ||
     deps.dynamicTemplateImports.length > 0
   );
+}
+
+// this little helper is needed because typescript can't see through normal
+// usage of Array.prototype.filter.
+function removeUndefined<T>(list: (T | undefined)[]): T[] {
+  return list.filter((item) => typeof item !== 'undefined') as T[];
 }

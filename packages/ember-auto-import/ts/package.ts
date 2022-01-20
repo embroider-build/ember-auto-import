@@ -32,6 +32,7 @@ export interface Options {
   publicAssetURL?: string;
   styleLoaderOptions?: Record<string, unknown>;
   cssLoaderOptions?: Record<string, unknown>;
+  miniCssExtractPluginOptions?: Record<string, unknown>;
   forbidEval?: boolean;
   skipBabel?: { package: string; semverRange?: string }[];
   watchDependencies?: (string | string[])[];
@@ -147,7 +148,7 @@ export default class Package {
   get isFastBootEnabled() {
     return (
       process.env.FASTBOOT_DISABLED !== 'true' &&
-      !!this._parent.addons.find((addon) => addon.name === 'ember-cli-fastboot')
+      this._parent.addons.some((addon) => addon.name === 'ember-cli-fastboot')
     );
   }
 
@@ -418,6 +419,13 @@ export default class Package {
   get cssLoaderOptions(): Record<string, unknown> | undefined {
     // only apps (not addons) are allowed to set this
     return this.isAddon ? undefined : this.autoImportOptions?.cssLoaderOptions;
+  }
+
+  get miniCssExtractPluginOptions(): Record<string, unknown> | undefined {
+    // only apps (not addons) are allowed to set this
+    return this.isAddon
+      ? undefined
+      : this.autoImportOptions?.miniCssExtractPluginOptions;
   }
 
   get forbidsEval(): boolean {

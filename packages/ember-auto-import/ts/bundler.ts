@@ -20,6 +20,7 @@ export interface BundlerOptions {
   publicAssetURL: string | undefined;
   browserslist: string;
   webpack: typeof webpack;
+  hasFastboot: boolean;
 }
 
 export interface BuildResult {
