@@ -437,6 +437,10 @@ function combine(objValue: any, srcValue: any, key: string) {
     return eitherPattern(objValue, srcValue);
   }
 
+  if (key === 'externals') {
+    return [srcValue, objValue].flat();
+  }
+
   // arrays concat
   if (Array.isArray(objValue)) {
     return objValue.concat(srcValue);
