@@ -59,8 +59,8 @@ Once you're setup, you can use dynamic `import()` and it will result in loading 
 export default Route.extend({
   model({ id }) {
     return Promise.all([
-      fetch(`/data-for-chart/${id}`).then((response) => response.json()),
-      import('highcharts').then((module) => module.default),
+      fetch(`/data-for-chart/${id}`).then(response => response.json()),
+      import('highcharts').then(module => module.default),
     ]).then(([dataPoints, highcharts]) => {
       return { dataPoints, highcharts };
     });
@@ -272,6 +272,32 @@ import 'intl';
 <script src="{{rootURL}}assets/vendor.js"></script>
 <auto-import-script entrypoint="app"></auto-import-script>
 <script src="{{rootURL}}assets/your-app.js"></script>
+```
+
+## Fastboot
+
+ember-auto-import works with [Fastboot](https://ember-fastboot.com) to support server-side rendering.
+
+When using Fastboot, you may need to add your Node version to `config/targets.js` in order to only use Javascript features that work in that Node version. When you do this, it may prevent webpack from being able to infer that it should still be doing a build that targets the web. This may result in an error message like:
+
+```
+For the selected environment is no default script chunk format available:
+JSONP Array push can be chosen when 'document' or 'importScripts' is available.
+CommonJs exports can be chosen when 'require' or node builtins are available.
+Make sure that your 'browserslist' includes only platforms that support these features or select an appropriate 'target' to allow selecting a chunk format by default. Alternatively specify the 'output.chunkFormat' directly.
+```
+
+You can fix this by setting the target to web explicitly:
+
+```js
+// ember-cli-build.js
+let app = new EmberApp(defaults, {
+  autoImport: {
+    webpack: {
+      target: 'web',
+    },
+  },
+});
 ```
 
 ## FAQ
