@@ -68,11 +68,15 @@ export class Inserter extends Plugin {
       let assets = this.bundler.buildResult.entrypoints.get('app');
       if (assets) {
         for (let asset of assets) {
-          fastbootInfo.vendorFiles.push(asset);
+          if (asset.endsWith('.js')) {
+            fastbootInfo.vendorFiles.push(asset);
+          }
         }
       }
       for (let asset of this.bundler.buildResult.lazyAssets) {
-        fastbootInfo.vendorFiles.push(asset);
+        if (asset.endsWith('.js')) {
+          fastbootInfo.vendorFiles.push(asset);
+        }
       }
       writeJSONSync(join(this.outputPath, 'package.json'), fastbootInfo.pkg);
     }
