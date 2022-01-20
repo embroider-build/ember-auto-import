@@ -224,11 +224,13 @@ export default class WebpackBundler extends Plugin implements Bundler {
     if (this.opts.environment === 'production' || this.opts.hasFastboot) {
       return {
         loader: MiniCssExtractPlugin.loader,
-        plugin: new MiniCssExtractPlugin(
-          [...this.opts.packages].find(
+        plugin: new MiniCssExtractPlugin({
+          filename: `chunk.[id].[chunkhash].css`,
+          chunkFilename: `chunk.[id].[chunkhash].css`,
+          ...[...this.opts.packages].find(
             (pkg) => pkg.miniCssExtractPluginOptions
-          )?.miniCssExtractPluginOptions
-        ),
+          )?.miniCssExtractPluginOptions,
+        }),
       };
     } else
       return {
