@@ -1,5 +1,11 @@
 # Changelog
 
+### 2.4.0
+
+- ENHANCEMENT make v2 addon's with CSS work in fastboot out of the box
+- INTERNAL update @embroider/macros and @embroider/shared-internals to 1.0 by @SergeAstapov
+- BUGFIX correctly merge user-provided webpack `externals` with our own, by @vstefanovic97
+
 ### 2.3.0
 
 - INTERNAL update to latest @embroider/internals
