@@ -208,14 +208,16 @@ export default class AutoImport implements AutoImportSharedAPI {
   // have their own webpack-generated hashes and (2) the runtime loader code
   // can't easily be told about broccoli-asset-rev's hashes.
   private configureFingerprints(host: AppInstance) {
-    let pattern = 'assets/chunk.*.js';
+    let patterns = ['assets/chunk.*.js', 'assets/chunk..*.css'];
     if (!host.options.fingerprint) {
       host.options.fingerprint = {};
     }
     if (!('exclude' in host.options.fingerprint)) {
-      host.options.fingerprint.exclude = [pattern];
+      host.options.fingerprint.exclude = patterns;
     } else {
-      host.options.fingerprint.exclude.push(pattern);
+      for (let pattern of patterns) {
+        host.options.fingerprint.exclude.push(pattern);
+      }
     }
   }
 }
