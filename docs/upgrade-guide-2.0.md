@@ -7,7 +7,7 @@
 - apps that were adding css handling (like `css-loader`, `style-loader`, and `MiniCSSExtraPlugin`) to the webpack config must remove those, because they're now included by default for compatibility with the embroider v2 package spec.
 - apps should confirm that their deployment strategy includes all files produced under `dist` (not just the traditional expected ones like `dist/assets/your-app.js` and `dist/assets/vendor.js`)
 - apps that use `fingerprint.prepend` to move their assets to a different origin will also need to set `autoImport.publicAssetURL`. See example below.
-- addons that upgrade to ember-auto-import >= 2 will only work in apps that have ember-auto-import >= 2, so they should do their own semver major releases when they upgrade
+- addons that upgrade to ember-auto-import >= 2 (as [dependencies](https://docs.npmjs.com/cli/v7/configuring-npm/package-json#dependencies)) will only work in apps that have ember-auto-import >= 2, so they should do their own semver major releases when they upgrade
 - our `alias` option has changed slightly to align better with how it works in webpack
 - we dropped support for node < 12 and ember-source < 3.4 and ember-cli < 3.4.
 
