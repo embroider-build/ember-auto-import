@@ -12,8 +12,8 @@ const debug = makeDebug('ember-auto-import:inserter');
 
 export interface InserterOptions {
   publicAssetURL: string;
-  insertScriptsAt: string | undefined;
-  insertStylesAt: string | undefined;
+  insertScriptsAt: string | null | undefined;
+  insertStylesAt: string | null | undefined;
 }
 
 interface ScriptTarget {
@@ -98,7 +98,7 @@ export class Inserter extends Plugin {
         `looking for custom script element: %s`,
         this.options.insertScriptsAt
       );
-    } else {
+    } else if (this.options.insertScriptsAt === undefined) {
       debug(
         `looking for scripts with src: %s`,
         targets.scripts.map((s) => s.afterFile).filter(Boolean)
@@ -110,7 +110,7 @@ export class Inserter extends Plugin {
         `looking for custom style element: %s`,
         this.options.insertStylesAt
       );
-    } else {
+    } else if (this.options.insertStylesAt === undefined) {
       debug(
         `looking for link with href: %s`,
         targets.styles.map((s) => s.afterFile).filter(Boolean)
@@ -134,7 +134,10 @@ export class Inserter extends Plugin {
             entrypoint.value
           );
         }
-      } else if (element.tagName === 'script') {
+      } else if (
+        this.options.insertScriptsAt === undefined &&
+        element.tagName === 'script'
+      ) {
         let src = element.attrs.find((a) => a.name === 'src')?.value;
         if (src) {
           debug(`found script with src=%s`, src);
@@ -163,7 +166,10 @@ export class Inserter extends Plugin {
             entrypoint.value
           );
         }
-      } else if (element.tagName === 'link') {
+      } else if (
+        this.options.insertStylesAt === undefined &&
+        element.tagName === 'link'
+      ) {
         if (
           element.attrs.some(
             (a) => a.name === 'rel' && a.value === 'stylesheet'
@@ -186,7 +192,7 @@ export class Inserter extends Plugin {
         throw new Error(
           `ember-auto-import cannot find <${this.options.insertScriptsAt} entrypoint="${appScripts.bundleName}"> in ${filename}.`
         );
-      } else {
+      } else if (this.options.insertScriptsAt === undefined) {
         throw new Error(
           `ember-auto-import could not find a place to insert app scripts in ${filename}.`
         );
@@ -201,7 +207,7 @@ export class Inserter extends Plugin {
         throw new Error(
           `ember-auto-import cannot find <${this.options.insertStylesAt} entrypoint="${appStyles.bundleName}"> in ${filename}.`
         );
-      } else {
+      } else if (this.options.insertStylesAt === undefined) {
         throw new Error(
           `ember-auto-import could not find a place to insert app styles in ${filename}.`
         );
