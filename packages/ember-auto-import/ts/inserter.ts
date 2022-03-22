@@ -2,7 +2,7 @@ import type { InputNode } from 'broccoli-node-api';
 import Plugin from 'broccoli-plugin';
 import makeDebug from 'debug';
 import { existsSync, readFileSync } from 'fs';
-import { outputFileSync, readJSONSync, writeJSONSync } from 'fs-extra';
+import { outputFileSync, readJSONSync } from 'fs-extra';
 import { join } from 'path';
 import parse5 from 'parse5';
 import BundleConfig from './bundle-config';
@@ -42,6 +42,8 @@ interface Targets {
 }
 
 export class Inserter extends Plugin {
+  private outputCache = new Map<string, string>();
+
   constructor(
     allApp: InputNode,
     private bundler: Bundler,
@@ -50,6 +52,7 @@ export class Inserter extends Plugin {
   ) {
     super([allApp], {
       annotation: 'ember-auto-import-inserter',
+      persistentOutput: true,
     });
   }
   async build() {
@@ -78,7 +81,21 @@ export class Inserter extends Plugin {
           fastbootInfo.vendorFiles.push(asset);
         }
       }
-      writeJSONSync(join(this.outputPath, 'package.json'), fastbootInfo.pkg);
+
+      this.cachedOutputFileSync(
+        'package.json',
+        JSON.stringify(fastbootInfo.pkg, null, 2)
+      );
+    }
+  }
+
+  // not touching our output files helps prevent other parts of the build from
+  // reacting to spurious changes. For example, if we touch the HTML, we defeat
+  // CSS hot reloading by making ember-cli think the HTML file has changed.
+  private cachedOutputFileSync(localFilename: string, content: string) {
+    if (this.outputCache.get(localFilename) !== content) {
+      this.outputCache.set(localFilename, content);
+      outputFileSync(join(this.outputPath, localFilename), content, 'utf8');
     }
   }
 
@@ -208,11 +225,7 @@ export class Inserter extends Plugin {
       }
     }
 
-    outputFileSync(
-      join(this.outputPath, filename),
-      stringInserter.serialize(),
-      'utf8'
-    );
+    this.cachedOutputFileSync(filename, stringInserter.serialize());
   }
 
   private insertScripts(
