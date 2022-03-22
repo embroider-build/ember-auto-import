@@ -34,6 +34,15 @@ const entryTemplate = compile(`
 module.exports = (function(){
   var d = _eai_d;
   var r = _eai_r;
+
+  let lazyEngines = new Map();
+  {{#each myAddons as |module|}}
+  {{#if (and lazinessEnabled module.isLazyEngine )}} 
+    lazyEngines.set(module.name, () => import("{{js-string-escape module.path}}"))
+  {{else}}
+    import "{{js-string-escape module.path}}";
+  {{/each}}
+
   window.emberAutoImportDynamic = function(specifier) {
     if (arguments.length === 1) {
       return r('_eai_dyn_' + specifier);
