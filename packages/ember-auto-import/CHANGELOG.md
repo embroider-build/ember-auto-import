@@ -1,5 +1,12 @@
 # Changelog
 
+### 2.4.1
+
+- BUGFIX: avoid unnecessary full page reloads
+- DOCS: clarify upgrade guide for addon by @ctjhoa
+- BUGFIX: don't let broccoli-asset-rev mess with css chunks
+- INTERNALS: upgrade fs-extra and resolve-package-path by @SergeAstapov
+
 ### 2.4.0
 
 - ENHANCEMENT make v2 addon's with CSS work in fastboot out of the box
