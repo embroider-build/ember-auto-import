@@ -20,7 +20,12 @@ import { Options } from './package';
 import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
-import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
+import {
+  ensureDirSync,
+  symlinkSync,
+  existsSync,
+  outputFileSync,
+} from 'fs-extra';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import semver from 'semver';
 
@@ -90,6 +95,16 @@ module.exports = (function(){
     {{! this is only used for synchronous importSync() using a template string }}
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
+  {{#each relativeImports as |module|}}
+    require('./{{js-string-escape module}}.cjs');
+  {{/each}}
+  {{#each lazyEngineImports as |module|}}
+    var engineLookup = window.__eaiEngineLookup || {};
+    engineLookup['{{module}}'] = function() {
+      return import('./{{js-string-escape module}}.cjs')
+    };
+    window.__eaiEngineLookup = engineLookup;
+  {{/each}}
   d('__v1-addons__early-boot-set__', [{{{v1EmberDeps}}}], function() {});
   {{#each staticImports as |module|}}
     d('{{js-string-escape module.specifier}}', ['__v1-addons__early-boot-set__'], function() { return require('{{js-string-escape module.specifier}}'); });
@@ -119,9 +134,17 @@ module.exports = (function(){
   dynamicImports: { specifier: string }[];
   staticTemplateImports: { key: string; args: string; template: string }[];
   dynamicTemplateImports: { key: string; args: string; template: string }[];
+  relativeImports: { specifier: string }[];
+  lazyEngineImports: { specifier: string }[];
   publicAssetURL: string | undefined;
   v1EmberDeps: string;
 }) => string;
+
+const emptyTemplate = compile(`
+{{#each relativeImports as |module|}}
+require('./{{js-string-escape module}}.cjs');
+{{/each}}
+`) as (args: { relativeImports: { specifier: string }[] }) => string;
 
 // this goes in a file by itself so we can tell webpack not to parse it. That
 // allows us to grab the "require" and "define" from our enclosing scope without
@@ -209,6 +232,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         library: '__ember_auto_import__',
       },
       optimization: {
+        removeAvailableModules: true,
         splitChunks: {
           chunks: 'all',
         },
@@ -377,13 +401,44 @@ export default class WebpackBundler extends Plugin implements Bundler {
   async build(): Promise<void> {
     let bundleDeps = await this.opts.splitter.deps();
 
-    for (let [bundle, deps] of bundleDeps.entries()) {
-      this.writeEntryFile(bundle, deps);
-    }
+    this.recursivelyCreateEntryFiles(
+      this.opts.bundles.hostProject,
+      bundleDeps,
+      true
+    );
     this.writeLoaderFile();
     this.linkDeps(bundleDeps);
     let stats = await this.runWebpack();
     this.lastBuildResult = this.summarizeStats(stats, bundleDeps);
+  }
+
+  private recursivelyCreateEntryFiles(project: any, deps: any, isApp: boolean) {
+    let addonNames: string[] = [];
+    let lazyEngineNames: string[] = [];
+
+    project.addons.forEach((addon: any) => {
+      if (
+        addon.options &&
+        addon.options.lazyLoading &&
+        addon.options.lazyLoading.enabled
+      ) {
+        lazyEngineNames.push(flattenFileName(addon.name));
+      } else if (addon.addons.length) {
+        addonNames.push(flattenFileName(addon.name));
+      }
+
+      if (addon.addons.length) {
+        this.recursivelyCreateEntryFiles(addon, deps, false);
+      }
+    });
+
+    if (isApp) {
+      this.writeEntryFile('app', deps.get('app')!, addonNames, lazyEngineNames);
+      this.writeEntryFile('tests', deps.get('tests')!, ['app'], []);
+    } else {
+      let name = project.name;
+      this.writeEntryFile(name, deps.get(name), addonNames, lazyEngineNames);
+    }
   }
 
   private summarizeStats(
@@ -530,22 +585,38 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return result;
   }
 
-  private writeEntryFile(name: string, deps: BundleDependencies) {
+  private writeEntryFile(
+    name: string,
+    deps: BundleDependencies,
+    relativeImports: any,
+    lazyEngineImports: any
+  ) {
     let v1EmberDeps = this.getEarlyBootSet();
 
-    writeFileSync(
-      join(this.stagingDir, `${name}.cjs`),
-      entryTemplate({
-        staticImports: deps.staticImports,
-        dynamicImports: deps.dynamicImports,
-        dynamicTemplateImports:
-          deps.dynamicTemplateImports.map(mapTemplateImports),
-        staticTemplateImports:
-          deps.staticTemplateImports.map(mapTemplateImports),
-        publicAssetURL: this.opts.publicAssetURL,
-        v1EmberDeps: v1EmberDeps.map((name) => `'${name}'`).join(','),
-      })
-    );
+    if (!existsSync(join(this.stagingDir, name))) {
+      if (!deps) {
+        outputFileSync(
+          join(this.stagingDir, `${flattenFileName(name)}.cjs`),
+          emptyTemplate({ relativeImports })
+        );
+      } else {
+        writeFileSync(
+          join(this.stagingDir, `${flattenFileName(name)}.cjs`),
+          entryTemplate({
+            staticImports: deps.staticImports,
+            dynamicImports: deps.dynamicImports,
+            dynamicTemplateImports:
+              deps.dynamicTemplateImports.map(mapTemplateImports),
+            staticTemplateImports:
+              deps.staticTemplateImports.map(mapTemplateImports),
+            relativeImports,
+            lazyEngineImports,
+            publicAssetURL: this.opts.publicAssetURL,
+            v1EmberDeps: v1EmberDeps.map((name) => `'${name}'`).join(','),
+          })
+        );
+      }
+    }
   }
 
   private writeLoaderFile() {
@@ -691,4 +762,9 @@ function nonEmptyBundle(
 // usage of Array.prototype.filter.
 function removeUndefined<T>(list: (T | undefined)[]): T[] {
   return list.filter((item) => typeof item !== 'undefined') as T[];
+}
+
+function flattenFileName(path: string) {
+  let re = new RegExp('/', 'g');
+  return path.replace(re, '-');
 }
