@@ -19,7 +19,7 @@ import { WatchedDir } from 'broccoli-source';
 import { Inserter } from './inserter';
 import mergeTrees from 'broccoli-merge-trees';
 import resolve from 'resolve';
-import type webpackType from 'webpack';
+import webpackType from 'webpack';
 import resolvePackagePath from 'resolve-package-path';
 import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
@@ -67,7 +67,16 @@ export default class AutoImport implements AutoImportSharedAPI {
     this.packages.add(Package.lookupParentOf(topmostAddon));
     let host = topmostAddon.app;
     this.env = host.env;
-    this.bundles = new BundleConfig(host.options.outputPaths);
+    let lazyEngines = host.project.addons.filter(
+      (addon: any) =>
+        addon.options &&
+        addon.options.lazyLoading &&
+        addon.options.lazyLoading.enabled
+    );
+    this.bundles = new BundleConfig(
+      host.options.outputPaths,
+      lazyEngines.map((engine: any) => engine.options.name)
+    );
     if (!this.env) {
       throw new Error('Bug in ember-auto-import: did not discover environment');
     }

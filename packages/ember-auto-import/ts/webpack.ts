@@ -1,10 +1,10 @@
 import type {
   Configuration,
-  Compiler,
   RuleSetRule,
-  Stats,
   RuleSetUseItem,
   WebpackPluginInstance,
+  MultiCompiler,
+  MultiStats,
 } from 'webpack';
 import { join, dirname } from 'path';
 import { mergeWith, flatten, zip } from 'lodash';
@@ -138,7 +138,7 @@ window._eai_d = define;
 export default class WebpackBundler extends Plugin implements Bundler {
   private state:
     | {
-        webpack: Compiler;
+        webpack: MultiCompiler;
         stagingDir: string;
       }
     | undefined;
@@ -161,11 +161,11 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private get webpack() {
-    return this.setup().webpack;
+    return this.setup()?.webpack;
   }
 
   private get stagingDir() {
-    return this.setup().stagingDir;
+    return this.setup()?.stagingDir;
   }
 
   private setup() {
@@ -261,7 +261,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
       ...[...this.opts.packages].map((pkg) => pkg.webpackConfig)
     );
     debug('webpackConfig %j', config);
-    this.state = { webpack: this.opts.webpack(config), stagingDir };
+    this.state = {
+      webpack: this.opts.webpack(config) as unknown as MultiCompiler,
+      stagingDir,
+    };
     return this.state;
   }
 
@@ -376,7 +379,6 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   async build(): Promise<void> {
     let bundleDeps = await this.opts.splitter.deps();
-
     for (let [bundle, deps] of bundleDeps.entries()) {
       this.writeEntryFile(bundle, deps);
     }
@@ -387,52 +389,54 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private summarizeStats(
-    _stats: Required<Stats>,
+    _stats: Required<MultiStats>,
     bundleDeps: Map<string, BundleDependencies>
   ): BuildResult {
-    let { entrypoints, assets } = _stats.toJson();
-
-    // webpack's types are written rather loosely, implying that these two
-    // properties may not be present. They really always are, as far as I can
-    // tell, but we need to check here anyway to satisfy the type checker.
-    if (!entrypoints) {
-      throw new Error(`unexpected webpack output: no entrypoints`);
-    }
-    if (!assets) {
-      throw new Error(`unexpected webpack output: no assets`);
-    }
-
+    let { children } = _stats.toJson();
     let output: BuildResult = {
       entrypoints: new Map(),
       lazyAssets: [] as string[],
     };
-    let nonLazyAssets: Set<string> = new Set();
-    for (let id of Object.keys(entrypoints!)) {
-      let { assets: entrypointAssets } = entrypoints![id];
-      if (!entrypointAssets) {
-        throw new Error(`unexpected webpack output: no entrypoint.assets`);
-      }
 
-      // our built-in bundles can be "empty" while still existing because we put
-      // setup code in them, so they get a special check for non-emptiness.
-      // Whereas any other bundle that was manually configured by the user
-      // should always be emitted.
-      if (
-        !this.opts.bundles.isBuiltInBundleName(id) ||
-        nonEmptyBundle(id, bundleDeps)
-      ) {
-        output.entrypoints.set(
-          id,
-          entrypointAssets.map((a) => 'assets/' + a.name)
-        );
+    children?.forEach(({ entrypoints, assets }) => {
+      // webpack's types are written rather loosely, implying that these two
+      // properties may not be present. They really always are, as far as I can
+      // tell, but we need to check here anyway to satisfy the type checker.
+      if (!entrypoints) {
+        throw new Error(`unexpected webpack output: no entrypoints`);
       }
-      entrypointAssets.forEach((asset) => nonLazyAssets.add(asset.name));
-    }
-    for (let asset of assets!) {
-      if (!nonLazyAssets.has(asset.name)) {
-        output.lazyAssets.push('assets/' + asset.name);
+      if (!assets) {
+        throw new Error(`unexpected webpack output: no assets`);
       }
-    }
+      let nonLazyAssets: Set<string> = new Set();
+      for (let id of Object.keys(entrypoints!)) {
+        let { assets: entrypointAssets } = entrypoints![id];
+        if (!entrypointAssets) {
+          throw new Error(`unexpected webpack output: no entrypoint.assets`);
+        }
+
+        // our built-in bundles can be "empty" while still existing because we put
+        // setup code in them, so they get a special check for non-emptiness.
+        // Whereas any other bundle that was manually configured by the user
+        // should always be emitted.
+        if (
+          !this.opts.bundles.isBuiltInBundleName(id) ||
+          nonEmptyBundle(id, bundleDeps)
+        ) {
+          output.entrypoints.set(
+            id,
+            entrypointAssets.map((a) => 'assets/' + a.name)
+          );
+        }
+        entrypointAssets.forEach((asset) => nonLazyAssets.add(asset.name));
+      }
+      for (let asset of assets!) {
+        if (!nonLazyAssets.has(asset.name)) {
+          output.lazyAssets.push('assets/' + asset.name);
+        }
+      }
+    });
+
     return output;
   }
 
@@ -586,7 +590,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
     }
   }
 
-  private async runWebpack(): Promise<Required<Stats>> {
+  private async runWebpack(): Promise<Required<MultiStats>> {
     return new Promise((resolve, reject) => {
       this.webpack.run((err, stats) => {
         const statsString = stats ? stats.toString() : '';
@@ -604,9 +608,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
           this.opts.consoleWrite(statsString);
         }
         // this cast is justified because we already checked hasErrors above
-        resolve(stats as Required<Stats>);
+        resolve(stats as Required<MultiStats>);
       });
-    }) as Promise<Required<Stats>>;
+    }) as Promise<Required<MultiStats>>;
   }
 }
 

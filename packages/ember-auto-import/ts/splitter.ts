@@ -247,13 +247,36 @@ export default class Splitter {
         target.importedBy,
         (imp) => imp.isDynamic
       );
+
       if (staticUses.length > 0) {
-        let bundleName = this.chooseBundle(staticUses);
-        deps.get(bundleName)!.staticImports.push(target);
+        let bundleNames = this.chooseBundle(staticUses);
+        bundleNames.forEach((name) => {
+          if (!deps.has(name)) {
+            deps.set(name, {
+              staticImports: [],
+              staticTemplateImports: [],
+              dynamicImports: [],
+              dynamicTemplateImports: [],
+            });
+          }
+
+          deps.get(name)!.staticImports.push(target);
+        });
       }
       if (dynamicUses.length > 0) {
-        let bundleName = this.chooseBundle(dynamicUses);
-        deps.get(bundleName)!.dynamicImports.push(target);
+        let bundleNames = this.chooseBundle(dynamicUses);
+        bundleNames.forEach((name) => {
+          if (!deps.has(name)) {
+            deps.set(name, {
+              staticImports: [],
+              staticTemplateImports: [],
+              dynamicImports: [],
+              dynamicTemplateImports: [],
+            });
+          }
+
+          deps.get(name)!.dynamicImports.push(target);
+        });
       }
     }
 
@@ -263,12 +286,34 @@ export default class Splitter {
         (imp) => imp.isDynamic
       );
       if (staticUses.length > 0) {
-        let bundleName = this.chooseBundle(staticUses);
-        deps.get(bundleName)!.staticTemplateImports.push(target);
+        let bundleNames = this.chooseBundle(staticUses);
+        bundleNames.forEach((name) => {
+          if (!deps.has(name)) {
+            deps.set(name, {
+              staticImports: [],
+              staticTemplateImports: [],
+              dynamicImports: [],
+              dynamicTemplateImports: [],
+            });
+          }
+
+          deps.get(name)!.staticTemplateImports.push(target);
+        });
       }
       if (dynamicUses.length > 0) {
-        let bundleName = this.chooseBundle(dynamicUses);
-        deps.get(bundleName)!.dynamicTemplateImports.push(target);
+        let bundleNames = this.chooseBundle(dynamicUses);
+        bundleNames.forEach((name) => {
+          if (!deps.has(name)) {
+            deps.set(name, {
+              staticImports: [],
+              staticTemplateImports: [],
+              dynamicImports: [],
+              dynamicTemplateImports: [],
+            });
+          }
+
+          deps.get(name)!.dynamicTemplateImports.push(target);
+        });
       }
     }
 
@@ -300,7 +345,17 @@ export default class Splitter {
     importedBy.forEach((usage) => {
       usedInBundles[this.bundleFor(usage)] = true;
     });
-    return this.options.bundles.names.find((bundle) => usedInBundles[bundle])!;
+
+    // if an import happens from both a lazy engine and the app
+    // we can rely on the app bundle bringing it in instead of "double"
+    // requiring it
+    if (usedInBundles['app']) {
+      return [
+        this.options.bundles.names.find((bundle) => usedInBundles[bundle])!,
+      ];
+    }
+
+    return Object.keys(usedInBundles);
   }
 
   private bundleFor(usage: Import) {
@@ -309,6 +364,10 @@ export default class Splitter {
       typeof this.options.bundles.bundleForTreeType !== 'function'
         ? this.options.bundles.bundleForPath(usage.path)
         : this.options.bundles.bundleForTreeType(usage.treeType);
+
+    if (usage.package.isLazyEngine) {
+      return usage.package.name;
+    }
 
     if (this.options.bundles.names.indexOf(bundleName) === -1) {
       throw new Error(

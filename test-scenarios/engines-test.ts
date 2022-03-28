@@ -124,6 +124,8 @@ export default buildRoutes(function () {});`,
 // npm package works correctly (ie the npm package should not be eagerly added).
 appScenarios
   .skip('release') // ember-engines doesn't have an ember 4.0 compatible release yet.
+  .skip('beta')
+  .skip('canary')
   .map('engines', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.linkDependency('webpack', { baseDir: __dirname });

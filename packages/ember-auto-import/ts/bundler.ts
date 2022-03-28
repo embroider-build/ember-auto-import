@@ -5,7 +5,7 @@ import type BundleConfig from './bundle-config';
 import type { BundleName } from './bundle-config';
 import { buildDebugCallback } from 'broccoli-debug';
 import type { TransformOptions } from '@babel/core';
-import type webpack from 'webpack';
+import webpackType from 'webpack';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -19,7 +19,7 @@ export interface BundlerOptions {
   babelConfig: TransformOptions;
   publicAssetURL: string | undefined;
   browserslist: string;
-  webpack: typeof webpack;
+  webpack: typeof webpackType;
   hasFastboot: boolean;
   earlyBootSet: undefined | ((defaultModules: string[]) => string[]);
   v2Addons: Map<string, string>;

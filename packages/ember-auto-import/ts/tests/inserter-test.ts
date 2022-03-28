@@ -55,12 +55,15 @@ Qmodule('inserter', function (hooks) {
       entrypoints: new Map(),
       lazyAssets: [],
     };
-    bundleConfig = new BundleConfig({
-      app: {
-        html: 'index.html',
+    bundleConfig = new BundleConfig(
+      {
+        app: {
+          html: 'index.html',
+        },
+        vendor: { css: '/assets/vendor.css', js: '/assets/vendor.js' },
       },
-      vendor: { css: '/assets/vendor.css', js: '/assets/vendor.js' },
-    });
+      []
+    );
     publicAssetURL = '/assets/';
   });
 
@@ -179,12 +182,15 @@ Qmodule('inserter', function (hooks) {
   });
 
   test('inserts app scripts after customized vendor.js', async function (assert) {
-    bundleConfig = new BundleConfig({
-      app: {
-        html: 'index.html',
+    bundleConfig = new BundleConfig(
+      {
+        app: {
+          html: 'index.html',
+        },
+        vendor: { css: '/assets/vendor.css', js: '/assets/rodnev.js' },
       },
-      vendor: { css: '/assets/vendor.css', js: '/assets/rodnev.js' },
-    });
+      []
+    );
     buildResult.entrypoints.set('app', ['assets/chunk.1.js']);
     writeIndex(`<script src="/assets/rodnev.js"></script>`);
     await build();
@@ -195,12 +201,15 @@ Qmodule('inserter', function (hooks) {
   });
 
   test('inserts app styles after customized vendor.css', async function (assert) {
-    bundleConfig = new BundleConfig({
-      app: {
-        html: 'index.html',
+    bundleConfig = new BundleConfig(
+      {
+        app: {
+          html: 'index.html',
+        },
+        vendor: { css: '/assets/rodnev.css', js: '/assets/rodnev.js' },
       },
-      vendor: { css: '/assets/rodnev.css', js: '/assets/rodnev.js' },
-    });
+      []
+    );
     buildResult.entrypoints.set('app', ['assets/chunk.1.css']);
     writeIndex(`<link rel="stylesheet" href="/assets/rodnev.css"/>`);
     await build();

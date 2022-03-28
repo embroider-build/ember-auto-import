@@ -26,7 +26,14 @@ interface OutputPaths {
 }
 
 export default class BundleConfig {
-  constructor(private outputPaths: OutputPaths) {}
+  constructor(
+    private outputPaths: OutputPaths,
+    private lazyEnginesNames: string[]
+  ) {}
+
+  get lazyEngines() {
+    return this.lazyEnginesNames;
+  }
 
   // This list of valid bundles, in priority order. The first one in the list that
   // needs a given import will end up with that import.
