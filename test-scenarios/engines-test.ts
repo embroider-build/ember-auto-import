@@ -29,16 +29,6 @@ function createInRepoEngine(project: Project, engineName: string) {
   merge(project.files, {
     lib: {
       [engineName]: {
-        node_modules: {
-          'fake-package': {
-            'package.json': `{
-              "name": "fake-package"
-            }`,
-            'index.js': `module.exports = function() {
-  return 'fake-package';
-}`,
-          },
-        },
         'index.js': `const EngineAddon = require('ember-engines/lib/engine-addon');
 module.exports = EngineAddon.extend({
   name: '${engineName}',
@@ -57,7 +47,8 @@ module.exports = EngineAddon.extend({
     "ember-cli-htmlbars": "*",
     "ember-cli-babel": "*",
     "webpack": "*",
-    "fake-package": "*"
+    "fake-package": "*",
+    "outer2": "*"
   },
   "devDependencies": {
     "ember-engines": "*"
@@ -83,17 +74,19 @@ return ENV;
           routes: {
             'application.js': `import Route from '@ember/routing/route';
 import fakePkg from 'fake-package';
+import { nonce } from 'outer2';
 
 export default class ApplicationRoute extends Route {
   model() {
     return {
       pkgName: fakePkg(),
+      nonce,
     };
   }
 }`,
           },
           templates: {
-            'application.hbs': `<p data-test-pkg-name>{{this.model.pkgName}}</p>`,
+            'application.hbs': `<p data-test-pkg-name>{{this.model.pkgName}}</p><p data-test-nonce>{{this.model.nonce}}</p>`,
           },
           'engine.js': `import Engine from 'ember-engines/engine';
 import loadInitializers from 'ember-load-initializers';
@@ -132,6 +125,44 @@ appScenarios
 
     createInRepoEngine(project, 'lazy-in-repo-engine');
 
+    project.addDevDependency('fake-package', {
+      files: {
+        'index.js': `module.exports = function() {
+          return 'fake-package';
+        }`,
+      },
+    });
+
+    project.addDevDependency('inner', {
+      files: {
+        'index.js': `
+          export const nonce = Math.floor(Math.random() * 1000000);
+        `,
+      },
+    });
+
+    // if we let the app and the engine both directly auto-import "inner",
+    // ember-auto-import's own deduplication logic would ensure there's no
+    // duplication of code or state.
+    //
+    // But that only covers the top-level dependencies. All deeper dependencies
+    // are managed directly by webpack, and we also need those dependencies not
+    // to get duplicated module state.
+    //
+    // So this test gives the app and engine different first-level dependencies
+    // (outer1 and outer2) that both share a deeper dependency (inner).
+    for (let outer of ['outer1', 'outer2']) {
+      let dep = project.addDevDependency(outer, {
+        files: {
+          'index.js': `
+          export { nonce } from 'inner';
+        `,
+        },
+      });
+      dep.pkg.peerDependencies = { inner: '*' };
+      project.addDevDependency(dep);
+    }
+
     merge(project.files, {
       app: {
         'router.js': `import EmberRouter from '@ember/routing/router';
@@ -147,6 +178,19 @@ Router.map(function() {
 });
 
 export default Router;`,
+        templates: {
+          'index.hbs': '<div data-test-nonce>{{@model.nonce}}</div>',
+        },
+        routes: {
+          'index.js': `import Route from '@ember/routing/route';
+          import { nonce } from 'outer1';
+          
+          export default class IndexRoute extends Route {
+            model() {
+              return { nonce };
+            }
+          }`,
+        },
       },
       tests: {
         acceptance: {
@@ -157,13 +201,27 @@ import { setupApplicationTest } from 'ember-qunit';
 module('Acceptance | basics', function (hooks) {
   setupApplicationTest(hooks);
 
-  test('importing a plain npm pacakge from a lazy engines does not add the package eagerly', async function (assert) {
+  // To control module caching behaviors, we intentionally only have a single test here that 
+  // exercises everything we want to exercise. If we added more tests, their order could effect 
+  // the outcome of when lazy modules are visible.
+
+  test('lazy engine basics', async function (assert) {
+
+    // 1. importing a plain npm pacakge from a lazy engines does not add the package eagerly
+
     assert.equal(requirejs.entries['fake-package'], undefined, 'fake-package should not be loaded before visting lazy engine');
     await visit('/use-lazy-engine');
     assert.equal(typeof requirejs.entries['fake-package'], 'object', 'fake-package was loaded only after visting the engine');
     assert
       .dom('[data-test-pkg-name]')
       .hasText('fake-package', 'The fake-package was correctly imported');
+
+    // 2. Deps that are shared between app and engine share the same module state
+
+    await visit('/');
+    let appNonce = document.querySelector('[data-test-nonce]').textContent;
+    await visit('/use-lazy-engine');
+    assert.dom('[data-test-nonce]').hasText(appNonce, 'app and addon should see same nonce');
   });
 });`,
         },
