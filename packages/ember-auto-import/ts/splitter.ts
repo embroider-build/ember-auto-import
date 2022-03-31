@@ -37,6 +37,19 @@ export interface SplitterOptions {
   analyzers: Map<Analyzer, Package>;
 }
 
+function ensureDep(deps: Map<string, BundleDependencies>, name: string) {
+  if (!deps.has(name)) {
+    deps.set(name, {
+      staticImports: [],
+      staticTemplateImports: [],
+      dynamicImports: [],
+      dynamicTemplateImports: [],
+    });
+  }
+
+  return deps.get(name);
+}
+
 export default class Splitter {
   private lastImports: Import[][] | undefined;
   private lastDeps: Map<string, BundleDependencies> | null = null;
@@ -233,14 +246,9 @@ export default class Splitter {
     let targets = await this.computeTargets(analyzers);
     let deps: Map<string, BundleDependencies> = new Map();
 
-    this.options.bundles.names.forEach((bundleName) => {
-      deps.set(bundleName, {
-        staticImports: [],
-        staticTemplateImports: [],
-        dynamicImports: [],
-        dynamicTemplateImports: [],
-      });
-    });
+    this.options.bundles.names.forEach((bundleName) =>
+      ensureDep(deps, bundleName)
+    );
 
     for (let target of targets.targets.values()) {
       let [dynamicUses, staticUses] = partition(
@@ -251,31 +259,15 @@ export default class Splitter {
       if (staticUses.length > 0) {
         let bundleNames = this.chooseBundle(staticUses);
         bundleNames.forEach((name) => {
-          if (!deps.has(name)) {
-            deps.set(name, {
-              staticImports: [],
-              staticTemplateImports: [],
-              dynamicImports: [],
-              dynamicTemplateImports: [],
-            });
-          }
-
-          deps.get(name)!.staticImports.push(target);
+          const dep = ensureDep(deps, name);
+          dep!.staticImports.push(target);
         });
       }
       if (dynamicUses.length > 0) {
         let bundleNames = this.chooseBundle(dynamicUses);
         bundleNames.forEach((name) => {
-          if (!deps.has(name)) {
-            deps.set(name, {
-              staticImports: [],
-              staticTemplateImports: [],
-              dynamicImports: [],
-              dynamicTemplateImports: [],
-            });
-          }
-
-          deps.get(name)!.dynamicImports.push(target);
+          const dep = ensureDep(deps, name);
+          dep!.dynamicImports.push(target);
         });
       }
     }
@@ -288,31 +280,15 @@ export default class Splitter {
       if (staticUses.length > 0) {
         let bundleNames = this.chooseBundle(staticUses);
         bundleNames.forEach((name) => {
-          if (!deps.has(name)) {
-            deps.set(name, {
-              staticImports: [],
-              staticTemplateImports: [],
-              dynamicImports: [],
-              dynamicTemplateImports: [],
-            });
-          }
-
-          deps.get(name)!.staticTemplateImports.push(target);
+          const dep = ensureDep(deps, name);
+          dep!.staticTemplateImports.push(target);
         });
       }
       if (dynamicUses.length > 0) {
         let bundleNames = this.chooseBundle(dynamicUses);
         bundleNames.forEach((name) => {
-          if (!deps.has(name)) {
-            deps.set(name, {
-              staticImports: [],
-              staticTemplateImports: [],
-              dynamicImports: [],
-              dynamicTemplateImports: [],
-            });
-          }
-
-          deps.get(name)!.dynamicTemplateImports.push(target);
+          const dep = ensureDep(deps, name);
+          dep!.dynamicTemplateImports.push(target);
         });
       }
     }
