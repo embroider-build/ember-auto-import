@@ -157,10 +157,6 @@ export default class Package {
     );
   }
 
-  get isLazyEngine() {
-    return this._options.lazyLoading && this._options.lazyLoading.enabled;
-  }
-
   private buildBabelOptions(instance: Project | AddonInstance, options: any) {
     // Generate the same babel options that the package (meaning app or addon)
     // is using. We will use these so we can configure our parser to

@@ -20,11 +20,16 @@ function emberEngines(): Project {
 }
 
 function createInRepoEngine(project: Project, engineName: string) {
-  project.addDependency(emberEngines());
+  let engineProject = emberEngines();
+  project.addDependency(engineProject);
 
-  project.pkg['ember-addon'] = {
-    paths: [`lib/${engineName}`],
-  };
+  if (project.pkg['ember-addon'] && (project.pkg['ember-addon'] as any).paths) {
+    ((project.pkg['ember-addon'] as any).paths as any).push(`lib/${engineName}`);
+  } else {
+    project.pkg['ember-addon'] = {
+      paths: [`lib/${engineName}`],
+    };
+  }
 
   merge(project.files, {
     lib: {
@@ -111,6 +116,8 @@ export default buildRoutes(function () {});`,
       },
     },
   });
+
+  return engineProject;
 }
 
 // This is testing that an inrepo lazy engine which imports (via auto-import) a plain
@@ -179,17 +186,30 @@ Router.map(function() {
 
 export default Router;`,
         templates: {
-          'index.hbs': '<div data-test-nonce>{{@model.nonce}}</div>',
+          'index.hbs': '<div data-test-nonce>{{this.model.nonce}}</div>',
         },
         routes: {
           'index.js': `import Route from '@ember/routing/route';
           import { nonce } from 'outer1';
-          
+
           export default class IndexRoute extends Route {
             model() {
               return { nonce };
             }
           }`,
+        },
+        'instance-initializers': {
+          'stub.js': `
+          import RSVP from 'rsvp';
+          import assetLoader, { RETRY_LOAD_SECRET } from 'ember-asset-loader/services/asset-loader';
+          import BundleLoadError from 'ember-asset-loader/errors/bundle-load';
+          import stub from 'ember-auto-import/stubs/asset-loader';
+
+          assetLoader.reopen(stub(RSVP, RETRY_LOAD_SECRET, BundleLoadError))
+
+          export function initialize() {}
+          export default { initialize };
+          `,
         },
       },
       tests: {
@@ -201,17 +221,17 @@ import { setupApplicationTest } from 'ember-qunit';
 module('Acceptance | basics', function (hooks) {
   setupApplicationTest(hooks);
 
-  // To control module caching behaviors, we intentionally only have a single test here that 
-  // exercises everything we want to exercise. If we added more tests, their order could effect 
+  // To control module caching behaviors, we intentionally only have a single test here that
+  // exercises everything we want to exercise. If we added more tests, their order could effect
   // the outcome of when lazy modules are visible.
 
   test('lazy engine basics', async function (assert) {
 
     // 1. importing a plain npm pacakge from a lazy engines does not add the package eagerly
 
-    assert.equal(requirejs.entries['fake-package'], undefined, 'fake-package should not be loaded before visting lazy engine');
+    assert.strictEqual(requirejs.entries['fake-package'], undefined, 'fake-package should not be loaded before visting lazy engine');
     await visit('/use-lazy-engine');
-    assert.equal(typeof requirejs.entries['fake-package'], 'object', 'fake-package was loaded only after visting the engine');
+    assert.strictEqual(typeof requirejs.entries['fake-package'], 'object', 'fake-package was loaded only after visting the engine');
     assert
       .dom('[data-test-pkg-name]')
       .hasText('fake-package', 'The fake-package was correctly imported');

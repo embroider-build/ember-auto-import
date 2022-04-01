@@ -1,5 +1,6 @@
 import AutoImport from './auto-import';
 import type { Node } from 'broccoli-node-api';
+import writeFile from 'broccoli-file-creator';
 // @ts-ignore
 import pkg from '../package';
 
@@ -62,5 +63,64 @@ module.exports = {
     } else {
       return tree;
     }
+  },
+
+  treeForAddon() {
+    let assetLoaderStub = writeFile(
+      'stubs/asset-loader.js',
+      `
+        export default function stub(RSVP, RETRY_LOAD_SECRET, BundleLoadError) {
+          return {
+            loadBundle(name, retryLoad) {
+              const cachedPromise = this._getFromCache(
+                'bundle',
+                name,
+                retryLoad === RETRY_LOAD_SECRET
+              );
+
+              if (cachedPromise) {
+                return cachedPromise;
+              }
+
+              const bundle = this._getBundle(name);
+
+              const dependencies = bundle.dependencies || [];
+              const dependencyPromises = dependencies.map((dependency) =>
+                this.loadBundle(dependency, retryLoad)
+              );
+
+              const assets = bundle.assets || [];
+              const assetPromises = assets.map((asset) =>
+                this.loadAsset(asset, retryLoad)
+              );
+
+              const bundlePromise = RSVP.allSettled([
+                ...dependencyPromises,
+                ...assetPromises,
+                window.engineLookup[name](),
+              ]);
+              const bundleWithFail = bundlePromise.then((promises) => {
+                const rejects = promises.filter(
+                  (promise) => promise.state === 'rejected'
+                );
+                const errors = rejects.map((reject) => reject.reason);
+
+                if (errors.length) {
+                  // Evict rejected promise.
+                  this._getFromCache('bundle', name, true);
+                  throw new BundleLoadError(this, name, errors);
+                }
+
+                return name;
+              });
+
+              return this._setInCache('bundle', name, bundleWithFail);
+            },
+          }
+        }
+        `
+    );
+
+    return this._super.treeForAddon.call(this, assetLoaderStub);
   },
 };

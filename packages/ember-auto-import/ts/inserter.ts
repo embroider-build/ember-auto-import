@@ -109,6 +109,9 @@ export class Inserter extends Plugin {
     let html = readFileSync(fullName, 'utf8');
     let ast = parse5.parse(html, { sourceCodeLocationInfo: true });
     let stringInserter = new StringInserter(html);
+    // make sure we do not duplicate scripts that would
+    // be added to the test html file.
+    let insertedScriptAssets: Set<string> = new Set();
 
     if (this.options.insertScriptsAt) {
       debug(
@@ -160,7 +163,8 @@ export class Inserter extends Plugin {
             fastbootInfo,
             stringInserter,
             element,
-            src
+            src,
+            insertedScriptAssets
           );
         }
       }
@@ -233,7 +237,8 @@ export class Inserter extends Plugin {
     fastbootInfo: ReturnType<typeof Inserter.prototype.fastbootManifestInfo>,
     stringInserter: StringInserter,
     element: parse5.Element,
-    src: string
+    src: string,
+    insertedScriptAssets: Set<string>
   ) {
     for (let entry of targets.scripts) {
       if (entry.afterFile && src.endsWith(entry.afterFile)) {
@@ -241,6 +246,14 @@ export class Inserter extends Plugin {
         entry.inserted = true;
         debug(`inserting %s`, scriptChunks);
         let insertedSrc = scriptChunks
+          .filter((s) => {
+            if (insertedScriptAssets.has(s)) {
+              return false;
+            }
+
+            insertedScriptAssets.add(s);
+            return true;
+          })
           .map((chunk) => `\n<script src="${this.chunkURL(chunk)}"></script>`)
           .join('');
         if (fastbootInfo?.readsHTML && bundleName === 'app') {

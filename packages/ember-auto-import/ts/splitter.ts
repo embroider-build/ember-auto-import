@@ -2,7 +2,7 @@ import makeDebug from 'debug';
 import Analyzer, { Import, LiteralImport, TemplateImport } from './analyzer';
 import Package, { DepResolution } from './package';
 import { shallowEqual } from './util';
-import { flatten, partition } from 'lodash';
+import { flatten } from 'lodash';
 import BundleConfig from './bundle-config';
 import { join } from 'path';
 import { satisfies } from 'semver';
@@ -35,19 +35,6 @@ export interface SplitterOptions {
   // list of bundle names in priority order
   bundles: BundleConfig;
   analyzers: Map<Analyzer, Package>;
-}
-
-function ensureDep(deps: Map<string, BundleDependencies>, name: string) {
-  if (!deps.has(name)) {
-    deps.set(name, {
-      staticImports: [],
-      staticTemplateImports: [],
-      dynamicImports: [],
-      dynamicTemplateImports: [],
-    });
-  }
-
-  return deps.get(name);
 }
 
 export default class Splitter {
@@ -246,51 +233,51 @@ export default class Splitter {
     let targets = await this.computeTargets(analyzers);
     let deps: Map<string, BundleDependencies> = new Map();
 
-    this.options.bundles.names.forEach((bundleName) =>
-      ensureDep(deps, bundleName)
-    );
+    this.options.bundles.names.forEach((bundleName) => {
+      getOrCreate(deps, bundleName);
+    });
 
     for (let target of targets.targets.values()) {
-      let [dynamicUses, staticUses] = partition(
-        target.importedBy,
-        (imp) => imp.isDynamic
-      );
+      target.importedBy.forEach((i) => {
+        let bundleName = this.chooseBundle([i]);
 
-      if (staticUses.length > 0) {
-        let bundleNames = this.chooseBundle(staticUses);
-        bundleNames.forEach((name) => {
-          const dep = ensureDep(deps, name);
-          dep!.staticImports.push(target);
-        });
-      }
-      if (dynamicUses.length > 0) {
-        let bundleNames = this.chooseBundle(dynamicUses);
-        bundleNames.forEach((name) => {
-          const dep = ensureDep(deps, name);
-          dep!.dynamicImports.push(target);
-        });
-      }
+        if (bundleName === 'tests') {
+          if (i.isDynamic) {
+            getOrCreate(deps, 'tests').dynamicImports.push(target);
+          } else {
+            getOrCreate(deps, 'tests').staticImports.push(target);
+          }
+        } else {
+          let depName = i.package.isAddon ? i.package.name : 'app';
+          if (i.isDynamic) {
+            getOrCreate(deps, depName).dynamicImports.push(target);
+          } else {
+            getOrCreate(deps, depName).staticImports.push(target);
+          }
+        }
+      });
     }
 
     for (let target of targets.templateTargets.values()) {
-      let [dynamicUses, staticUses] = partition(
-        target.importedBy,
-        (imp) => imp.isDynamic
-      );
-      if (staticUses.length > 0) {
-        let bundleNames = this.chooseBundle(staticUses);
-        bundleNames.forEach((name) => {
-          const dep = ensureDep(deps, name);
-          dep!.staticTemplateImports.push(target);
-        });
-      }
-      if (dynamicUses.length > 0) {
-        let bundleNames = this.chooseBundle(dynamicUses);
-        bundleNames.forEach((name) => {
-          const dep = ensureDep(deps, name);
-          dep!.dynamicTemplateImports.push(target);
-        });
-      }
+      target.importedBy.forEach((i) => {
+        let bundleName = this.chooseBundle([i]);
+
+        if (bundleName === 'tests') {
+          if (i.isDynamic) {
+            getOrCreate(deps, 'tests').dynamicTemplateImports.push(target);
+          } else {
+            getOrCreate(deps, 'tests').staticTemplateImports.push(target);
+          }
+        } else {
+          let depName = i.package.isAddon ? i.package.name : 'app';
+
+          if (i.isDynamic) {
+            getOrCreate(deps, depName).dynamicTemplateImports.push(target);
+          } else {
+            getOrCreate(deps, depName).staticTemplateImports.push(target);
+          }
+        }
+      });
     }
 
     this.sortDependencies(deps);
@@ -321,17 +308,7 @@ export default class Splitter {
     importedBy.forEach((usage) => {
       usedInBundles[this.bundleFor(usage)] = true;
     });
-
-    // if an import happens from both a lazy engine and the app
-    // we can rely on the app bundle bringing it in instead of "double"
-    // requiring it
-    if (usedInBundles['app']) {
-      return [
-        this.options.bundles.names.find((bundle) => usedInBundles[bundle])!,
-      ];
-    }
-
-    return Object.keys(usedInBundles);
+    return this.options.bundles.names.find((bundle) => usedInBundles[bundle])!;
   }
 
   private bundleFor(usage: Import) {
@@ -340,10 +317,6 @@ export default class Splitter {
       typeof this.options.bundles.bundleForTreeType !== 'function'
         ? this.options.bundles.bundleForPath(usage.path)
         : this.options.bundles.bundleForTreeType(usage.treeType);
-
-    if (usage.package.isLazyEngine) {
-      return usage.package.name;
-    }
 
     if (this.options.bundles.names.indexOf(bundleName) === -1) {
       throw new Error(
@@ -401,4 +374,17 @@ class LazyPrintDeps {
     }
     return JSON.stringify(output, null, 2);
   }
+}
+
+function getOrCreate(deps: Map<string, BundleDependencies>, name: string) {
+  if (!deps.has(name)) {
+    deps.set(name, {
+      staticImports: [],
+      staticTemplateImports: [],
+      dynamicImports: [],
+      dynamicTemplateImports: [],
+    });
+  }
+
+  return deps.get(name)!;
 }

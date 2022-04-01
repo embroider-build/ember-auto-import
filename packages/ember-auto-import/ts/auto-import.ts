@@ -67,11 +67,7 @@ export default class AutoImport implements AutoImportSharedAPI {
     this.packages.add(Package.lookupParentOf(topmostAddon));
     let host = topmostAddon.app;
     this.env = host.env;
-    let lazyEngines = findRecursiveLazyEngines(new Set(), host.project);
-    this.bundles = new BundleConfig(
-      host.options.outputPaths,
-      Array.from(lazyEngines)
-    );
+    this.bundles = new BundleConfig(host.options.outputPaths, host);
     if (!this.env) {
       throw new Error('Bug in ember-auto-import: did not discover environment');
     }
@@ -249,20 +245,4 @@ function isAnalyzerPlugin(entry: unknown) {
       typeof entry[0] === 'string' &&
       entry[0].endsWith(suffix))
   );
-}
-
-function findRecursiveLazyEngines(lazyEngines: Set<string>, project: any) {
-  project.addons.forEach((addon: any) => {
-    if (
-      addon.options &&
-      addon.options.lazyLoading &&
-      addon.options.lazyLoading.enabled
-    ) {
-      lazyEngines.add(addon.options.name);
-    }
-
-    findRecursiveLazyEngines(lazyEngines, addon);
-  });
-
-  return lazyEngines;
 }

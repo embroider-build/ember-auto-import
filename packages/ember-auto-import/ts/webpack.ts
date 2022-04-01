@@ -1,10 +1,10 @@
 import type {
   Configuration,
+  Compiler,
   RuleSetRule,
+  Stats,
   RuleSetUseItem,
   WebpackPluginInstance,
-  MultiCompiler,
-  MultiStats,
 } from 'webpack';
 import { join, dirname } from 'path';
 import { mergeWith, flatten, zip } from 'lodash';
@@ -20,7 +20,12 @@ import { Options } from './package';
 import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
-import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
+import {
+  ensureDirSync,
+  symlinkSync,
+  existsSync,
+  outputFileSync,
+} from 'fs-extra';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import semver from 'semver';
 
@@ -90,6 +95,16 @@ module.exports = (function(){
     {{! this is only used for synchronous importSync() using a template string }}
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
+  {{#each relativeImports as |module|}}
+    require('./{{js-string-escape module}}');
+  {{/each}}
+  {{#each lazyEngineImports as |module|}}
+    var engineLookup = window.engineLookup || {};
+    engineLookup['{{module}}'] = function() {
+      return import('./{{js-string-escape module}}.js')
+    };
+    window.engineLookup = engineLookup;
+  {{/each}}
   d('__v1-addons__early-boot-set__', [{{{v1EmberDeps}}}], function() {});
   {{#each staticImports as |module|}}
     d('{{js-string-escape module.specifier}}', ['__v1-addons__early-boot-set__'], function() { return require('{{js-string-escape module.specifier}}'); });
@@ -119,9 +134,17 @@ module.exports = (function(){
   dynamicImports: { specifier: string }[];
   staticTemplateImports: { key: string; args: string; template: string }[];
   dynamicTemplateImports: { key: string; args: string; template: string }[];
+  relativeImports: { specifier: string }[];
+  lazyEngineImports: { specifier: string }[];
   publicAssetURL: string | undefined;
   v1EmberDeps: string;
 }) => string;
+
+const emptyTemplate = compile(`
+{{#each relativeImports as |module|}}
+  import './{{js-string-escape module}}.js';
+{{/each}}
+`) as (args: { relativeImports: { specifier: string }[] }) => string;
 
 // this goes in a file by itself so we can tell webpack not to parse it. That
 // allows us to grab the "require" and "define" from our enclosing scope without
@@ -138,7 +161,7 @@ window._eai_d = define;
 export default class WebpackBundler extends Plugin implements Bundler {
   private state:
     | {
-        webpack: MultiCompiler;
+        webpack: Compiler;
         stagingDir: string;
       }
     | undefined;
@@ -253,19 +276,6 @@ export default class WebpackBundler extends Plugin implements Bundler {
       node: false,
       externals: this.externalsHandler,
     };
-    if ([...this.opts.packages].find((pkg) => pkg.forbidsEval)) {
-      config.devtool = 'source-map';
-    }
-    mergeConfig(
-      config,
-      ...[...this.opts.packages].map((pkg) => pkg.webpackConfig)
-    );
-    debug('webpackConfig %j', config);
-    this.state = {
-      webpack: this.opts.webpack(config) as unknown as MultiCompiler,
-      stagingDir,
-    };
-    return this.state;
   }
 
   private setupStyleLoader(): {
@@ -379,64 +389,95 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   async build(): Promise<void> {
     let bundleDeps = await this.opts.splitter.deps();
-    for (let [bundle, deps] of bundleDeps.entries()) {
-      this.writeEntryFile(bundle, deps);
-    }
+
+    this.recursivelyCreateEntryFiles(
+      this.opts.bundles.hostProject,
+      bundleDeps,
+      true
+    );
+
     this.writeLoaderFile();
     this.linkDeps(bundleDeps);
     let stats = await this.runWebpack();
     this.lastBuildResult = this.summarizeStats(stats, bundleDeps);
   }
 
+  private recursivelyCreateEntryFiles(project: any, deps: any, isApp: boolean) {
+    let addonNames: string[] = [];
+    let lazyEngineNames: string[] = [];
+
+    project.addons.forEach((addon: any) => {
+      if (
+        addon.options &&
+        addon.options.lazyLoading &&
+        addon.options.lazyLoading.enabled
+      ) {
+        lazyEngineNames.push(flattenFileName(addon.name));
+      } else if (addon.addons.length) {
+        addonNames.push(flattenFileName(addon.name));
+      }
+
+      if (addon.addons.length) {
+        this.recursivelyCreateEntryFiles(addon, deps, false);
+      }
+    });
+
+    if (isApp) {
+      this.writeEntryFile('app', deps.get('app')!, addonNames, lazyEngineNames);
+      this.writeEntryFile('tests', deps.get('tests')!, ['app'], []);
+    } else {
+      let name = project.name;
+      this.writeEntryFile(name, deps.get(name), addonNames, lazyEngineNames);
+    }
+  }
+
   private summarizeStats(
-    _stats: Required<MultiStats>,
+    _stats: Required<Stats>,
     bundleDeps: Map<string, BundleDependencies>
   ): BuildResult {
-    let { children } = _stats.toJson();
+    let { entrypoints, assets } = _stats.toJson();
+
+    // webpack's types are written rather loosely, implying that these two
+    // properties may not be present. They really always are, as far as I can
+    // tell, but we need to check here anyway to satisfy the type checker.
+    if (!entrypoints) {
+      throw new Error(`unexpected webpack output: no entrypoints`);
+    }
+    if (!assets) {
+      throw new Error(`unexpected webpack output: no assets`);
+    }
+
     let output: BuildResult = {
       entrypoints: new Map(),
       lazyAssets: [] as string[],
     };
+    let nonLazyAssets: Set<string> = new Set();
+    for (let id of Object.keys(entrypoints!)) {
+      let { assets: entrypointAssets } = entrypoints![id];
+      if (!entrypointAssets) {
+        throw new Error(`unexpected webpack output: no entrypoint.assets`);
+      }
 
-    children?.forEach(({ entrypoints, assets }) => {
-      // webpack's types are written rather loosely, implying that these two
-      // properties may not be present. They really always are, as far as I can
-      // tell, but we need to check here anyway to satisfy the type checker.
-      if (!entrypoints) {
-        throw new Error(`unexpected webpack output: no entrypoints`);
+      // our built-in bundles can be "empty" while still existing because we put
+      // setup code in them, so they get a special check for non-emptiness.
+      // Whereas any other bundle that was manually configured by the user
+      // should always be emitted.
+      if (
+        !this.opts.bundles.isBuiltInBundleName(id) ||
+        nonEmptyBundle(id, bundleDeps)
+      ) {
+        output.entrypoints.set(
+          id,
+          entrypointAssets.map((a) => 'assets/' + a.name)
+        );
       }
-      if (!assets) {
-        throw new Error(`unexpected webpack output: no assets`);
+      entrypointAssets.forEach((asset) => nonLazyAssets.add(asset.name));
+    }
+    for (let asset of assets!) {
+      if (!nonLazyAssets.has(asset.name)) {
+        output.lazyAssets.push('assets/' + asset.name);
       }
-      let nonLazyAssets: Set<string> = new Set();
-      for (let id of Object.keys(entrypoints!)) {
-        let { assets: entrypointAssets } = entrypoints![id];
-        if (!entrypointAssets) {
-          throw new Error(`unexpected webpack output: no entrypoint.assets`);
-        }
-
-        // our built-in bundles can be "empty" while still existing because we put
-        // setup code in them, so they get a special check for non-emptiness.
-        // Whereas any other bundle that was manually configured by the user
-        // should always be emitted.
-        if (
-          !this.opts.bundles.isBuiltInBundleName(id) ||
-          nonEmptyBundle(id, bundleDeps)
-        ) {
-          output.entrypoints.set(
-            id,
-            entrypointAssets.map((a) => 'assets/' + a.name)
-          );
-        }
-        entrypointAssets.forEach((asset) => nonLazyAssets.add(asset.name));
-      }
-      for (let asset of assets!) {
-        if (!nonLazyAssets.has(asset.name)) {
-          output.lazyAssets.push('assets/' + asset.name);
-        }
-      }
-    });
-
+    }
     return output;
   }
 
@@ -535,10 +576,8 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private writeEntryFile(name: string, deps: BundleDependencies) {
-    let v1EmberDeps = this.getEarlyBootSet();
-
     writeFileSync(
-      join(this.stagingDir, `${name}.cjs`),
+      join(this.stagingDir, `${name}.js`),
       entryTemplate({
         staticImports: deps.staticImports,
         dynamicImports: deps.dynamicImports,
@@ -547,7 +586,6 @@ export default class WebpackBundler extends Plugin implements Bundler {
         staticTemplateImports:
           deps.staticTemplateImports.map(mapTemplateImports),
         publicAssetURL: this.opts.publicAssetURL,
-        v1EmberDeps: v1EmberDeps.map((name) => `'${name}'`).join(','),
       })
     );
   }
@@ -590,7 +628,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
     }
   }
 
-  private async runWebpack(): Promise<Required<MultiStats>> {
+  private async runWebpack(): Promise<Required<Stats>> {
     return new Promise((resolve, reject) => {
       this.webpack.run((err, stats) => {
         const statsString = stats ? stats.toString() : '';
@@ -608,9 +646,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
           this.opts.consoleWrite(statsString);
         }
         // this cast is justified because we already checked hasErrors above
-        resolve(stats as Required<MultiStats>);
+        resolve(stats as Required<Stats>);
       });
-    }) as Promise<Required<MultiStats>>;
+    }) as Promise<Required<Stats>>;
   }
 }
 
@@ -695,4 +733,9 @@ function nonEmptyBundle(
 // usage of Array.prototype.filter.
 function removeUndefined<T>(list: (T | undefined)[]): T[] {
   return list.filter((item) => typeof item !== 'undefined') as T[];
+}
+
+function flattenFileName(path: string) {
+  let re = new RegExp('/', 'g');
+  return path.replace(re, '-');
 }

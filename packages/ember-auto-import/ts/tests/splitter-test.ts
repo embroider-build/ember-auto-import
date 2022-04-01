@@ -72,18 +72,15 @@ Qmodule('splitter', function (hooks) {
       });
       let analyzer = new Analyzer(transpiled, pack, undefined, true);
       splitter = new Splitter({
-        bundles: new BundleConfig(
-          {
-            vendor: {
-              js: 'assets/vendor.js',
-              css: 'assetes/vendor.css',
-            },
-            app: {
-              html: 'index.html',
-            },
+        bundles: new BundleConfig({
+          vendor: {
+            js: 'assets/vendor.js',
+            css: 'assetes/vendor.css',
           },
-          []
-        ),
+          app: {
+            html: 'index.html',
+          },
+        }),
         analyzers: new Map([[analyzer, pack]]),
       });
       builder = new broccoli.Builder(analyzer);
