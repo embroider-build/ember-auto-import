@@ -124,7 +124,7 @@ appScenarios
         app = await scenario.prepare();
       });
       test('yarn test', async function (assert) {
-        let result = await app.execute('npm run test');
+        let result = await app.execute('volta run npm -- run test');
         assert.equal(result.exitCode, 0, result.output);
       });
     });

@@ -3,6 +3,7 @@ import { PreparedApp } from 'scenario-tester';
 import QUnit from 'qunit';
 import merge from 'lodash/merge';
 import { setupFastboot } from './fastboot-helper';
+
 const { module: Qmodule, test } = QUnit;
 
 appScenarios
@@ -161,7 +162,7 @@ appScenarios
       });
 
       test('npm run test', async function (assert) {
-        let result = await app.execute('npm run test');
+        let result = await app.execute('volta run npm -- run test');
         assert.equal(result.exitCode, 0, result.output);
       });
 

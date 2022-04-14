@@ -1,20 +1,6 @@
 import { Scenarios, Project } from 'scenario-tester';
-import { dirname, delimiter } from 'path';
+import { dirname } from 'path';
 import { merge } from 'lodash';
-
-// https://github.com/volta-cli/volta/issues/702
-// We need this because we're launching node in child processes and we want
-// those children to respect volta config per project.
-(function restoreVoltaEnvironment() {
-  let voltaHome = process.env['VOLTA_HOME'];
-  if (!voltaHome) return;
-  let paths = process.env['PATH']!.split(delimiter);
-  while (/\.volta/.test(paths[0])) {
-    paths.shift();
-  }
-  paths.unshift(`${voltaHome}/bin`);
-  process.env['PATH'] = paths.join(delimiter);
-})();
 
 if (
   require('../packages/ember-auto-import/package.json').version !==
