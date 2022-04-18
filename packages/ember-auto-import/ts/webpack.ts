@@ -86,6 +86,11 @@ window._eai_r = require;
 window._eai_d = define;
 `;
 
+type StyleLoader = {
+  loader: RuleSetUseItem;
+  plugin: WebpackPluginInstance | undefined;
+};
+
 export default class WebpackBundler extends Plugin implements Bundler {
   private state:
     | {
@@ -138,7 +143,13 @@ export default class WebpackBundler extends Plugin implements Bundler {
       ];
     });
 
-    let { plugin: stylePlugin, loader: styleLoader } = this.setupStyleLoader();
+    let stylePluginsAndLoaders = this.setupStyleLoaders();
+    let stylePlugins = stylePluginsAndLoaders.map(
+      (stylePluginAndLoader) => stylePluginAndLoader.plugin
+    );
+    let styleLoaders = stylePluginsAndLoaders.map(
+      (stylePluginAndLoader) => stylePluginAndLoader.loader
+    );
 
     let config: Configuration = {
       mode:
@@ -182,7 +193,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           ...removeUndefined([...this.opts.packages].map((pkg) => pkg.aliases))
         ),
       },
-      plugins: removeUndefined([stylePlugin]),
+      plugins: removeUndefined(stylePlugins),
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.js'),
         rules: [
@@ -190,7 +201,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           {
             test: /\.css$/i,
             use: [
-              styleLoader,
+              ...styleLoaders,
               {
                 loader: 'eai-css-loader',
                 options: [...this.opts.packages].find(
@@ -217,12 +228,11 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return this.state;
   }
 
-  private setupStyleLoader(): {
-    loader: RuleSetUseItem;
-    plugin: WebpackPluginInstance | undefined;
-  } {
+  private setupStyleLoaders(): StyleLoader[] {
+    let result: StyleLoader[] = [];
+
     if (this.opts.environment === 'production' || this.opts.hasFastboot) {
-      return {
+      result.push({
         loader: MiniCssExtractPlugin.loader,
         plugin: new MiniCssExtractPlugin({
           filename: `chunk.[id].[chunkhash].css`,
@@ -231,16 +241,19 @@ export default class WebpackBundler extends Plugin implements Bundler {
             (pkg) => pkg.miniCssExtractPluginOptions
           )?.miniCssExtractPluginOptions,
         }),
-      };
-    } else
-      return {
-        loader: {
-          loader: 'eai-style-loader',
-          options: [...this.opts.packages].find((pkg) => pkg.styleLoaderOptions)
-            ?.styleLoaderOptions,
-        },
-        plugin: undefined,
-      };
+      });
+    }
+
+    result.push({
+      loader: {
+        loader: 'eai-style-loader',
+        options: [...this.opts.packages].find((pkg) => pkg.styleLoaderOptions)
+          ?.styleLoaderOptions,
+      },
+      plugin: undefined,
+    });
+
+    return result;
   }
 
   private skipBabel(): Required<Options>['skipBabel'] {
