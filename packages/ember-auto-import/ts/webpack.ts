@@ -99,11 +99,11 @@ module.exports = (function(){
     require('./{{js-string-escape module}}');
   {{/each}}
   {{#each lazyEngineImports as |module|}}
-    var engineLookup = window.engineLookup || {};
+    var engineLookup = window.__eaiEngineLookup || {};
     engineLookup['{{module}}'] = function() {
       return import('./{{js-string-escape module}}.js')
     };
-    window.engineLookup = engineLookup;
+    window.__eaiEngineLookup = engineLookup;
   {{/each}}
   d('__v1-addons__early-boot-set__', [{{{v1EmberDeps}}}], function() {});
   {{#each staticImports as |module|}}
@@ -142,7 +142,7 @@ module.exports = (function(){
 
 const emptyTemplate = compile(`
 {{#each relativeImports as |module|}}
-  import './{{js-string-escape module}}.js';
+import './{{js-string-escape module}}.js';
 {{/each}}
 `) as (args: { relativeImports: { specifier: string }[] }) => string;
 
@@ -232,6 +232,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         library: '__ember_auto_import__',
       },
       optimization: {
+        removeAvailableModules: true,
         splitChunks: {
           chunks: 'all',
         },

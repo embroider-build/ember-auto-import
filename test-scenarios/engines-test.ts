@@ -198,19 +198,6 @@ export default Router;`,
             }
           }`,
         },
-        'instance-initializers': {
-          'stub.js': `
-          import RSVP from 'rsvp';
-          import assetLoader, { RETRY_LOAD_SECRET } from 'ember-asset-loader/services/asset-loader';
-          import BundleLoadError from 'ember-asset-loader/errors/bundle-load';
-          import stub from 'ember-auto-import/stubs/asset-loader';
-
-          assetLoader.reopen(stub(RSVP, RETRY_LOAD_SECRET, BundleLoadError))
-
-          export function initialize() {}
-          export default { initialize };
-          `,
-        },
       },
       tests: {
         acceptance: {
