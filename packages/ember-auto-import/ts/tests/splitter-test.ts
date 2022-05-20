@@ -476,6 +476,9 @@ function stubAddonInstance(
     name() {
       return 'my-project';
     },
+    configPath() {
+      return join(baseDir, 'config', 'environment');
+    },
   } as EmberCLIProject;
   let app = {
     env: 'development',
