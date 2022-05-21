@@ -204,14 +204,13 @@ export default class WebpackBundler extends Plugin implements Bundler {
       node: false,
       externals: this.externalsHandler,
     };
-
+    if ([...this.opts.packages].find((pkg) => pkg.forbidsEval)) {
+      config.devtool = 'source-map';
+    }
     mergeConfig(
       config,
       ...[...this.opts.packages].map((pkg) => pkg.webpackConfig)
     );
-    if ([...this.opts.packages].find((pkg) => pkg.forbidsEval)) {
-      config.devtool = 'source-map';
-    }
     debug('webpackConfig %j', config);
     this.state = { webpack: this.opts.webpack(config), stagingDir };
     return this.state;
