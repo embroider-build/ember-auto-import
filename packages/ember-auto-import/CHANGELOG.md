@@ -80,6 +80,22 @@
 - BREAKING: minimum supported Node is 12 (because 10 hit EOL on 2021-04-30)
 - BREAKING: minimum supported Ember and EmberCLI versions are both 3.4
 
+### 1.12.2
+
+- BUGFIX allow the user's devTool setting to take priority over the default provided by forbidEval by @apellerano-pw
+
+### 1.12.1
+
+- COMPAT upgraded to `@embroider/shared-internals` 1.0 so that apps can avoid redundant copies
+
+### 1.12.0
+
+- FEATURE: We now properly optimize TypeScript's `import type` syntax, meaning
+  if you only import the types from a package it will not be included in your
+  build.
+  Backports [#380](https://github.com/ef4/ember-auto-import/pull/380) from
+  `v2.1.0` by @buschtoens.
+
 ### 1.11.3
 
 - NO-OP: I accidentally published 2.0.0-alpha.0 to NPM under the `latest` tag. This is a re-published of 1.11.2 to supplant that as latest.
