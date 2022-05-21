@@ -70,6 +70,7 @@ type Resolution =
 export default class Package {
   public name: string;
   public root: string;
+  private pkgRoot: string;
   public isAddon: boolean;
   private _options: any;
   private _parent: Project | AddonInstance;
@@ -97,14 +98,17 @@ export default class Package {
 
   constructor(child: AddonInstance) {
     this.name = child.parent.pkg.name;
-    this.root = child.parent.root;
 
     if (isDeepAddonInstance(child)) {
+      this.root = this.pkgRoot = child.parent.root;
       this.isAddon = true;
       this.isDeveloping = this.root === child.project.root;
       // This is the per-package options from ember-cli
       this._options = child.parent.options;
     } else {
+      // this can differ from child.parent.root because Dummy apps are terrible
+      this.root = join(child.project.configPath(), '..', '..');
+      this.pkgRoot = child.parent.root;
       this.isAddon = false;
       this.isDeveloping = true;
       this._options = child.app.options;
@@ -187,7 +191,7 @@ export default class Package {
       // avoiding `require` here because we don't want to go through the
       // require cache.
       this.pkgCache = JSON.parse(
-        readFileSync(join(this.root, 'package.json'), 'utf-8')
+        readFileSync(join(this.pkgRoot, 'package.json'), 'utf-8')
       );
       this.pkgGeneration = pkgGeneration;
     }
