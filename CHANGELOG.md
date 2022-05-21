@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.12.2
+
+- BUGFIX allow the user's devTool setting to take priority over the default provided by forbidEval by @apellerano-pw
+
 ### 1.12.1
 
 - COMPAT upgraded to `@embroider/shared-internals` 1.0 so that apps can avoid redundant copies
