@@ -1,5 +1,9 @@
 # Changelog
 
+### 2.4.2
+
+- BUGFIX: prioritize the user's webpack devTool setting over the default provided by our forbidEval setting.
+
 ### 2.4.1
 
 - BUGFIX: avoid unnecessary full page reloads
@@ -82,7 +86,7 @@
 
 ### 1.12.2
 
-- BUGFIX allow the user's devTool setting to take priority over the default provided by forbidEval by @apellerano-pw
+- BUGFIX allow the user's devTool setting to take priority over the default provided by forbidEval by @apellerano-pw.
 
 ### 1.12.1
 
