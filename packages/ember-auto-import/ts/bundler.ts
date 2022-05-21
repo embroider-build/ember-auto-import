@@ -76,8 +76,12 @@ export default class Bundler extends Plugin {
 
   get bundlerHook(): BundlerHook {
     if (!this.cachedBundlerHook) {
+      const internalWebpackConfig: any = {};
+      if ([...this.options.packages.values()].find(pkg => pkg.forbidsEval)) {
+        internalWebpackConfig.devtool = 'source-map';
+      }
       let extraWebpackConfig = mergeWith(
-        {},
+        internalWebpackConfig,
         ...[...this.options.packages.values()].map(pkg => pkg.webpackConfig),
         (objValue: any, srcValue: any) => {
           // arrays concat
@@ -86,9 +90,6 @@ export default class Bundler extends Plugin {
           }
         }
       );
-      if ([...this.options.packages.values()].find(pkg => pkg.forbidsEval)) {
-        extraWebpackConfig.devtool = 'source-map';
-      }
       debug('extraWebpackConfig %j', extraWebpackConfig);
       this.cachedBundlerHook = new WebpackBundler(
         this.options.bundles,
