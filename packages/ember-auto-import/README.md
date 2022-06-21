@@ -72,7 +72,7 @@ If you're using custom deployment code, make sure it will include all the Javasc
 
 ## Customizing Build Behavior
 
-While most NPM packages authored in CommonJS or ES Modules will Just Work, for others you may need some give ember-auto-import a hint about what to do.
+While most NPM packages authored in CommonJS or ES Modules will Just Work, for others you may need to give ember-auto-import a hint about what to do.
 
 You can set options like this in your ember-cli-build.js:
 
