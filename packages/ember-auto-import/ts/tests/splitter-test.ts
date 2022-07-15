@@ -6,7 +6,7 @@ import { outputFileSync } from 'fs-extra';
 import { join } from 'path';
 import Package, { Options } from '../package';
 import Analyzer from '../analyzer';
-import Splitter from '../splitter';
+import Splitter, { ImportError, isImportError } from '../splitter';
 import BundleConfig from '../bundle-config';
 import { Project } from 'scenario-tester';
 import { merge } from 'lodash';
@@ -190,30 +190,43 @@ Qmodule('splitter', function (hooks) {
         assert.deepEqual(deps.get('app')?.dynamicImports, []);
         let dynamicTemplateImports = deps.get('app')?.dynamicTemplateImports;
         assert.equal(dynamicTemplateImports?.length, 1);
+        let templateImport = dynamicTemplateImports?.[0];
+
+        // this test does not check this particular pathway so this throw will never happen
+        // and this code is just here to make the TypeScript compiler happy
+        if (templateImport === undefined || isImportError(templateImport)) {
+          throw new Error('Import error');
+        }
+
         assert.deepEqual(
-          dynamicTemplateImports?.[0].cookedQuasis,
+          templateImport.cookedQuasis,
           example[1].quasis
         );
         assert.deepEqual(
-          dynamicTemplateImports?.[0].expressionNameHints,
+          templateImport.expressionNameHints,
           example[1].expressions
         );
         assert.equal(
-          dynamicTemplateImports?.[0].packageName,
+          templateImport.packageName,
           example[1].packageName
         );
         assert.equal(
-          dynamicTemplateImports?.[0].packageRoot,
+          templateImport.packageRoot,
           join(project.baseDir, 'node_modules', example[1].packageName)
         );
       } else {
+
         assert.deepEqual(deps.get('app')?.dynamicTemplateImports, []);
         let dynamicImports = deps.get('app')?.dynamicImports;
+        let templateImport = dynamicImports?.[0];
+        if (templateImport === undefined || isImportError(templateImport)) {
+          throw Error('Import error');
+        }
         assert.equal(dynamicImports?.length, 1);
-        assert.equal(dynamicImports?.[0].specifier, example[1].specifier);
-        assert.equal(dynamicImports?.[0].packageName, example[1].packageName);
+        assert.equal(templateImport.specifier, example[1].specifier);
+        assert.equal(templateImport.packageName, example[1].packageName);
         assert.equal(
-          dynamicImports?.[0].packageRoot,
+          templateImport.packageRoot,
           join(project.baseDir, 'node_modules', example[1].packageName)
         );
       }
@@ -236,30 +249,47 @@ Qmodule('splitter', function (hooks) {
         assert.deepEqual(deps.get('app')?.staticImports, []);
         let staticTemplateImports = deps.get('app')?.staticTemplateImports;
         assert.equal(staticTemplateImports?.length, 1);
+
+        const templateImport = staticTemplateImports?.[0];
+
+        // this test does not check this particular pathway so this throw will never happen
+        // and this code is just here to make the TypeScript compiler happy
+        if (templateImport === undefined || isImportError(templateImport)) {
+          throw new Error('Import error');
+        }
+
         assert.deepEqual(
-          staticTemplateImports?.[0].cookedQuasis,
+          templateImport.cookedQuasis,
           example[1].quasis
         );
         assert.deepEqual(
-          staticTemplateImports?.[0].expressionNameHints,
+          templateImport.expressionNameHints,
           example[1].expressions
         );
         assert.equal(
-          staticTemplateImports?.[0].packageName,
+          templateImport.packageName,
           example[1].packageName
         );
         assert.equal(
-          staticTemplateImports?.[0].packageRoot,
+          templateImport.packageRoot,
           join(project.baseDir, 'node_modules', example[1].packageName)
         );
       } else {
         assert.deepEqual(deps.get('app')?.staticTemplateImports, []);
         let staticImports = deps.get('app')?.staticImports;
+
+        const templateImport = staticImports?.[0];
+
+        // this test does not check this particular pathway so this throw will never happen
+        // and this code is just here to make the TypeScript compiler happy
+        if (templateImport === undefined || isImportError(templateImport)) {
+          throw new Error('Import error');
+        }
         assert.equal(staticImports?.length, 1);
-        assert.equal(staticImports?.[0].specifier, example[1].specifier);
-        assert.equal(staticImports?.[0].packageName, example[1].packageName);
+        assert.equal(templateImport.specifier, example[1].specifier);
+        assert.equal(templateImport.packageName, example[1].packageName);
         assert.equal(
-          staticImports?.[0].packageRoot,
+          templateImport.packageRoot,
           join(project.baseDir, 'node_modules', example[1].packageName)
         );
       }
@@ -332,15 +362,20 @@ Qmodule('splitter', function (hooks) {
     let src = "import('./thing')";
     outputFileSync(join(project.baseDir, 'sample.js'), src);
     await builder.build();
-    try {
-      await splitter.deps();
-      throw new Error(`expected not to get here, build was supposed to fail`);
-    } catch (err) {
-      assert.contains(
-        err.message,
-        `ember-auto-import does not support dynamic relative imports. "./thing" is relative. To make this work, you need to upgrade to Embroider.`
-      );
-    }
+
+    const deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.dynamicImports.map((i) => ({
+        specifier: i.specifier,
+        error: (i as ImportError).error,
+      })),
+      [
+        {
+          specifier: './thing',
+          error: `ember-auto-import does not support dynamic relative imports. "./thing" is relative. To make this work, you need to upgrade to Embroider.`,
+        },
+      ]
+    );
   });
 
   test('dynamic template relative imports are forbidden', async function (assert) {
@@ -348,15 +383,17 @@ Qmodule('splitter', function (hooks) {
     let src = 'import(`./thing/${foo}`)';
     outputFileSync(join(project.baseDir, 'sample.js'), src);
     await builder.build();
-    try {
-      await splitter.deps();
-      throw new Error(`expected not to get here, build was supposed to fail`);
-    } catch (err) {
-      assert.contains(
-        err.message,
-        `ember-auto-import does not support dynamic relative imports. "./thing/" is relative. To make this work, you need to upgrade to Embroider.`
-      );
-    }
+    const deps = await splitter.deps();
+    assert.deepEqual(
+      deps.get('app')?.dynamicTemplateImports.map((i) => ({
+        error: (i as ImportError).error,
+      })),
+      [
+        {
+          error: `ember-auto-import does not support dynamic relative imports. "./thing/" is relative. To make this work, you need to upgrade to Embroider. The attempted import of './thing/' is located in sample.js`,
+        },
+      ]
+    );
   });
 
   test('exact alias remaps package name and root', async function (assert) {
@@ -371,11 +408,16 @@ Qmodule('splitter', function (hooks) {
     await builder.build();
     let deps = await splitter.deps();
     assert.deepEqual(
-      deps.get('app')?.staticImports.map((i) => ({
-        packageName: i.packageName,
-        packageRoot: i.packageRoot,
-        specifier: i.specifier,
-      })),
+      deps.get('app')?.staticImports.map((i) => {
+        if (isImportError(i)) {
+          throw new Error('we will never hit this errror');
+        }
+        return {
+          packageName: i.packageName,
+          packageRoot: i.packageRoot,
+          specifier: i.specifier,
+        };
+      }),
       [
         {
           packageName: 'aliasing-example',
@@ -402,11 +444,16 @@ Qmodule('splitter', function (hooks) {
     await builder.build();
     let deps = await splitter.deps();
     assert.deepEqual(
-      deps.get('app')?.staticImports.map((i) => ({
-        packageName: i.packageName,
-        packageRoot: i.packageRoot,
-        specifier: i.specifier,
-      })),
+      deps.get('app')?.staticImports.map((i) => {
+        if (isImportError(i)) {
+          throw new Error('we will never hit this errror');
+        }
+        return {
+          packageName: i.packageName,
+          packageRoot: i.packageRoot,
+          specifier: i.specifier,
+        };
+      }),
       [
         {
           packageName: 'aliasing-example',
@@ -433,11 +480,16 @@ Qmodule('splitter', function (hooks) {
     await builder.build();
     let deps = await splitter.deps();
     assert.deepEqual(
-      deps.get('app')?.staticImports.map((i) => ({
-        packageName: i.packageName,
-        packageRoot: i.packageRoot,
-        specifier: i.specifier,
-      })),
+      deps.get('app')?.staticImports.map((i) => {
+        if (isImportError(i)) {
+          throw new Error('we will never hit this errror');
+        }
+        return {
+          packageName: i.packageName,
+          packageRoot: i.packageRoot,
+          specifier: i.specifier,
+        };
+      }),
       [
         {
           packageName: 'aliasing-example',

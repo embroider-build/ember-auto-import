@@ -16,6 +16,11 @@ export interface ResolvedImport {
   importedBy: LiteralImport[];
 }
 
+export interface ResolvedImportError extends ImportError {
+  specifier: string;
+  importedBy: LiteralImport[];
+}
+
 export interface ResolvedTemplateImport {
   cookedQuasis: string[];
   expressionNameHints: string[];
@@ -24,11 +29,31 @@ export interface ResolvedTemplateImport {
   importedBy: TemplateImport[];
 }
 
+export interface ImportError {
+  error: string;
+}
+
+export interface ResolvedTemplateImportError extends ImportError {
+  importedBy: TemplateImport[];
+}
+
+export function isImportError(
+  imp: ResolvedTemplateImport | ResolvedImport | ImportError
+): imp is ImportError {
+  return (imp as ImportError).error !== undefined;
+}
+
 export interface BundleDependencies {
-  staticImports: ResolvedImport[];
-  staticTemplateImports: ResolvedTemplateImport[];
-  dynamicImports: ResolvedImport[];
-  dynamicTemplateImports: ResolvedTemplateImport[];
+  staticImports: (ResolvedImport | ResolvedImportError)[];
+  staticTemplateImports: (
+    | ResolvedTemplateImport
+    | ResolvedTemplateImportError
+  )[];
+  dynamicImports: (ResolvedImport | ResolvedImportError)[];
+  dynamicTemplateImports: (
+    | ResolvedTemplateImport
+    | ResolvedTemplateImportError
+  )[];
 }
 
 export interface SplitterOptions {
@@ -64,8 +89,11 @@ export default class Splitter {
   }
 
   private async computeTargets(analyzers: Map<Analyzer, Package>) {
-    let targets: Map<string, ResolvedImport> = new Map();
-    let templateTargets: Map<string, ResolvedTemplateImport> = new Map();
+    let targets: Map<string, ResolvedImport | ResolvedImportError> = new Map();
+    let templateTargets: Map<
+      string,
+      ResolvedTemplateImport | ResolvedTemplateImportError
+    > = new Map();
     let imports = flatten(
       [...analyzers.keys()].map((analyzer) => analyzer.imports)
     );
@@ -83,7 +111,7 @@ export default class Splitter {
 
   private async handleLiteralImport(
     imp: LiteralImport,
-    targets: Map<string, ResolvedImport>
+    targets: Map<string, ResolvedImport | ResolvedImportError>
   ) {
     let target = imp.package.resolve(imp.specifier, imp.path);
 
@@ -102,15 +130,18 @@ export default class Splitter {
       // we're only trying to identify imports of external NPM
       // packages, so relative imports are never relevant.
       if (imp.isDynamic) {
-        throw new Error(
-          `ember-auto-import does not support dynamic relative imports. "${imp.specifier}" is relative. To make this work, you need to upgrade to Embroider.`
-        );
+        // throw new Error('this is the error path' + imp.specifier);
+        targets.set(imp.specifier, {
+          specifier: imp.specifier,
+          error: `ember-auto-import does not support dynamic relative imports. "${imp.specifier}" is relative. To make this work, you need to upgrade to Embroider.`,
+          importedBy: [imp],
+        });
       }
       return;
     }
 
     let seenAlready = targets.get(imp.specifier);
-    if (seenAlready) {
+    if (seenAlready && !isImportError(seenAlready)) {
       await this.assertSafeVersion(seenAlready, imp, target);
       seenAlready.importedBy.push(imp);
     } else {
@@ -125,7 +156,7 @@ export default class Splitter {
 
   private async handleTemplateImport(
     imp: TemplateImport,
-    targets: Map<string, ResolvedTemplateImport>
+    targets: Map<string, ResolvedTemplateImport | ImportError>
   ) {
     let [leadingQuasi] = imp.cookedQuasis;
 
@@ -141,12 +172,16 @@ export default class Splitter {
     }
 
     if (target.type === 'local') {
-      throw new Error(
-        `ember-auto-import does not support dynamic relative imports. "${leadingQuasi}" is relative. To make this work, you need to upgrade to Embroider. ` +
+      let specifierKey = imp.cookedQuasis.join('${e}');
+      targets.set(specifierKey, {
+        error:
+          `ember-auto-import does not support dynamic relative imports. "${leadingQuasi}" is relative. To make this work, you need to upgrade to Embroider. ` +
           `The attempted import of '${imp.cookedQuasis.join(
             ''
-          )}' is located in ${imp.path}`
-      );
+          )}' is located in ${imp.path}`,
+        importedBy: [imp],
+      });
+      return;
     }
 
     if (target.type === 'imprecise') {
@@ -168,7 +203,7 @@ export default class Splitter {
     let specifierKey = imp.cookedQuasis.join('${e}');
 
     let seenAlready = targets.get(specifierKey);
-    if (seenAlready) {
+    if (seenAlready && !isImportError(seenAlready)) {
       await this.assertSafeVersion(seenAlready, imp, target);
       seenAlready.importedBy.push(imp);
     } else {
@@ -290,12 +325,26 @@ export default class Splitter {
 
   private sortBundle(bundle: BundleDependencies) {
     bundle.staticImports.sort((a, b) => a.specifier.localeCompare(b.specifier));
-    bundle.dynamicImports.sort((a, b) =>
-      a.specifier.localeCompare(b.specifier)
-    );
-    bundle.dynamicTemplateImports.sort((a, b) =>
-      a.cookedQuasis[0].localeCompare(b.cookedQuasis[0])
-    );
+    bundle.dynamicImports.sort((a, b) => {
+      if (isImportError(a)) {
+        return -1
+      }
+      if (isImportError(b)) {
+        return 1;
+      }
+
+      return a.specifier.localeCompare(b.specifier)
+    });
+    bundle.dynamicTemplateImports.sort((a, b) => {
+      if (isImportError(a)) {
+        return -1
+      }
+      if (isImportError(b)) {
+        return 1;
+      }
+
+      return a.cookedQuasis[0].localeCompare(b.cookedQuasis[0])
+    });
   }
 
   // given that a module is imported by the given list of paths, which
@@ -332,7 +381,13 @@ export default class Splitter {
 class LazyPrintDeps {
   constructor(private deps: Map<string, BundleDependencies>) {}
 
-  private describeResolvedImport(imp: ResolvedImport) {
+  private describeResolvedImport(imp: ResolvedImport | ResolvedImportError) {
+    if (isImportError(imp)) {
+      return {
+        specifier: imp.specifier,
+        error: imp.error,
+      };
+    }
     return {
       specifier: imp.specifier,
       packageRoot: imp.packageRoot,
@@ -347,7 +402,12 @@ class LazyPrintDeps {
     };
   }
 
-  private describeTemplateImport(imp: ResolvedTemplateImport) {
+  private describeTemplateImport(imp: ResolvedTemplateImport | ImportError) {
+    if (isImportError(imp)) {
+      return {
+        error: imp.error,
+      };
+    }
     return {
       cookedQuasis: imp.cookedQuasis,
       expressionNameHints: imp.expressionNameHints,
