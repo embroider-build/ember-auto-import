@@ -11,7 +11,14 @@ import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
 import jsStringEscape from 'js-string-escape';
-import { BundleDependencies, ResolvedTemplateImport } from './splitter';
+import {
+  BundleDependencies,
+  ResolvedImport,
+  ResolvedTemplateImport,
+  ImportError,
+  isImportError,
+  ResolvedTemplateImportError,
+} from './splitter';
 import { BuildResult, Bundler, BundlerOptions } from './bundler';
 import type { InputNode } from 'broccoli-node-api';
 import Plugin from 'broccoli-plugin';
@@ -45,32 +52,65 @@ module.exports = (function(){
     {{! this is only used for synchronous importSync() using a template string }}
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
+  // static imports
   {{#each staticImports as |module|}}
-    d('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.specifier}}'); });
-  {{/each}}
-  {{#each dynamicImports as |module|}}
-    d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.specifier}}'); });
-  {{/each}}
-  {{#each staticTemplateImports as |module|}}
-    d('_eai_sync_{{js-string-escape module.key}}', [], function() {
-      return function({{module.args}}) {
-        return require({{{module.template}}});
-      }
+    d('{{js-string-escape module.specifier}}', [], function() {
+      {{#if module.error}}
+        throw new Error('{{module.error}}');
+      {{else}}
+        return require('{{js-string-escape module.specifier}}');
+      {{/if}}
     });
   {{/each}}
+  // dynamic imports
+  {{#each dynamicImports as |module|}}
+    d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() {
+      {{#if module.error}}
+        throw new Error('{{module.error}}');
+      {{else}}
+        return import('{{js-string-escape module.specifier}}');
+      {{/if}}
+    });
+  {{/each}}
+  // static template imports
+  {{#each staticTemplateImports as |module|}}
+    d('_eai_sync_{{js-string-escape module.key}}', [], function() {
+      {{#if module.error}}
+        throw new Error('{{module.error}}');
+      {{else}}
+        return function({{module.args}}) {
+          return require({{{module.template}}});
+        }
+      {{/if}}
+    });
+  {{/each}}
+  // dynamic template imports
   {{#each dynamicTemplateImports as |module|}}
     d('_eai_dynt_{{js-string-escape module.key}}', [], function() {
-      return function({{module.args}}) {
-        return import({{{module.template}}});
-      }
+      {{#if module.error}}
+        throw new Error('{{module.error}}');
+      {{else}}
+        return function({{module.args}}) {
+          return import({{{module.template}}});
+        }
+      {{/if}}
     });
   {{/each}}
 })();
 `) as (args: {
-  staticImports: { specifier: string }[];
-  dynamicImports: { specifier: string }[];
-  staticTemplateImports: { key: string; args: string; template: string }[];
-  dynamicTemplateImports: { key: string; args: string; template: string }[];
+  staticImports: ({ specifier: string } | { specifier: string })[];
+  dynamicImports: (
+    | { specifier: string }
+    | { specifier: string; error: string }
+  )[];
+  staticTemplateImports: (
+    | { key: string; args: string; template: string }
+    | { key: string; error: string }
+  )[];
+  dynamicTemplateImports: (
+    | { key: string; args: string; template: string }
+    | { key: string; error: string }
+  )[];
   publicAssetURL: string | undefined;
 }) => string;
 
@@ -389,8 +429,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
       entryTemplate({
         staticImports: deps.staticImports,
         dynamicImports: deps.dynamicImports,
-        dynamicTemplateImports:
-          deps.dynamicTemplateImports.map(mapTemplateImports),
+        dynamicTemplateImports: deps.dynamicTemplateImports.map(
+          mapDynamicTemplateImports
+        ),
         staticTemplateImports:
           deps.staticTemplateImports.map(mapTemplateImports),
         publicAssetURL: this.opts.publicAssetURL,
@@ -419,13 +460,15 @@ export default class WebpackBundler extends Plugin implements Bundler {
     }
   }
 
-  private ensureLinked({
-    packageName,
-    packageRoot,
-  }: {
-    packageName: string;
-    packageRoot: string;
-  }): void {
+  private ensureLinked(
+    item: ResolvedImport | ResolvedTemplateImport | ImportError
+  ): void {
+    if (isImportError(item)) {
+      return;
+    }
+
+    const { packageName, packageRoot } = item;
+
     ensureDirSync(dirname(join(this.stagingDir, 'node_modules', packageName)));
     if (!existsSync(join(this.stagingDir, 'node_modules', packageName))) {
       symlinkSync(
@@ -508,7 +551,21 @@ function eitherPattern(...patterns: any[]): (resource: string) => boolean {
   };
 }
 
-function mapTemplateImports(imp: ResolvedTemplateImport) {
+function mapDynamicTemplateImports(
+  imp: ResolvedTemplateImport | ResolvedTemplateImportError
+) {
+  return mapTemplateImports(imp);
+}
+
+function mapTemplateImports(
+  imp: ResolvedTemplateImport | ResolvedTemplateImportError
+) {
+  if (isImportError(imp)) {
+    return {
+      key: imp.importedBy[0].cookedQuasis.join('${e}'),
+      error: imp.error,
+    };
+  }
   return {
     key: imp.importedBy[0].cookedQuasis.join('${e}'),
     args: imp.expressionNameHints.join(','),
