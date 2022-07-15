@@ -39,6 +39,7 @@ appScenarios
           Router.map(function () {
             this.route('dynamic-import');
             this.route('dynamic-flavor', { path: '/flavor/:which' });
+            this.route('dynamic-relative');
             this.route('native-import');
             this.route('data-import');
           });
@@ -49,6 +50,7 @@ appScenarios
         templates: {
           'dynamic-import.hbs': `<div data-test="dynamic-import-result">{{this.model.result}}</div>`,
           'dynamic-flavor.hbs': `<div data-test="dynamic-import-result">{{this.model.name}}</div>`,
+          'dynamic-relative.hbs': `<div data-test="dynamic-import-result">{{this.model.name}}</div>`,
           'native-import.hbs': `<div data-test="dynamic-import-result">{{this.model.name}}</div>`,
           'data-import.hbs': `<div data-test="dynamic-import-result">{{this.model.name}}</div>`,
         },
@@ -69,6 +71,17 @@ appScenarios
             export default Route.extend({
               model({ which }) {` +
             '   return import(`a-dependency/flavors/${which}`);' +
+            ` },
+            });
+          `,
+          'dynamic-relative.js':
+            `
+            import Route from '@ember/routing/route';
+            import { importSync } from '@embroider/macros';
+            export default Route.extend({
+              model() {` +
+            `   let face = 'blah';` +
+            '   return importSync(`/${face}/some-other-target.js`);' +
             ` },
             });
           `,
@@ -121,6 +134,19 @@ appScenarios
                 await visit('/flavor/vanilla');
                 assert.equal(currentURL(), '/flavor/vanilla');
                 assert.equal(document.querySelector('[data-test="dynamic-import-result"]').textContent.trim(), 'vanilla');
+              });
+
+              test('template dynamic-relative', async function (assert) {
+                assert.expect(1);
+
+                try {
+                  await visit('/dynamic-relative-template');
+                } catch (error) {
+                  assert.strictEqual(
+                    error.message,
+                    'ember-auto-import does not support dynamic relative imports. &quot;/&quot; is relative. To make this work, you need to upgrade to Embroider. The attempted import of &#x27;//some-other-target.js&#x27; is located in test-app/routes/dynamic-relative-template.js'
+                  );
+                }
               });
 
               test('browser can use native import', async function (assert) {
