@@ -141,12 +141,7 @@ export default class Splitter {
     }
 
     if (target.type === 'local') {
-      throw new Error(
-        `ember-auto-import does not support dynamic relative imports. "${leadingQuasi}" is relative. To make this work, you need to upgrade to Embroider. ` +
-          `The attempted import of '${imp.cookedQuasis.join(
-            ''
-          )}' is located in ${imp.path}`
-      );
+      return;
     }
 
     if (target.type === 'imprecise') {
