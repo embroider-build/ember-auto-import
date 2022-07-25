@@ -61,7 +61,7 @@ let app = new EmberApp(defaults, {
 });
 ```
 
-You will also need to set ember-auto-import's `publicAssetURL`:
+You will also need to set ember-auto-import's `publicAssetURL` (don't forget the trailing `/assets` for `autoImport.publicAssetURL`):
 
 ```js
 let app = new EmberApp(defaults, {
