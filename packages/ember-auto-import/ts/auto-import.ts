@@ -24,6 +24,7 @@ import resolvePackagePath from 'resolve-package-path';
 import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
 import { MARKER } from './analyzer-syntax';
+import path from 'path';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -234,7 +235,7 @@ function depsFor(allAppTree: Node, packages: Set<Package>) {
 }
 
 function isAnalyzerPlugin(entry: unknown) {
-  const suffix = 'ember-auto-import/js/analyzer-plugin.js';
+  const suffix = path.join('ember-auto-import', 'js', 'analyzer-plugin.js');
   return (
     (typeof entry === 'string' && entry.endsWith(suffix)) ||
     (Array.isArray(entry) &&
