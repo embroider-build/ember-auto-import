@@ -299,6 +299,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
         return callback();
       }
 
+      if (pkg.meta.externals?.includes(name)) {
+        return callback(undefined, 'commonjs ' + request);
+      }
+
       try {
         let found = packageCache.resolve(name, pkg);
         if (!found.isEmberPackage() || found.isV2Addon()) {
