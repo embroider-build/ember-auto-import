@@ -343,22 +343,6 @@ Qmodule('splitter', function (hooks) {
     }
   });
 
-  test('dynamic template relative imports are forbidden', async function (assert) {
-    assert.expect(1);
-    let src = 'import(`./thing/${foo}`)';
-    outputFileSync(join(project.baseDir, 'sample.js'), src);
-    await builder.build();
-    try {
-      await splitter.deps();
-      throw new Error(`expected not to get here, build was supposed to fail`);
-    } catch (err) {
-      assert.contains(
-        err.message,
-        `ember-auto-import does not support dynamic relative imports. "./thing/" is relative. To make this work, you need to upgrade to Embroider.`
-      );
-    }
-  });
-
   test('exact alias remaps package name and root', async function (assert) {
     setup({
       alias: {

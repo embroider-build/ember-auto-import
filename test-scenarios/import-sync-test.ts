@@ -38,6 +38,7 @@ appScenarios
 
           Router.map(function () {
             this.route('import-sync');
+            this.route('import-sync-relative-template');
             this.route('import-sync-flavor', { path: '/flavor/:which' });
           });
 
@@ -46,6 +47,7 @@ appScenarios
         `,
         templates: {
           'import-sync.hbs': `<div data-test="import-sync-result">{{this.model}}</div>`,
+          'import-sync-relative-template.hbs': `<div data-test="import-sync-result">{{this.model.message}}</div>`,
           'import-sync-flavor.hbs': `<div data-test="import-sync-result">{{this.model.name}}</div>`,
         },
         routes: {
@@ -68,6 +70,20 @@ appScenarios
             ` },
             });
           `,
+          'import-sync-relative-template.js':
+            `
+            import Route from '@ember/routing/route';
+            import { importSync } from '@embroider/macros';
+            export default Route.extend({
+              model() {
+                try {` +
+            '     return importSync(`/a-dependency/${42}`); ' +
+            `     throw new Error('you should not reach this point');
+                } catch (err) {
+                  return { message: err.message }
+                }
+              },
+            });`
         },
       },
       tests: {
@@ -94,6 +110,16 @@ appScenarios
                 assert.equal(currentURL(), '/flavor/vanilla');
                 assert.equal(document.querySelector('[data-test="import-sync-result"]').textContent.trim(), 'vanilla');
               });
+
+              test('import-sync relative template string import', async function (assert) {
+                await visit('/import-sync-relative-template');
+                assert.equal(currentURL(), '/import-sync-relative-template');
+                assert.equal(
+                  document.querySelector('[data-test="import-sync-result"]').textContent.trim(), ` +
+            "'Could not find module `_eai_sync_/a-dependency/${e}` imported from `(require)`'" +
+            `
+                );
+              })
             });
           `,
         },
