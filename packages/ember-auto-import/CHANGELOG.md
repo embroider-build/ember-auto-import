@@ -1,5 +1,14 @@
 # Changelog
 
+### 2.4.3
+
+- BUGFIX: Move Dynamic Template Import error to runtime instead of a build error by @mansona
+- BUGFIX: Respect v2 addon's explicit externals list
+- INTERNAL: add @babel/core to app and addon test templates for compatibility with upcoming ember versions.
+- DOCS: Improve upgrade guide by @pomm0
+- BUGFIX: windows path handling fix by @void-mAlex
+- DOCS: Fix typo by @berdeblock
+
 ### 2.4.2
 
 - BUGFIX: prioritize the user's webpack devTool setting over the default provided by our forbidEval setting.
