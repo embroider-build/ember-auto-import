@@ -16,7 +16,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v1
-      - uses: rwjblue/setup-volta@v1
+      - uses: volta-cli/action@v4
         with:
           node-version: '14'
       - uses: actions/cache@v2
@@ -41,7 +41,7 @@ jobs:
       matrix: ${{fromJson(needs.discover_matrix.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v1
-      - uses: rwjblue/setup-volta@v1
+      - uses: volta-cli/action@v4
         with:
           node-version: '14'
       - uses: actions/cache@v2
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: rwjblue/setup-volta@v1
+      - uses: volta-cli/action@v4
         with:
           node-version: '14'
       - uses: actions/cache@v2
@@ -79,7 +79,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: rwjblue/setup-volta@v1
+      - uses: volta-cli/action@v4
         with:
           node-version: '14'
       - uses: actions/cache@v2
