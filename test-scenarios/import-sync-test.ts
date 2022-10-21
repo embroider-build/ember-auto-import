@@ -39,6 +39,7 @@ appScenarios
           Router.map(function () {
             this.route('import-sync');
             this.route('import-sync-relative-template');
+            this.route('import-sync-root-path-template');
             this.route('import-sync-flavor', { path: '/flavor/:which' });
           });
 
@@ -48,6 +49,7 @@ appScenarios
         templates: {
           'import-sync.hbs': `<div data-test="import-sync-result">{{this.model}}</div>`,
           'import-sync-relative-template.hbs': `<div data-test="import-sync-result">{{this.model.message}}</div>`,
+          'import-sync-root-path-template.hbs': '<div data-test="import-sync-result">{{this.model.message}}</div>',
           'import-sync-flavor.hbs': `<div data-test="import-sync-result">{{this.model.name}}</div>`,
         },
         routes: {
@@ -83,12 +85,27 @@ appScenarios
                   return { message: err.message }
                 }
               },
-            });`
+            });`,
+          'import-sync-root-path-template.js':
+            `
+            import Route from '@ember/routing/route';
+            import { importSync } from '@embroider/macros';
+            export default Route.extend({
+              model() {
+                try {` +
+            '     return importSync(`@apollo/client`); ' +
+            `     throw new Error('you should not reach this point');
+                } catch (err) {
+                  return { message: err.message }
+                }
+              },
+            });`,
         },
       },
       tests: {
         acceptance: {
-          'import-sync-test.js': `
+          'import-sync-test.js':
+            `
             import { module, test } from 'qunit';
             import { visit, currentURL } from '@ember/test-helpers';
             import { setupApplicationTest } from 'ember-qunit';
@@ -119,6 +136,16 @@ appScenarios
             "'Could not find module `_eai_sync_/a-dependency/${e}` imported from `(require)`'" +
             `
                 );
+              });
+
+              test('import-sync root-path import', async function (assert) {
+                await visit('/import-sync-root-path-template');
+                assert.equal(currentURL(), '/import-sync-root-path-template');
+                assert.equal(
+                  document.querySelector('[data-test="import-sync-result"]').textContent.trim(), ` +
+            "'Could not find module `_eai_sync_@apollo/client` imported from `(require)`'" +
+            `
+                )
               })
             });
           `,

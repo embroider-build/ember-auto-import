@@ -328,9 +328,7 @@ export default class Package {
     }
 
     if (packageRoot == null) {
-      throw new Error(
-        `${this.name} tried to import "${packageName}" in "${fromPath}" but the package was not resolvable from ${this.root}`
-      );
+      return;
     }
 
     if (isV1EmberAddonDependency(packageRoot)) {
