@@ -133,8 +133,8 @@ export default class WebpackBundler extends Plugin implements Bundler {
     let entry: { [name: string]: string[] } = {};
     this.opts.bundles.names.forEach((bundle) => {
       entry[bundle] = [
-        join(stagingDir, 'l.js'),
-        join(stagingDir, `${bundle}.js`),
+        join(stagingDir, 'l.cjs'),
+        join(stagingDir, `${bundle}.cjs`),
       ];
     });
 
@@ -184,7 +184,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       },
       plugins: removeUndefined([stylePlugin]),
       module: {
-        noParse: (file: string) => file === join(stagingDir, 'l.js'),
+        noParse: (file: string) => file === join(stagingDir, 'l.cjs'),
         rules: [
           this.babelRule(stagingDir),
           {
@@ -389,7 +389,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   private writeEntryFile(name: string, deps: BundleDependencies) {
     writeFileSync(
-      join(this.stagingDir, `${name}.js`),
+      join(this.stagingDir, `${name}.cjs`),
       entryTemplate({
         staticImports: deps.staticImports,
         dynamicImports: deps.dynamicImports,
@@ -403,7 +403,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private writeLoaderFile() {
-    writeFileSync(join(this.stagingDir, `l.js`), loader);
+    writeFileSync(join(this.stagingDir, `l.cjs`), loader);
   }
 
   private linkDeps(bundleDeps: Map<string, BundleDependencies>) {
