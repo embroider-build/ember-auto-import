@@ -154,8 +154,8 @@ export default class WebpackBundler extends Plugin implements Bundler {
       output: {
         path: join(this.outputPath, 'assets'),
         publicPath: this.opts.publicAssetURL,
-        filename: `chunk.[id].[chunkhash].js`,
-        chunkFilename: `chunk.[id].[chunkhash].js`,
+        filename: `chunk.[id].[contenthash].js`,
+        chunkFilename: `chunk.[id].[contenthash].js`,
         libraryTarget: 'var',
         library: '__ember_auto_import__',
       },
