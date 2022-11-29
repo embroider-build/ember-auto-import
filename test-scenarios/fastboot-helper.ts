@@ -26,6 +26,9 @@ export async function launchFastboot(dir: string) {
       warn(...args: any[]) {
         logs.push(args);
       },
+      debug(...args: any[]) {
+        logs.push(args);
+      },
     },
   };
 
