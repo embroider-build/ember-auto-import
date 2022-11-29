@@ -1,5 +1,10 @@
 # Changelog
 
+### 2.5.0
+
+- ENHANCEMENT: add support for node type=module by @hjdivad [544](https://github.com/ef4/ember-auto-import/pull/544)
+- INTERNAL: upgrade to @embroider/shared-internals 2.0
+
 ### 2.4.3
 
 - BUGFIX: Move Dynamic Template Import error to runtime instead of a build error by @mansona
