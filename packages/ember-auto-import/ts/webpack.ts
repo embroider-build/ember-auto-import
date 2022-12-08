@@ -189,6 +189,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
           this.babelRule(stagingDir),
           {
             test: /\.css$/i,
+            use: ['style-loader', 'css-loader', 'postcss-loader'],
+          },
+          {
+            test: /\.css$/i,
             use: [
               styleLoader,
               {
