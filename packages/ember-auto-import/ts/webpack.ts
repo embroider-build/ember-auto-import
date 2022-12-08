@@ -45,8 +45,9 @@ module.exports = (function(){
     {{! this is only used for synchronous importSync() using a template string }}
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
+  d('__v1-addons__early-boot-set__', [{{{v1EmberDeps}}}], function() {});
   {{#each staticImports as |module|}}
-    d('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.specifier}}'); });
+    d('{{js-string-escape module.specifier}}', ['__v1-addons__early-boot-set__'], function() { return require('{{js-string-escape module.specifier}}'); });
   {{/each}}
   {{#each dynamicImports as |module|}}
     d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.specifier}}'); });
@@ -72,6 +73,7 @@ module.exports = (function(){
   staticTemplateImports: { key: string; args: string; template: string }[];
   dynamicTemplateImports: { key: string; args: string; template: string }[];
   publicAssetURL: string | undefined;
+  v1EmberDeps: string;
 }) => string;
 
 // this goes in a file by itself so we can tell webpack not to parse it. That
@@ -316,6 +318,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           return callback(undefined, 'commonjs ' + request);
         }
       } catch (err) {
+        // TODO: handle standard ember stuff here
         if (err.code !== 'MODULE_NOT_FOUND') {
           throw err;
         }
@@ -388,6 +391,23 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private writeEntryFile(name: string, deps: BundleDependencies) {
+    /**
+     * Not all of the emberVirtualPackages and emberVirtualPeers
+     * exist in every version of ember-source.
+     *
+     * We will only specify modules from v1 addons with exports known to be used in module-scope.
+     *
+     * Over time, we can check the package.json for these packages and see if they've been
+     * converted to v2, then exclude them from this list.
+     */
+    let v1EmberDeps: string[] = [
+      '@glimmer/tracking',
+      '@glimmer/component',
+      '@ember/service',
+      '@ember/controller',
+      '@ember/routing/route',
+      '@ember/component',
+    ];
     writeFileSync(
       join(this.stagingDir, `${name}.cjs`),
       entryTemplate({
@@ -398,6 +418,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         staticTemplateImports:
           deps.staticTemplateImports.map(mapTemplateImports),
         publicAssetURL: this.opts.publicAssetURL,
+        v1EmberDeps: v1EmberDeps.map((name) => `'${name}'`).join(','),
       })
     );
   }
