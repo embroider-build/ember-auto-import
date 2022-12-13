@@ -390,8 +390,23 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return output;
   }
 
+  /**
+   * TODO:
+
+   * @param name
+   * @param deps
+   */
   private writeEntryFile(name: string, deps: BundleDependencies) {
     /**
+     * TODO:
+     *  - what happens when one of these depends on a v2 addon?
+     *  - what happens when one of these is converted to a v2 addon?
+     *  - how can an app configure / change this list?
+     *    - need a way to opt out?
+     *    - need a way to add
+     *    - "what's the list of v1 addons that need to load before v2 addons"
+     *      - change the require logic (in development), to provide better messaging
+     *        for the scenario when these v1 addons aren't noticed to the loader
      * Not all of the emberVirtualPackages and emberVirtualPeers
      * exist in every version of ember-source.
      *

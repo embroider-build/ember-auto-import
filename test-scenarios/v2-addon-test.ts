@@ -463,3 +463,152 @@ Scenarios.fromProject(baseApp)
       });
     });
   });
+
+Scenarios.fromProject(baseApp)
+  .map('v2-addon-consumed-by-v1-addon-cross-talk-with-requirejs-and-webpack', project => {
+  /**
+   *  App (project)
+   *  -> v2 addon (v2-addon-c)
+   *     -> v1 addon (v1-addon-b)
+   *        -> v2 addon (v2-addon-a)
+   *           -> @glimmer/component
+   */
+  let v2AddonA = new Project('v2-addon-a', {
+    files: {
+      'addon-main.js': `
+      const { addonV1Shim } = require('@embroider/addon-shim');
+      module.exports = addonV1Shim(__dirname);
+      `,
+      /**
+       * transformed with babel
+       *
+       export default {
+          presets: [],
+          plugins: [
+            ['@babel/plugin-proposal-decorators', { legacy: true }],
+            '@babel/plugin-proposal-class-properties',
+          ]
+        };
+       */
+      'index.js': `
+      var _class, _descriptor;
+
+function _initializerDefineProperty(target, property, descriptor, context) { if (!descriptor) return; Object.defineProperty(target, property, { enumerable: descriptor.enumerable, configurable: descriptor.configurable, writable: descriptor.writable, value: descriptor.initializer ? descriptor.initializer.call(context) : void 0 }); }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) { var desc = {}; Object.keys(descriptor).forEach(function (key) { desc[key] = descriptor[key]; }); desc.enumerable = !!desc.enumerable; desc.configurable = !!desc.configurable; if ('value' in desc || desc.initializer) { desc.writable = true; } desc = decorators.slice().reverse().reduce(function (desc, decorator) { return decorator(target, property, desc) || desc; }, desc); if (context && desc.initializer !== void 0) { desc.value = desc.initializer ? desc.initializer.call(context) : void 0; desc.initializer = undefined; } if (desc.initializer === void 0) { Object.defineProperty(target, property, desc); desc = null; } return desc; }
+
+function _initializerWarningHelper(descriptor, context) { throw new Error('Decorating class property failed. Please ensure that ' + 'proposal-class-properties is enabled and runs after the decorators transform.'); }
+
+import { tracked } from '@glimmer/component';
+export let Cell = (_class = class Cell {
+  constructor() {
+    _initializerDefineProperty(this, "current", _descriptor, this);
+  }
+
+}, (_descriptor = _applyDecoratedDescriptor(_class.prototype, "current", [tracked], {
+  configurable: true,
+  enumerable: true,
+  writable: true,
+  initializer: null
+})), _class);
+      `,
+    }
+  });
+  v2AddonA.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  v2AddonA.pkg.keywords = v2AddonA.pkg.keywords ? [...v2AddonA.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  v2AddonA.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.js',
+  };
+  v2AddonA.pkg['exports'] = {
+    '.': './index.js'
+  };
+  v2AddonA.pkg.peerDependencies ||= {};
+  v2AddonA.pkg.peerDependencies['@glimmer/tracking'] = '^1.1.2';
+  v2AddonA.linkDevDependency('@glimmer/tracking', { baseDir: __dirname });
+
+  let v1AddonB = baseAddon();
+  merge(v1AddonB.files, {
+    addon: {
+      'index.js': `
+        export { Cell } from 'v2-addon-a';
+      `,
+    }
+  });
+  v1AddonB.pkg.peerDependencies ||= {};
+  v1AddonB.pkg.peerDependencies['v2-addon-a'] = '*';
+  v1AddonB.pkg.devDependencies ||= {};
+  v1AddonB.pkg.devDependencies['v2-addon-a'] = '*';
+
+  let v2AddonC = new Project('v2-addon-c', {
+    files: {
+      'addon-main.js': `
+        const { addonV1Shim } = require('@embroider/addon-shim');
+        module.exports = addonV1Shim(__dirname);
+      `,
+      'index.js': `
+        export { Cell } from 'v1-addon-b';
+      `,
+    }
+  });
+
+  v2AddonC.pkg.peerDependencies ||= {};
+  v2AddonC.pkg.devDependencies ||= {};
+  v2AddonC.pkg.peerDependencies['v1-addon-b'] = '*';
+  v2AddonC.pkg.devDependencies['v1-addon-b'] = '*';
+  v2AddonC.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  v2AddonC.pkg.keywords = v2AddonC.pkg.keywords ? [...v2AddonC.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  v2AddonC.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.js',
+  };
+  v2AddonC.pkg['exports'] = {
+    '.': './index.js'
+  };
+
+  project.linkDependency('v2-addon-a', { baseDir: v2AddonA.baseDir });
+  project.linkDependency('v1-addon-b', { baseDir: v1AddonB.baseDir });
+  project.linkDependency('v2-addon-c', { baseDir: v2AddonC.baseDir });
+  project.addDependency('@glimmer/component', '^1.1.2');
+  project.linkDependency('ember-auto-import', { baseDir: __dirname });
+  project.linkDependency('webpack', { baseDir: __dirname });
+
+  merge(project.files, {
+    tests: {
+      unit: {
+        'dep-chain-test.js': `
+          import { module, test } from 'qunit';
+          import { Cell } from 'v2-addon-c';
+
+          module('Unit | import from chain', function() {
+            test('it worked', function() {
+              let cell = new Cell();
+
+              assert.strictEqual(cull.current, undefined);
+
+              cell.current = 5;
+
+              assert.strictEqual(cell.current, 5);
+            });
+          });
+        `
+      }
+    }
+  });
+
+}).forEachScenario(scenario => {
+  Qmodule(scenario.name, function(hooks) {
+    let app: PreparedApp;
+    hooks.beforeEach(async () => {
+      app = await scenario.prepare();
+    });
+    test('ensure success', async function (assert) {
+      let result = await app.execute('volta run npm -- run build');
+      assert.strictEqual(result.exitCode, 0, result.output);
+    });
+  })
+})
