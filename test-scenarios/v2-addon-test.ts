@@ -468,7 +468,7 @@ Scenarios.fromProject(baseApp)
   });
 
 Scenarios.fromProject(baseApp)
-  .map('v2-addon-consumed-by-v1-addon-cross-talk-with-requirejs-and-webpack', project => {
+  .map('v2-addon-consumed-by-v1-addon-cross-talk-with-requirejs-and-webpack', async project => {
   /**
    *  App (project)
    *  -> v2 addon (v2-addon-c)
@@ -519,7 +519,6 @@ export let Cell = (_class = class Cell {
       `,
     }
   });
-  v2AddonA.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
   v2AddonA.pkg.keywords = v2AddonA.pkg.keywords ? [...v2AddonA.pkg.keywords, 'ember-addon'] : ['ember-addon'];
   v2AddonA.pkg['ember-addon'] = {
     version: 2,
@@ -530,8 +529,10 @@ export let Cell = (_class = class Cell {
     '.': './index.js'
   };
   v2AddonA.pkg.peerDependencies ||= {};
-  v2AddonA.pkg.peerDependencies['@glimmer/tracking'] = '^1.1.2';
-  v2AddonA.linkDevDependency('@glimmer/tracking', { baseDir: __dirname });
+  v2AddonA.pkg.peerDependencies['@glimmer/tracking'] = '1.1.2';
+  v2AddonA.pkg.devDependencies ||= {};
+  v2AddonA.pkg.devDependencies['@glimmer/tracking'] = '1.1.2';
+  v2AddonA.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
 
   let v1AddonB = baseAddon();
   merge(v1AddonB.files, {
@@ -573,10 +574,14 @@ export let Cell = (_class = class Cell {
     '.': './index.js'
   };
 
-  project.linkDependency('v2-addon-a', { baseDir: v2AddonA.baseDir });
-  project.linkDependency('v1-addon-b', { baseDir: v1AddonB.baseDir });
-  project.linkDependency('v2-addon-c', { baseDir: v2AddonC.baseDir });
-  project.addDependency('@glimmer/component', '^1.1.2');
+  await v2AddonA.write();
+  await v1AddonB.write();
+  await v2AddonC.write();
+
+  project.linkDependency('v2-addon-a', { target: v2AddonA.baseDir });
+  project.linkDependency('v1-addon-b', { target: v1AddonB.baseDir });
+  project.linkDependency('v2-addon-c', { target: v2AddonC.baseDir });
+  project.addDependency('@glimmer/component', '1.1.2');
   project.linkDependency('ember-auto-import', { baseDir: __dirname });
   project.linkDependency('webpack', { baseDir: __dirname });
 
