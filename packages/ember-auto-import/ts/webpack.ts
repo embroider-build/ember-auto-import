@@ -25,6 +25,36 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 
 const debug = makeDebug('ember-auto-import:webpack');
 
+/**
+ * Passed to and configuable with autoImport.earlyBootset
+ * example:
+ * ```js
+ * // ember-cli-build.js
+ * // ...
+ * autoImport: {
+ *   earlyBootSet: (defaultModules) => {
+ *     return [
+ *       ...defaultModules,
+ *       'my-package/my-module,
+ *     ];
+ *   }
+ * }
+ * ```
+ *
+ * Anything listed in the return value from this function that is from a v2 addon will be removed.
+ * (Allowing each of these packages from the default set to be incrementally converted to v2 addons
+ * without the need for this code to be updated)
+ *
+ */
+const DEFAULT_EARLY_BOOT_SET = [
+  '@glimmer/tracking',
+  '@glimmer/component',
+  '@ember/service',
+  '@ember/controller',
+  '@ember/routing/route',
+  '@ember/component',
+];
+
 registerHelper('js-string-escape', jsStringEscape);
 registerHelper('join', function (list, connector) {
   return list.join(connector);
@@ -390,39 +420,54 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return output;
   }
 
-  /**
-   * TODO:
+  private getEarlyBootSet() {
+    let result = this.opts.earlyBootSet
+      ? this.opts.earlyBootSet(DEFAULT_EARLY_BOOT_SET)
+      : DEFAULT_EARLY_BOOT_SET;
 
-   * @param name
-   * @param deps
-   */
-  private writeEntryFile(name: string, deps: BundleDependencies) {
+    if (!Array.isArray(result)) {
+      throw new Error(
+        'autoImport.earlyBootSet was used, but did not return an array. An array of strings is required'
+      );
+    }
+
+    // Reminder: [/* empty array */].every(anything) is true
+    if (!result.every((entry) => typeof entry === 'string')) {
+      throw new Error(
+        'autoImport.earlyBootSet was used, but the returned array did contained data other than strings. Every element in the return array must be a string representing a module'
+      );
+    }
+
     /**
-     * TODO:
-     *  - what happens when one of these depends on a v2 addon?
-     *  - what happens when one of these is converted to a v2 addon?
-     *  - how can an app configure / change this list?
-     *    - need a way to opt out?
-     *    - need a way to add
-     *    - "what's the list of v1 addons that need to load before v2 addons"
-     *      - change the require logic (in development), to provide better messaging
-     *        for the scenario when these v1 addons aren't noticed to the loader
-     * Not all of the emberVirtualPackages and emberVirtualPeers
-     * exist in every version of ember-source.
-     *
-     * We will only specify modules from v1 addons with exports known to be used in module-scope.
-     *
-     * Over time, we can check the package.json for these packages and see if they've been
-     * converted to v2, then exclude them from this list.
+     * TODO: iterate over these and check their dependencies if any depend on a v2 addon
+     *       - when this situation occurs, check that v2 addon's dependencies if any of those are v1 addons,
+     *         - if so, log a warning, about potentially needing to add modules from that v1 addon to the early boot set
      */
-    let v1EmberDeps: string[] = [
-      '@glimmer/tracking',
-      '@glimmer/component',
-      '@ember/service',
-      '@ember/controller',
-      '@ember/routing/route',
-      '@ember/component',
-    ];
+    let v2Addons = this.opts.v2Addons.keys();
+
+    result = result.filter((modulePath) => {
+      for (let v2Addon of v2Addons) {
+        // Omit modulePaths from v2 addons
+        if (modulePath.startsWith(v2Addon)) {
+          if (!DEFAULT_EARLY_BOOT_SET.includes(v2Addon)) {
+            console.warn(
+              `\`${modulePath}\` was included in the \`autoImport.earlyBootSet\` list, but belongs to a v2 addon. You can remove this entry from the earlyBootSet`
+            );
+          }
+
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    return result;
+  }
+
+  private writeEntryFile(name: string, deps: BundleDependencies) {
+    let v1EmberDeps: string[] = this.getEarlyBootSet();
+
     writeFileSync(
       join(this.stagingDir, `${name}.cjs`),
       entryTemplate({

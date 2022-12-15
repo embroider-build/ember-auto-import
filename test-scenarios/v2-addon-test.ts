@@ -168,12 +168,15 @@ function buildInnerV2Addon(name: string) {
         module.exports = addonV1Shim(__dirname);
       `,
       'index.js': `
+        import { tracked } from '@glimmer/tracking';
+        console.log({ tracked }, 'accessing a v1 addon thing in module space');
         export function innerV2Addon() {
           return '${name}-worked';
         }
       `,
     },
   });
+  addon.linkDependency('@glimmer/tracking', { baseDir: __dirname });
   addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
   addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
   addon.pkg['ember-addon'] = {
@@ -603,7 +606,7 @@ export let Cell = (_class = class Cell {
 }).forEachScenario(scenario => {
   Qmodule(scenario.name, function(hooks) {
     let app: PreparedApp;
-    hooks.beforeEach(async () => {
+    hooks.before(async () => {
       app = await scenario.prepare();
     });
     test('ensure success', async function (assert) {

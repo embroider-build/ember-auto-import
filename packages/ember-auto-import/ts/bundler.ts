@@ -21,6 +21,8 @@ export interface BundlerOptions {
   browserslist: string;
   webpack: typeof webpack;
   hasFastboot: boolean;
+  earlyBootSet: undefined | ((defaultModules: string[]) => string[]);
+  v2Addons: Map<string, string>;
 }
 
 export interface BuildResult {
