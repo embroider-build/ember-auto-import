@@ -1,5 +1,5 @@
 import merge from 'lodash/merge';
-import { appScenarios, baseAddon, baseApp } from './scenarios';
+import { appScenarios, baseAddon, baseApp, baseV2Addon } from './scenarios';
 import { PreparedApp, Project, Scenarios } from 'scenario-tester';
 import { setupFastboot } from './fastboot-helper';
 import QUnit from 'qunit';
@@ -168,15 +168,12 @@ function buildInnerV2Addon(name: string) {
         module.exports = addonV1Shim(__dirname);
       `,
       'index.js': `
-        import { tracked } from '@glimmer/tracking';
-        console.log({ tracked }, 'accessing a v1 addon thing in module space');
         export function innerV2Addon() {
           return '${name}-worked';
         }
       `,
     },
   });
-  addon.linkDependency('@glimmer/tracking', { baseDir: __dirname });
   addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
   addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
   addon.pkg['ember-addon'] = {
@@ -474,114 +471,85 @@ Scenarios.fromProject(baseApp)
    *  -> v2 addon (v2-addon-c)
    *     -> v1 addon (v1-addon-b)
    *        -> v2 addon (v2-addon-a)
-   *           -> @glimmer/component
+   *           -> fake-glimmer-tracking (our own so that this test isn't flaky when @glimmer/tracking changes)
    */
-  let v2AddonA = new Project('v2-addon-a', {
-    files: {
-      'addon-main.js': `
-      const { addonV1Shim } = require('@embroider/addon-shim');
-      module.exports = addonV1Shim(__dirname);
-      `,
-      /**
-       * transformed with babel
-       *
-       export default {
-          presets: [],
-          plugins: [
-            ['@babel/plugin-proposal-decorators', { legacy: true }],
-            '@babel/plugin-proposal-class-properties',
-          ]
-        };
-       */
+  let fakeGlimmerTracking = baseAddon();
+  fakeGlimmerTracking.name = 'fake-glimmer-tracking';
+  merge(fakeGlimmerTracking, {
+    addon: {
       'index.js': `
-      var _class, _descriptor;
+        export function fakeTracked() {
+          console.log('fake glimmer tracking was called');
+          window.two = 'two';
+          return 2;
+        }
+      `
+    }
+  });
+  await fakeGlimmerTracking.write();
 
-function _initializerDefineProperty(target, property, descriptor, context) { if (!descriptor) return; Object.defineProperty(target, property, { enumerable: descriptor.enumerable, configurable: descriptor.configurable, writable: descriptor.writable, value: descriptor.initializer ? descriptor.initializer.call(context) : void 0 }); }
+  let v2AddonA = baseV2Addon();
+  v2AddonA.pkg.name = 'v2-addon-a';
+  merge(v2AddonA.files, {
+    addon: {
+      'index.js': `
+        export { fakeTracked } from 'fake-glimmer-tracking';
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-function _applyDecoratedDescriptor(target, property, decorators, descriptor, context) { var desc = {}; Object.keys(descriptor).forEach(function (key) { desc[key] = descriptor[key]; }); desc.enumerable = !!desc.enumerable; desc.configurable = !!desc.configurable; if ('value' in desc || desc.initializer) { desc.writable = true; } desc = decorators.slice().reverse().reduce(function (desc, decorator) { return decorator(target, property, desc) || desc; }, desc); if (context && desc.initializer !== void 0) { desc.value = desc.initializer ? desc.initializer.call(context) : void 0; desc.initializer = undefined; } if (desc.initializer === void 0) { Object.defineProperty(target, property, desc); desc = null; } return desc; }
-
-function _initializerWarningHelper(descriptor, context) { throw new Error('Decorating class property failed. Please ensure that ' + 'proposal-class-properties is enabled and runs after the decorators transform.'); }
-
-import { tracked } from '@glimmer/component';
-export let Cell = (_class = class Cell {
-  constructor() {
-    _initializerDefineProperty(this, "current", _descriptor, this);
-  }
-
-}, (_descriptor = _applyDecoratedDescriptor(_class.prototype, "current", [tracked], {
-  configurable: true,
-  enumerable: true,
-  writable: true,
-  initializer: null
-})), _class);
+        // Must access in module scope
+        // This simulates how the decorator transform works by accessing and applynig
+        // @tracked in module space to a class's prototype
+        fakeTracked();
       `,
     }
   });
-  v2AddonA.pkg.keywords = v2AddonA.pkg.keywords ? [...v2AddonA.pkg.keywords, 'ember-addon'] : ['ember-addon'];
-  v2AddonA.pkg['ember-addon'] = {
-    version: 2,
-    type: 'addon',
-    main: './addon-main.js',
-  };
   v2AddonA.pkg['exports'] = {
     '.': './index.js'
   };
   v2AddonA.pkg.peerDependencies ||= {};
-  v2AddonA.pkg.peerDependencies['@glimmer/tracking'] = '1.1.2';
-  v2AddonA.pkg.devDependencies ||= {};
-  v2AddonA.pkg.devDependencies['@glimmer/tracking'] = '1.1.2';
-  v2AddonA.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  v2AddonA.pkg.peerDependencies['fake-glimmer-tracking'] = '*';
+  // v2AddonA.pkg.devDependencies ||= {};
+  // v2AddonA.pkg.devDependencies['fake-glimmer-tracking'] = '*';
+  v2AddonA.addDevDependency('fake-glimmer-tracking', '*');
+  await v2AddonA.write();
 
   let v1AddonB = baseAddon();
+  v1AddonB.pkg.name = 'v1-addon-b';
   merge(v1AddonB.files, {
     addon: {
       'index.js': `
-        export { Cell } from 'v2-addon-a';
+        export { fakeTracked } from 'v2-addon-a';
       `,
     }
   });
   v1AddonB.pkg.peerDependencies ||= {};
   v1AddonB.pkg.peerDependencies['v2-addon-a'] = '*';
-  v1AddonB.pkg.devDependencies ||= {};
-  v1AddonB.pkg.devDependencies['v2-addon-a'] = '*';
+  v1AddonB.linkDevDependency('v2-addon-a', { target: v2AddonA.baseDir });
+  // v1AddonB.addDevDependency('v2-addon-a', '*');
+  // v1AddonB.pkg.devDependencies ||= {};
+  // v1AddonB.pkg.devDependencies['v2-addon-a'] = '*';
+  await v1AddonB.write();
 
-  let v2AddonC = new Project('v2-addon-c', {
-    files: {
-      'addon-main.js': `
-        const { addonV1Shim } = require('@embroider/addon-shim');
-        module.exports = addonV1Shim(__dirname);
-      `,
-      'index.js': `
-        export { Cell } from 'v1-addon-b';
-      `,
-    }
+  let v2AddonC = baseV2Addon();
+  v2AddonC.pkg.name = 'v2-addon-c';
+  merge(v2AddonC.files, {
+    'index.js': `
+      export { fakeTracked } from 'v1-addon-b';
+    `,
   });
-
-  v2AddonC.pkg.peerDependencies ||= {};
-  v2AddonC.pkg.devDependencies ||= {};
-  v2AddonC.pkg.peerDependencies['v1-addon-b'] = '*';
-  v2AddonC.pkg.devDependencies['v1-addon-b'] = '*';
-  v2AddonC.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
-  v2AddonC.pkg.keywords = v2AddonC.pkg.keywords ? [...v2AddonC.pkg.keywords, 'ember-addon'] : ['ember-addon'];
-  v2AddonC.pkg['ember-addon'] = {
-    version: 2,
-    type: 'addon',
-    main: './addon-main.js',
-  };
   v2AddonC.pkg['exports'] = {
     '.': './index.js'
   };
-
-  await v2AddonA.write();
-  await v1AddonB.write();
+  v2AddonC.pkg.peerDependencies ||= {};
+  v2AddonC.pkg.peerDependencies['v1-addon-b'] = '*';
+  // v2AddonC.pkg.devDependencies ||= {};
+  // v2AddonC.pkg.devDependencies['v1-addon-b'] = '*';
+  v2AddonC.addDevDependency('v1-addon-c', '*');
   await v2AddonC.write();
 
+  project.linkDependency('fake-glimmer-tracking', { target: fakeGlimmerTracking.baseDir });
   project.linkDependency('v2-addon-a', { target: v2AddonA.baseDir });
   project.linkDependency('v1-addon-b', { target: v1AddonB.baseDir });
   project.linkDependency('v2-addon-c', { target: v2AddonC.baseDir });
-  project.addDependency('@glimmer/component', '1.1.2');
   project.linkDependency('ember-auto-import', { baseDir: __dirname });
   project.linkDependency('webpack', { baseDir: __dirname });
 
@@ -590,17 +558,17 @@ export let Cell = (_class = class Cell {
       unit: {
         'dep-chain-test.js': `
           import { module, test } from 'qunit';
-          import { Cell } from 'v2-addon-c';
+
+          import { fakeTracked as boop } from 'v1-addon-b'; // imports v2-addon-c => imports our fake tracking module
+          import { fakeTracked } from 'v2-addon-c';
+
+          // Something to keep imports from being optimized away if unused
+          console.log({ boop, fakeTracked });
 
           module('Unit | import from chain', function() {
             test('it worked', function() {
-              let cell = new Cell();
-
-              assert.strictEqual(cull.current, undefined);
-
-              cell.current = 5;
-
-              assert.strictEqual(cell.current, 5);
+              assert.strictEqual(window.two, 'two');
+              assert.strictEqual(fakeTracked(), 2);
             });
           });
         `
@@ -615,7 +583,7 @@ export let Cell = (_class = class Cell {
       app = await scenario.prepare();
     });
     test('ensure success', async function (assert) {
-      let result = await app.execute('volta run npm -- run build');
+      let result = await app.execute('volta run npm -- run test');
       assert.strictEqual(result.exitCode, 0, result.output);
     });
   })
