@@ -486,12 +486,11 @@ Scenarios.fromProject(baseApp)
       `
     }
   });
-  await fakeGlimmerTracking.write();
 
   let v2AddonA = baseV2Addon();
   v2AddonA.pkg.name = 'v2-addon-a';
   merge(v2AddonA.files, {
-    addon: {
+    dist: {
       'index.js': `
         export { fakeTracked } from 'fake-glimmer-tracking';
 
@@ -503,14 +502,10 @@ Scenarios.fromProject(baseApp)
     }
   });
   v2AddonA.pkg['exports'] = {
-    '.': './index.js'
+    '.': './dist/index.js'
   };
   v2AddonA.pkg.peerDependencies ||= {};
   v2AddonA.pkg.peerDependencies['fake-glimmer-tracking'] = '*';
-  // v2AddonA.pkg.devDependencies ||= {};
-  // v2AddonA.pkg.devDependencies['fake-glimmer-tracking'] = '*';
-  v2AddonA.addDevDependency('fake-glimmer-tracking', '*');
-  await v2AddonA.write();
 
   let v1AddonB = baseAddon();
   v1AddonB.pkg.name = 'v1-addon-b';
@@ -523,11 +518,6 @@ Scenarios.fromProject(baseApp)
   });
   v1AddonB.pkg.peerDependencies ||= {};
   v1AddonB.pkg.peerDependencies['v2-addon-a'] = '*';
-  v1AddonB.linkDevDependency('v2-addon-a', { target: v2AddonA.baseDir });
-  // v1AddonB.addDevDependency('v2-addon-a', '*');
-  // v1AddonB.pkg.devDependencies ||= {};
-  // v1AddonB.pkg.devDependencies['v2-addon-a'] = '*';
-  await v1AddonB.write();
 
   let v2AddonC = baseV2Addon();
   v2AddonC.pkg.name = 'v2-addon-c';
@@ -541,15 +531,11 @@ Scenarios.fromProject(baseApp)
   };
   v2AddonC.pkg.peerDependencies ||= {};
   v2AddonC.pkg.peerDependencies['v1-addon-b'] = '*';
-  // v2AddonC.pkg.devDependencies ||= {};
-  // v2AddonC.pkg.devDependencies['v1-addon-b'] = '*';
-  v2AddonC.addDevDependency('v1-addon-c', '*');
-  await v2AddonC.write();
 
-  project.linkDependency('fake-glimmer-tracking', { target: fakeGlimmerTracking.baseDir });
-  project.linkDependency('v2-addon-a', { target: v2AddonA.baseDir });
-  project.linkDependency('v1-addon-b', { target: v1AddonB.baseDir });
-  project.linkDependency('v2-addon-c', { target: v2AddonC.baseDir });
+  project.addDependency(fakeGlimmerTracking);
+  project.addDependency(v2AddonA);
+  project.addDependency(v1AddonB);
+  project.addDependency(v2AddonC);
   project.linkDependency('ember-auto-import', { baseDir: __dirname });
   project.linkDependency('webpack', { baseDir: __dirname });
 
