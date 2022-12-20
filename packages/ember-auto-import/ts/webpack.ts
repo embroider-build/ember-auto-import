@@ -55,6 +55,19 @@ const DEFAULT_EARLY_BOOT_SET = [
   '@ember/component',
 ];
 
+/**
+ * @glimmer/tracking + @glimmer/component
+ * are separate addons, yet included in ember-source (for now),
+ * but we will be required to use the real glimmer packages before
+ * ember-source is converted to v2 (else we implement more hacks at resolver time!)
+ */
+const BOOT_SET_FROM_EMBER_SOURCE = [
+  '@ember/service',
+  '@ember/controller',
+  '@ember/routing/route',
+  '@ember/component',
+];
+
 registerHelper('js-string-escape', jsStringEscape);
 registerHelper('join', function (list, connector) {
   return list.join(connector);
@@ -75,7 +88,7 @@ module.exports = (function(){
     {{! this is only used for synchronous importSync() using a template string }}
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
-  d('__v1-addons__early-boot-set__', [{{{v1EmberDeps}}}], function() {});
+  d('__v1-addons__early-boot-set__', [{{js-string-escape v1EmberDeps}}], function() {});
   {{#each staticImports as |module|}}
     d('{{js-string-escape module.specifier}}', ['__v1-addons__early-boot-set__'], function() { return require('{{js-string-escape module.specifier}}'); });
   {{/each}}
@@ -348,7 +361,6 @@ export default class WebpackBundler extends Plugin implements Bundler {
           return callback(undefined, 'commonjs ' + request);
         }
       } catch (err) {
-        // TODO: handle standard ember stuff here
         if (err.code !== 'MODULE_NOT_FOUND') {
           throw err;
         }
@@ -444,8 +456,19 @@ export default class WebpackBundler extends Plugin implements Bundler {
      *         - if so, log a warning, about potentially needing to add modules from that v1 addon to the early boot set
      */
     let v2Addons = this.opts.v2Addons.keys();
+    let isEmberSourceV2 = this.opts.v2Addons.has('ember-source');
 
     result = result.filter((modulePath) => {
+      if (isEmberSourceV2) {
+        let isFromEmberSource = BOOT_SET_FROM_EMBER_SOURCE.some((fromEmber) =>
+          modulePath.startsWith(fromEmber)
+        );
+
+        if (isFromEmberSource) {
+          return false;
+        }
+      }
+
       for (let v2Addon of v2Addons) {
         // Omit modulePaths from v2 addons
         if (modulePath.startsWith(v2Addon)) {
