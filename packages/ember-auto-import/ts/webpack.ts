@@ -88,7 +88,7 @@ module.exports = (function(){
     {{! this is only used for synchronous importSync() using a template string }}
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
-  d('__v1-addons__early-boot-set__', [{{js-string-escape v1EmberDeps}}], function() {});
+  d('__v1-addons__early-boot-set__', [{{{v1EmberDeps}}}], function() {});
   {{#each staticImports as |module|}}
     d('{{js-string-escape module.specifier}}', ['__v1-addons__early-boot-set__'], function() { return require('{{js-string-escape module.specifier}}'); });
   {{/each}}
