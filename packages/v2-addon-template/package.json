@@ -1,0 +1,17 @@
+{
+  "name": "@ef4/v2-addon-template",
+  "version": "0.0.1",
+  "keywords": [
+    "ember-addon"
+  ],
+  "dependencies": {
+    "@embroider/addon-shim": "^1.8.4"
+  },
+  "private": true,
+  "ember-addon": {
+    "type": "addon",
+    "version": 2,
+    "app-js": {},
+    "main": "addon-main.cjs"
+  }
+}

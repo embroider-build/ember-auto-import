@@ -17,6 +17,7 @@
   "license": "MIT",
   "devDependencies": {
     "@ef4/addon-template": "*",
+    "@ef4/v2-addon-template": "*",
     "@ef4/app-template": "*",
     "@embroider/macros": "npm:@embroider/macros@latest",
     "@embroider/addon-shim": "npm:@embroider/addon-shim@latest",

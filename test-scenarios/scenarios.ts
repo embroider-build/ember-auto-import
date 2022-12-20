@@ -106,4 +106,12 @@ export function baseAddon(as: 'addon' | 'dummy-app' = 'addon') {
     linkDevDeps: as === 'dummy-app',
   });
 }
+
+export function baseV2Addon() {
+  return Project.fromDir(dirname(require.resolve('@ef4/v2-addon-template/package.json')), {
+    linkDeps: true,
+    linkDevDeps: true,
+  });
+}
+
 export const addonScenarios = supportMatrix(Scenarios.fromProject(() => baseAddon('dummy-app')));
