@@ -475,7 +475,7 @@ Scenarios.fromProject(baseApp)
    */
   let fakeGlimmerTracking = baseAddon();
   fakeGlimmerTracking.name = 'fake-glimmer-tracking';
-  merge(fakeGlimmerTracking, {
+  merge(fakeGlimmerTracking.files, {
     addon: {
       'index.js': `
         export function fakeTracked() {
@@ -486,13 +486,15 @@ Scenarios.fromProject(baseApp)
       `
     }
   });
+  fakeGlimmerTracking.linkDependency('ember-auto-import', { baseDir: __dirname });
 
   let v2AddonA = baseV2Addon();
   v2AddonA.pkg.name = 'v2-addon-a';
   merge(v2AddonA.files, {
     dist: {
       'index.js': `
-        export { fakeTracked } from 'fake-glimmer-tracking';
+        import { fakeTracked } from 'fake-glimmer-tracking';
+        export { fakeTracked as fromV2AddonA } from 'fake-glimmer-tracking';
 
         // Must access in module scope
         // This simulates how the decorator transform works by accessing and applynig
@@ -512,18 +514,19 @@ Scenarios.fromProject(baseApp)
   merge(v1AddonB.files, {
     addon: {
       'index.js': `
-        export { fakeTracked } from 'v2-addon-a';
+        export { fromV2AddonA as fromV1AddonB } from 'v2-addon-a';
       `,
     }
   });
   v1AddonB.pkg.peerDependencies ||= {};
   v1AddonB.pkg.peerDependencies['v2-addon-a'] = '*';
+  v1AddonB.linkDependency('ember-auto-import', { baseDir: __dirname });
 
   let v2AddonC = baseV2Addon();
   v2AddonC.pkg.name = 'v2-addon-c';
   merge(v2AddonC.files, {
     'index.js': `
-      export { fakeTracked } from 'v1-addon-b';
+      export { fromV1AddonB as fromV2AddonC } from 'v1-addon-b';
     `,
   });
   v2AddonC.pkg['exports'] = {
@@ -545,16 +548,16 @@ Scenarios.fromProject(baseApp)
         'dep-chain-test.js': `
           import { module, test } from 'qunit';
 
-          import { fakeTracked as boop } from 'v1-addon-b'; // imports v2-addon-c => imports our fake tracking module
-          import { fakeTracked } from 'v2-addon-c';
+          import { fromV2AddonB } from 'v1-addon-b'; // imports v2-addon-c => imports our fake tracking module
+          import { fromV2AddonC } from 'v2-addon-c';
 
           // Something to keep imports from being optimized away if unused
-          console.log({ boop, fakeTracked });
+          console.log({ fromV2AddonB, fromV2AddonC });
 
           module('Unit | import from chain', function() {
-            test('it worked', function() {
-              assert.strictEqual(window.two, 'two');
-              assert.strictEqual(fakeTracked(), 2);
+            test('it worked', function(assert) {
+              assert.strictEqual(window.two, 'two', 'side-effect ran');
+              assert.strictEqual(fromV2AddonC(), 2);
             });
           });
         `
