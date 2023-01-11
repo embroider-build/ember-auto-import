@@ -457,16 +457,36 @@ export default class WebpackBundler extends Plugin implements Bundler {
      */
     let v2Addons = this.opts.v2Addons.keys();
     let isEmberSourceV2 = this.opts.v2Addons.has('ember-source');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    let host = this.opts.rootPackage;
+
+    function depNameForPath(modulePath: string) {
+      if (modulePath.startsWith('@')) {
+        let [scope, name] = modulePath.split('/');
+
+        return `${scope}/${name}`;
+      }
+
+      return modulePath.split('/')[0];
+    }
+
+    function isFromEmberSource(modulePath: string) {
+      return BOOT_SET_FROM_EMBER_SOURCE.some((fromEmber) =>
+        modulePath.startsWith(fromEmber)
+      );
+    }
 
     result = result.filter((modulePath) => {
       if (isEmberSourceV2) {
-        let isFromEmberSource = BOOT_SET_FROM_EMBER_SOURCE.some((fromEmber) =>
-          modulePath.startsWith(fromEmber)
-        );
-
-        if (isFromEmberSource) {
+        if (isFromEmberSource(modulePath)) {
           return false;
         }
+      }
+
+      let depName = depNameForPath(modulePath);
+
+      if (!host.hasDependency(depName) && !isFromEmberSource(modulePath)) {
+        return false;
       }
 
       for (let v2Addon of v2Addons) {

@@ -211,7 +211,7 @@ export default class Package {
   // maps from packageName to packageRoot
   magicDeps: Map<string, string> | undefined;
 
-  private hasDependency(name: string): boolean {
+  hasDependency(name: string): boolean {
     let { pkg } = this;
     return Boolean(
       pkg.dependencies?.[name] ||

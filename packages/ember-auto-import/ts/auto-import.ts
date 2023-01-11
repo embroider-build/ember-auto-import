@@ -153,6 +153,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       hasFastboot: this.rootPackage.isFastBootEnabled,
       earlyBootSet: this.rootPackage.earlyBootSet,
       v2Addons: this.v2Addons,
+      rootPackage: this.rootPackage,
     });
   }
 

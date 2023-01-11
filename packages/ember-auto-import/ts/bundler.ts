@@ -23,6 +23,7 @@ export interface BundlerOptions {
   hasFastboot: boolean;
   earlyBootSet: undefined | ((defaultModules: string[]) => string[]);
   v2Addons: Map<string, string>;
+  rootPackage: Package;
 }
 
 export interface BuildResult {
