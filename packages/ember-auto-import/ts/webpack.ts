@@ -22,6 +22,7 @@ import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import semver from 'semver';
 
 const debug = makeDebug('ember-auto-import:webpack');
 
@@ -437,6 +438,24 @@ export default class WebpackBundler extends Plugin implements Bundler {
       ? this.opts.earlyBootSet([...DEFAULT_EARLY_BOOT_SET])
       : DEFAULT_EARLY_BOOT_SET;
 
+    /**
+     * Prior to ember-source 3.27, the modules were precompiled into a variant of requirejs/AMD.
+     * As such, the early boot set will not support earlier than 3.27.
+     */
+    let host = this.opts.rootPackage;
+    let emberSource = host.requestedRange('ember-source');
+    let emberSourceVersion = semver.coerce(emberSource);
+
+    if (emberSourceVersion && semver.lt(emberSourceVersion, '3.27.0')) {
+      if (this.opts.earlyBootSet) {
+        throw new Error(
+          'autoImport.earlyBootSet is not supported for ember-source <= 3.27.0'
+        );
+      }
+
+      result = [];
+    }
+
     if (!Array.isArray(result)) {
       throw new Error(
         'autoImport.earlyBootSet was used, but did not return an array. An array of strings is required'
@@ -457,8 +476,6 @@ export default class WebpackBundler extends Plugin implements Bundler {
      */
     let v2Addons = this.opts.v2Addons.keys();
     let isEmberSourceV2 = this.opts.v2Addons.has('ember-source');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    let host = this.opts.rootPackage;
 
     function depNameForPath(modulePath: string) {
       if (modulePath.startsWith('@')) {
@@ -477,14 +494,16 @@ export default class WebpackBundler extends Plugin implements Bundler {
     }
 
     result = result.filter((modulePath) => {
-      if (isEmberSourceV2) {
-        if (isFromEmberSource(modulePath)) {
-          return false;
-        }
+      if (isEmberSourceV2 && isFromEmberSource(modulePath)) {
+        return false;
       }
 
       let depName = depNameForPath(modulePath);
 
+      /**
+       * If a dependency from the earlyBootSet is not actually included in the project,
+       * don't include in the earlyBootSet emitted content.
+       */
       if (!host.hasDependency(depName) && !isFromEmberSource(modulePath)) {
         return false;
       }
