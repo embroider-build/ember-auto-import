@@ -46,14 +46,14 @@ const debug = makeDebug('ember-auto-import:webpack');
  * without the need for this code to be updated)
  *
  */
-const DEFAULT_EARLY_BOOT_SET = [
+const DEFAULT_EARLY_BOOT_SET = Object.freeze([
   '@glimmer/tracking',
   '@glimmer/component',
   '@ember/service',
   '@ember/controller',
   '@ember/routing/route',
   '@ember/component',
-];
+]);
 
 /**
  * @glimmer/tracking + @glimmer/component
@@ -61,12 +61,12 @@ const DEFAULT_EARLY_BOOT_SET = [
  * but we will be required to use the real glimmer packages before
  * ember-source is converted to v2 (else we implement more hacks at resolver time!)
  */
-const BOOT_SET_FROM_EMBER_SOURCE = [
+const BOOT_SET_FROM_EMBER_SOURCE = Object.freeze([
   '@ember/service',
   '@ember/controller',
   '@ember/routing/route',
   '@ember/component',
-];
+]);
 
 registerHelper('js-string-escape', jsStringEscape);
 registerHelper('join', function (list, connector) {
@@ -434,7 +434,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   private getEarlyBootSet() {
     let result = this.opts.earlyBootSet
-      ? this.opts.earlyBootSet(DEFAULT_EARLY_BOOT_SET)
+      ? this.opts.earlyBootSet([...DEFAULT_EARLY_BOOT_SET])
       : DEFAULT_EARLY_BOOT_SET;
 
     if (!Array.isArray(result)) {
@@ -489,7 +489,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private writeEntryFile(name: string, deps: BundleDependencies) {
-    let v1EmberDeps: string[] = this.getEarlyBootSet();
+    let v1EmberDeps = this.getEarlyBootSet();
 
     writeFileSync(
       join(this.stagingDir, `${name}.cjs`),
