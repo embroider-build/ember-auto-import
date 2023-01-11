@@ -466,114 +466,83 @@ Scenarios.fromProject(baseApp)
 
 Scenarios.fromProject(baseApp)
   .map('v2-addon-consumed-by-v1-addon-cross-talk-with-requirejs-and-webpack', async project => {
-  /**
-   *  App (project)
-   *  -> v2 addon (v2-addon-c)
-   *     -> v1 addon (v1-addon-b)
-   *        -> v2 addon (v2-addon-a)
-   *           -> fake-glimmer-tracking (our own so that this test isn't flaky when @glimmer/tracking changes)
-   */
-  let fakeGlimmerTracking = baseAddon();
-  fakeGlimmerTracking.name = 'fake-glimmer-tracking';
-  merge(fakeGlimmerTracking.files, {
-    addon: {
-      'index.js': `
-        export function fakeTracked() {
-          console.log('fake glimmer tracking was called');
-          window.two = 'two';
-          return 2;
+    let v2Addon = baseV2Addon();
+    v2Addon.pkg.name = 'v2-addon';
+    merge(v2Addon.files, {
+      dist: {
+        'index.js': `
+        import { things } from 'v1-addon';
+        const result = things();
+        export function theResult() {
+          return result;
         }
-      `
-    }
-  });
-  fakeGlimmerTracking.linkDependency('ember-auto-import', { baseDir: __dirname });
-
-  let v2AddonA = baseV2Addon();
-  v2AddonA.pkg.name = 'v2-addon-a';
-  merge(v2AddonA.files, {
-    dist: {
-      'index.js': `
-        import { fakeTracked } from 'fake-glimmer-tracking';
-        export { fakeTracked as fromV2AddonA } from 'fake-glimmer-tracking';
-
-        // Must access in module scope
-        // This simulates how the decorator transform works by accessing and applynig
-        // @tracked in module space to a class's prototype
-        fakeTracked();
       `,
-    }
-  });
-  v2AddonA.pkg['exports'] = {
-    '.': './dist/index.js'
-  };
-  v2AddonA.pkg.peerDependencies ||= {};
-  v2AddonA.pkg.peerDependencies['fake-glimmer-tracking'] = '*';
+      },
+    });
+    v2Addon.pkg['exports'] = {
+      '.': './dist/index.js',
+    };
+    v2Addon.pkg.peerDependencies ||= {};
+    v2Addon.pkg.peerDependencies['v1-addon'] = '*';
 
-  let v1AddonB = baseAddon();
-  v1AddonB.pkg.name = 'v1-addon-b';
-  merge(v1AddonB.files, {
-    addon: {
-      'index.js': `
-        export { fromV2AddonA as fromV1AddonB } from 'v2-addon-a';
+    let v1Addon = baseAddon();
+    v1Addon.pkg.name = 'v1-addon';
+    merge(v1Addon.files, {
+      addon: {
+        'index.js': `
+        export function things() {
+          return 'it worked'
+        }
       `,
-    }
-  });
-  v1AddonB.pkg.peerDependencies ||= {};
-  v1AddonB.pkg.peerDependencies['v2-addon-a'] = '*';
-  v1AddonB.linkDependency('ember-auto-import', { baseDir: __dirname });
+      },
+    });
 
-  let v2AddonC = baseV2Addon();
-  v2AddonC.pkg.name = 'v2-addon-c';
-  merge(v2AddonC.files, {
-    'index.js': `
-      export { fromV1AddonB as fromV2AddonC } from 'v1-addon-b';
-    `,
-  });
-  v2AddonC.pkg['exports'] = {
-    '.': './index.js'
-  };
-  v2AddonC.pkg.peerDependencies ||= {};
-  v2AddonC.pkg.peerDependencies['v1-addon-b'] = '*';
+    project.addDependency(v2Addon);
+    project.addDependency(v1Addon);
 
-  project.addDependency(fakeGlimmerTracking);
-  project.addDependency(v2AddonA);
-  project.addDependency(v1AddonB);
-  project.addDependency(v2AddonC);
-  project.linkDependency('ember-auto-import', { baseDir: __dirname });
-  project.linkDependency('webpack', { baseDir: __dirname });
+    project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
 
-  merge(project.files, {
-    tests: {
-      unit: {
-        'dep-chain-test.js': `
+    merge(project.files, {
+      'ember-cli-build.js': `
+        const EmberApp = require('ember-cli/lib/broccoli/ember-app');
+        module.exports = function (defaults) {
+          let app = new EmberApp(defaults, {
+            autoImport: {
+              earlyBootSet(defaults) {
+                return [...defaults, 'v1-addon'];
+              }
+            }
+          });
+          return app.toTree();
+        };
+      `,
+      tests: {
+        unit: {
+          'dep-chain-test.js': `
           import { module, test } from 'qunit';
-
-          import { fromV2AddonB } from 'v1-addon-b'; // imports v2-addon-c => imports our fake tracking module
-          import { fromV2AddonC } from 'v2-addon-c';
-
-          // Something to keep imports from being optimized away if unused
-          console.log({ fromV2AddonB, fromV2AddonC });
+          import { theResult } from 'v2-addon';
+          import 'v1-addon';
 
           module('Unit | import from chain', function() {
             test('it worked', function(assert) {
-              assert.strictEqual(window.two, 'two', 'side-effect ran');
-              assert.strictEqual(fromV2AddonC(), 2);
+              assert.strictEqual(theResult(), 'it worked');
             });
           });
-        `
-      }
-    }
-  });
-
-}).forEachScenario(scenario => {
-  Qmodule(scenario.name, function(hooks) {
-    let app: PreparedApp;
-    hooks.before(async () => {
-      app = await scenario.prepare();
-    });
-    test('ensure success', async function (assert) {
-      let result = await app.execute('volta run npm -- run test');
-      assert.strictEqual(result.exitCode, 0, result.output);
+        `,
+        },
+      },
     });
   })
-})
+  .forEachScenario(scenario => {
+    Qmodule(scenario.name, function (hooks) {
+      let app: PreparedApp;
+      hooks.before(async () => {
+        app = await scenario.prepare();
+      });
+      test('ensure success', async function (assert) {
+        let result = await app.execute('volta run npm -- run test');
+        assert.strictEqual(result.exitCode, 0, result.output);
+      });
+    });
+  });
