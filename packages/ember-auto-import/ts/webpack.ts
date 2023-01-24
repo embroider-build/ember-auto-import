@@ -22,8 +22,52 @@ import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import semver from 'semver';
 
 const debug = makeDebug('ember-auto-import:webpack');
+
+/**
+ * Passed to and configuable with autoImport.earlyBootset
+ * example:
+ * ```js
+ * // ember-cli-build.js
+ * // ...
+ * autoImport: {
+ *   earlyBootSet: (defaultModules) => {
+ *     return [
+ *       ...defaultModules,
+ *       'my-package/my-module,
+ *     ];
+ *   }
+ * }
+ * ```
+ *
+ * Anything listed in the return value from this function that is from a v2 addon will be removed.
+ * (Allowing each of these packages from the default set to be incrementally converted to v2 addons
+ * without the need for this code to be updated)
+ *
+ */
+const DEFAULT_EARLY_BOOT_SET = Object.freeze([
+  '@glimmer/tracking',
+  '@glimmer/component',
+  '@ember/service',
+  '@ember/controller',
+  '@ember/routing/route',
+  '@ember/component',
+]);
+
+/**
+ * @glimmer/tracking + @glimmer/component
+ * are separate addons, yet included in ember-source (for now),
+ * but we will be required to use the real glimmer packages before
+ * ember-source is converted to v2 (else we implement more hacks at resolver time!)
+ */
+const BOOT_SET_FROM_EMBER_SOURCE = Object.freeze([
+  '@ember/service',
+  '@ember/controller',
+  '@ember/routing/route',
+  '@ember/component',
+]);
 
 registerHelper('js-string-escape', jsStringEscape);
 registerHelper('join', function (list, connector) {
@@ -45,8 +89,9 @@ module.exports = (function(){
     {{! this is only used for synchronous importSync() using a template string }}
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
+  d('__v1-addons__early-boot-set__', [{{{v1EmberDeps}}}], function() {});
   {{#each staticImports as |module|}}
-    d('{{js-string-escape module.specifier}}', [], function() { return require('{{js-string-escape module.specifier}}'); });
+    d('{{js-string-escape module.specifier}}', ['__v1-addons__early-boot-set__'], function() { return require('{{js-string-escape module.specifier}}'); });
   {{/each}}
   {{#each dynamicImports as |module|}}
     d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.specifier}}'); });
@@ -72,6 +117,7 @@ module.exports = (function(){
   staticTemplateImports: { key: string; args: string; template: string }[];
   dynamicTemplateImports: { key: string; args: string; template: string }[];
   publicAssetURL: string | undefined;
+  v1EmberDeps: string;
 }) => string;
 
 // this goes in a file by itself so we can tell webpack not to parse it. That
@@ -387,7 +433,103 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return output;
   }
 
+  private getEarlyBootSet() {
+    let result = this.opts.earlyBootSet
+      ? this.opts.earlyBootSet([...DEFAULT_EARLY_BOOT_SET])
+      : DEFAULT_EARLY_BOOT_SET;
+
+    /**
+     * Prior to ember-source 3.27, the modules were precompiled into a variant of requirejs/AMD.
+     * As such, the early boot set will not support earlier than 3.27.
+     */
+    let host = this.opts.rootPackage;
+    let emberSource = host.requestedRange('ember-source');
+    let emberSourceVersion = semver.coerce(emberSource);
+
+    if (emberSourceVersion && semver.lt(emberSourceVersion, '3.27.0')) {
+      if (this.opts.earlyBootSet) {
+        throw new Error(
+          'autoImport.earlyBootSet is not supported for ember-source <= 3.27.0'
+        );
+      }
+
+      result = [];
+    }
+
+    if (!Array.isArray(result)) {
+      throw new Error(
+        'autoImport.earlyBootSet was used, but did not return an array. An array of strings is required'
+      );
+    }
+
+    // Reminder: [/* empty array */].every(anything) is true
+    if (!result.every((entry) => typeof entry === 'string')) {
+      throw new Error(
+        'autoImport.earlyBootSet was used, but the returned array did contained data other than strings. Every element in the return array must be a string representing a module'
+      );
+    }
+
+    /**
+     * TODO: iterate over these and check their dependencies if any depend on a v2 addon
+     *       - when this situation occurs, check that v2 addon's dependencies if any of those are v1 addons,
+     *         - if so, log a warning, about potentially needing to add modules from that v1 addon to the early boot set
+     */
+    let v2Addons = this.opts.v2Addons.keys();
+    let isEmberSourceV2 = this.opts.v2Addons.has('ember-source');
+
+    function depNameForPath(modulePath: string) {
+      if (modulePath.startsWith('@')) {
+        let [scope, name] = modulePath.split('/');
+
+        return `${scope}/${name}`;
+      }
+
+      return modulePath.split('/')[0];
+    }
+
+    function isFromEmberSource(modulePath: string) {
+      return BOOT_SET_FROM_EMBER_SOURCE.some((fromEmber) =>
+        modulePath.startsWith(fromEmber)
+      );
+    }
+
+    result = result.filter((modulePath) => {
+      if (isEmberSourceV2 && isFromEmberSource(modulePath)) {
+        return false;
+      }
+
+      let depName = depNameForPath(modulePath);
+
+      /**
+       * If a dependency from the earlyBootSet is not actually included in the project,
+       * don't include in the earlyBootSet emitted content.
+       */
+      if (!host.hasDependency(depName) && !isFromEmberSource(modulePath)) {
+        return false;
+      }
+
+      for (let v2Addon of v2Addons) {
+        // Omit modulePaths from v2 addons
+        if (modulePath.startsWith(v2Addon)) {
+          if (!DEFAULT_EARLY_BOOT_SET.includes(v2Addon)) {
+            console.warn(
+              `\`${modulePath}\` was included in the \`autoImport.earlyBootSet\` list, but belongs to a v2 addon. You can remove this entry from the earlyBootSet`
+            );
+          }
+
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    return result;
+  }
+
   private writeEntryFile(name: string, deps: BundleDependencies) {
+    let v1EmberDeps = this.getEarlyBootSet();
+
     writeFileSync(
       join(this.stagingDir, `${name}.cjs`),
       entryTemplate({
@@ -398,6 +540,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         staticTemplateImports:
           deps.staticTemplateImports.map(mapTemplateImports),
         publicAssetURL: this.opts.publicAssetURL,
+        v1EmberDeps: v1EmberDeps.map((name) => `'${name}'`).join(','),
       })
     );
   }

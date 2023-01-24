@@ -1,5 +1,5 @@
 import merge from 'lodash/merge';
-import { appScenarios, baseAddon, baseApp } from './scenarios';
+import { appScenarios, baseAddon, baseApp, baseV2Addon } from './scenarios';
 import { PreparedApp, Project, Scenarios } from 'scenario-tester';
 import { setupFastboot } from './fastboot-helper';
 import QUnit from 'qunit';
@@ -460,6 +460,89 @@ Scenarios.fromProject(baseApp)
           /my-v1-addon needs to depend on ember-auto-import in order to use my-v2-addon/.test(result.stderr),
           result.stderr
         );
+      });
+    });
+  });
+
+Scenarios.fromProject(baseApp)
+  .map('v2-addon-consumed-by-v1-addon-cross-talk-with-requirejs-and-webpack', async project => {
+    let v2Addon = baseV2Addon();
+    v2Addon.pkg.name = 'v2-addon';
+    merge(v2Addon.files, {
+      dist: {
+        'index.js': `
+        import { things } from 'v1-addon';
+        const result = things();
+        export function theResult() {
+          return result;
+        }
+      `,
+      },
+    });
+    v2Addon.pkg['exports'] = {
+      '.': './dist/index.js',
+    };
+    v2Addon.pkg.peerDependencies ||= {};
+    v2Addon.pkg.peerDependencies['v1-addon'] = '*';
+
+    let v1Addon = baseAddon();
+    v1Addon.pkg.name = 'v1-addon';
+    merge(v1Addon.files, {
+      addon: {
+        'index.js': `
+        export function things() {
+          return 'it worked'
+        }
+      `,
+      },
+    });
+
+    project.addDependency(v2Addon);
+    project.addDependency(v1Addon);
+
+    project.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.linkDependency('webpack', { baseDir: __dirname });
+
+    merge(project.files, {
+      'ember-cli-build.js': `
+        const EmberApp = require('ember-cli/lib/broccoli/ember-app');
+        module.exports = function (defaults) {
+          let app = new EmberApp(defaults, {
+            autoImport: {
+              earlyBootSet(defaults) {
+                return [...defaults, 'v1-addon'];
+              }
+            }
+          });
+          return app.toTree();
+        };
+      `,
+      tests: {
+        unit: {
+          'dep-chain-test.js': `
+          import { module, test } from 'qunit';
+          import { theResult } from 'v2-addon';
+          import 'v1-addon';
+
+          module('Unit | import from chain', function() {
+            test('it worked', function(assert) {
+              assert.strictEqual(theResult(), 'it worked');
+            });
+          });
+        `,
+        },
+      },
+    });
+  })
+  .forEachScenario(scenario => {
+    Qmodule(scenario.name, function (hooks) {
+      let app: PreparedApp;
+      hooks.before(async () => {
+        app = await scenario.prepare();
+      });
+      test('ensure success', async function (assert) {
+        let result = await app.execute('volta run npm -- run test');
+        assert.strictEqual(result.exitCode, 0, result.output);
       });
     });
   });

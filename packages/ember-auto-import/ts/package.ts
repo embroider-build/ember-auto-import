@@ -30,6 +30,7 @@ export interface Options {
   alias?: { [fromName: string]: string };
   webpack?: Configuration;
   publicAssetURL?: string;
+  earlyBootSet?: (defaultModules: string[]) => string[];
   styleLoaderOptions?: Record<string, unknown>;
   cssLoaderOptions?: Record<string, unknown>;
   miniCssExtractPluginOptions?: Record<string, unknown>;
@@ -210,7 +211,7 @@ export default class Package {
   // maps from packageName to packageRoot
   magicDeps: Map<string, string> | undefined;
 
-  private hasDependency(name: string): boolean {
+  hasDependency(name: string): boolean {
     let { pkg } = this;
     return Boolean(
       pkg.dependencies?.[name] ||
@@ -411,6 +412,17 @@ export default class Package {
       this.autoImportOptions?.publicAssetURL ??
         ensureTrailingSlash((this._parent as any).config().rootURL) + 'assets/'
     );
+  }
+
+  /**
+   * The function for defining the early boot set.
+   * Used when we begin building entry files for webpack, so that we can query all packages listed
+   * in the early boot set to check if they are v2 addons --if they are v2 addons,
+   * we remove them from the early boot set, as this feature is for a rare compatibility circumstance that
+   * only affects v1 addons consumed by v2 addons.
+   */
+  get earlyBootSet(): undefined | ((defaults: string[]) => string[]) {
+    return this.isAddon ? undefined : this.autoImportOptions?.earlyBootSet;
   }
 
   get styleLoaderOptions(): Record<string, unknown> | undefined {

@@ -40,8 +40,18 @@ async function lts(project: Project) {
 `;
   }
 
+  // this wasn't a thing in ember 3.4
+  project.removeDevDependency('@glimmer/tracking');
+
   if (project.name === '@ef4/app-template') {
     merge(project.files, {
+      config: {
+        'targets.js': `
+          module.exports = {
+            browsers: ['ie 11']
+          };
+        `,
+      },
       app: {
         'app.js': olderAppJS('@ef4/app-template'),
       },
@@ -54,6 +64,13 @@ async function lts(project: Project) {
         dummy: {
           app: {
             'app.js': olderAppJS('dummy'),
+          },
+          config: {
+            'targets.js': `
+              module.exports = {
+                browsers: ['ie 11']
+              };
+            `,
           },
         },
       },
@@ -106,4 +123,12 @@ export function baseAddon(as: 'addon' | 'dummy-app' = 'addon') {
     linkDevDeps: as === 'dummy-app',
   });
 }
+
+export function baseV2Addon() {
+  return Project.fromDir(dirname(require.resolve('@ef4/v2-addon-template/package.json')), {
+    linkDeps: true,
+    linkDevDeps: true,
+  });
+}
+
 export const addonScenarios = supportMatrix(Scenarios.fromProject(() => baseAddon('dummy-app')));
