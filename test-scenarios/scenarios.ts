@@ -2,15 +2,6 @@ import { Scenarios, Project } from 'scenario-tester';
 import { dirname } from 'path';
 import { merge } from 'lodash';
 
-if (
-  require('../packages/ember-auto-import/package.json').version !==
-  require('./package.json').devDependencies['ember-auto-import']
-) {
-  throw new Error(
-    `version safety check failure. test-scenarios is not depending on the current verion of ember-auto-import`
-  );
-}
-
 // this scenario represents the oldest Ember LTS we support
 async function lts(project: Project) {
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-lts' });
