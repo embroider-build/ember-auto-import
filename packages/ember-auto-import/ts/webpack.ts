@@ -74,7 +74,8 @@ registerHelper('join', function (list, connector) {
   return list.join(connector);
 });
 
-const entryTemplate = compile(`
+const entryTemplate = compile(
+  `
 module.exports = (function(){
   var d = _eai_d;
   var r = _eai_r;
@@ -111,7 +112,9 @@ module.exports = (function(){
     });
   {{/each}}
 })();
-`) as (args: {
+`,
+  { noEscape: true }
+) as (args: {
   staticImports: { specifier: string }[];
   dynamicImports: { specifier: string }[];
   staticTemplateImports: { key: string; args: string; template: string }[];
