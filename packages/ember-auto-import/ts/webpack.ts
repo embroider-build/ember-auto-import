@@ -96,12 +96,12 @@ module.exports = (function(){
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
   {{#each relativeImports as |module|}}
-    require('./{{js-string-escape module}}');
+      require('./{{js-string-escape module}}.cjs');
   {{/each}}
   {{#each lazyEngineImports as |module|}}
     var engineLookup = window.__eaiEngineLookup || {};
     engineLookup['{{module}}'] = function() {
-      return import('./{{js-string-escape module}}.js')
+      return require('./{{js-string-escape module}}.cjs')
     };
     window.__eaiEngineLookup = engineLookup;
   {{/each}}
@@ -142,7 +142,7 @@ module.exports = (function(){
 
 const emptyTemplate = compile(`
 {{#each relativeImports as |module|}}
-import './{{js-string-escape module}}.js';
+  require('./{{js-string-escape module}}.cjs');
 {{/each}}
 `) as (args: { relativeImports: { specifier: string }[] }) => string;
 
