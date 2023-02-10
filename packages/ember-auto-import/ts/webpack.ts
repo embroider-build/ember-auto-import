@@ -184,11 +184,11 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private get webpack() {
-    return this.setup()?.webpack;
+    return this.setup().webpack;
   }
 
   private get stagingDir() {
-    return this.setup()?.stagingDir;
+    return this.setup().stagingDir as string;
   }
 
   private setup() {
@@ -277,6 +277,17 @@ export default class WebpackBundler extends Plugin implements Bundler {
       node: false,
       externals: this.externalsHandler,
     };
+
+    if ([...this.opts.packages].find((pkg) => pkg.forbidsEval)) {
+      config.devtool = 'source-map';
+    }
+    mergeConfig(
+      config,
+      ...[...this.opts.packages].map((pkg) => pkg.webpackConfig)
+    );
+    debug('webpackConfig %j', config);
+    this.state = { webpack: this.opts.webpack(config), stagingDir };
+    return this.state;
   }
 
   private setupStyleLoader(): {
@@ -292,7 +303,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           ...[...this.opts.packages].find(
             (pkg) => pkg.miniCssExtractPluginOptions
           )?.miniCssExtractPluginOptions,
-        }),
+        }) as unknown as WebpackPluginInstance,
       };
     } else
       return {
@@ -576,19 +587,36 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return result;
   }
 
-  private writeEntryFile(name: string, deps: BundleDependencies) {
-    writeFileSync(
-      join(this.stagingDir, `${name}.js`),
-      entryTemplate({
-        staticImports: deps.staticImports,
-        dynamicImports: deps.dynamicImports,
-        dynamicTemplateImports:
-          deps.dynamicTemplateImports.map(mapTemplateImports),
-        staticTemplateImports:
-          deps.staticTemplateImports.map(mapTemplateImports),
-        publicAssetURL: this.opts.publicAssetURL,
-      })
-    );
+  private writeEntryFile(
+    name: string,
+    deps: BundleDependencies | undefined,
+    relativeImports: any,
+    lazyEngineImports: any
+  ) {
+    if (!deps) {
+      outputFileSync(
+        join(this.stagingDir, `${flattenFileName(name)}.cjs`),
+        emptyTemplate({ relativeImports })
+      );
+    } else {
+      let v1EmberDeps = this.getEarlyBootSet();
+
+      writeFileSync(
+        join(this.stagingDir, `${name}.js`),
+        entryTemplate({
+          staticImports: deps.staticImports,
+          dynamicImports: deps.dynamicImports,
+          dynamicTemplateImports:
+            deps.dynamicTemplateImports.map(mapTemplateImports),
+          staticTemplateImports:
+            deps.staticTemplateImports.map(mapTemplateImports),
+          publicAssetURL: this.opts.publicAssetURL,
+          relativeImports,
+          lazyEngineImports,
+          v1EmberDeps: v1EmberDeps.map((name) => `'${name}'`).join(','),
+        })
+      );
+    }
   }
 
   private writeLoaderFile() {
@@ -631,7 +659,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   private async runWebpack(): Promise<Required<Stats>> {
     return new Promise((resolve, reject) => {
-      this.webpack.run((err, stats) => {
+      this.webpack?.run((err, stats) => {
         const statsString = stats ? stats.toString() : '';
         if (err) {
           this.opts.consoleWrite(statsString);
