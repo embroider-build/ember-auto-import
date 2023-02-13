@@ -82,6 +82,7 @@ Qmodule('splitter', function (hooks) {
           },
         }),
         analyzers: new Map([[analyzer, pack]]),
+        isPreBundled: () => false,
       });
       builder = new broccoli.Builder(analyzer);
     };
