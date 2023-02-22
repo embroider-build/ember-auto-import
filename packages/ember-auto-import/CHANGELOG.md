@@ -1,5 +1,9 @@
 # Changelog
 
+### 2.6.1
+
+- BUGFIX: `earlyBootSet` now defaults to empty, because it was causing problems for some apps. If you need it you need to turn it on explicitly. @NullVoxPopuli [568](https://github.com/ef4/ember-auto-import/pull/568)
+
 ### 2.6.0
 
 - ENHANCEMENT: new option `earlyBootSet` allows you to work around compatibility problems between classic addons and v2 addons by @NullVoxPopuli [553](https://github.com/ef4/ember-auto-import/pull/553)
