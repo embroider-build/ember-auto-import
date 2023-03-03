@@ -494,7 +494,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
   private getEarlyBootSet() {
     let result = this.opts.earlyBootSet
       ? this.opts.earlyBootSet([...DEFAULT_EARLY_BOOT_SET])
-      : DEFAULT_EARLY_BOOT_SET;
+      : [];
 
     /**
      * Prior to ember-source 3.27, the modules were precompiled into a variant of requirejs/AMD.
