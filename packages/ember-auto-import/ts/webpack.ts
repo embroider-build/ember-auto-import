@@ -74,6 +74,9 @@ const BOOT_SET_FROM_EMBER_SOURCE = Object.freeze([
   '@ember/component',
 ]);
 
+registerHelper('flatten-file-name', (str) => {
+  return flattenFileName(str);
+});
 registerHelper('js-string-escape', jsStringEscape);
 registerHelper('join', function (list, connector) {
   return list.join(connector);
@@ -98,13 +101,16 @@ module.exports = (function(){
   {{#each relativeImports as |module|}}
     require('./{{js-string-escape module}}.cjs');
   {{/each}}
-  {{#each lazyEngineImports as |module|}}
+  {{#if lazyEngineImports}}
     var engineLookup = window.__eaiEngineLookup || {};
+    {{#each lazyEngineImports as |module|}}
     engineLookup['{{module}}'] = function() {
-      return import('./{{js-string-escape module}}.cjs')
+      return import('./{{js-string-escape (flatten-file-name module)}}.cjs')
     };
+    {{/each}}
     window.__eaiEngineLookup = engineLookup;
-  {{/each}}
+  {{/if}}
+
   d('__v1-addons__early-boot-set__', [{{{v1EmberDeps}}}], function() {});
   {{#each staticImports as |module|}}
     d('{{js-string-escape module.specifier}}', ['__v1-addons__early-boot-set__'], function() { return require('{{js-string-escape module.specifier}}'); });
@@ -422,8 +428,11 @@ export default class WebpackBundler extends Plugin implements Bundler {
         addon.options.lazyLoading &&
         addon.options.lazyLoading.enabled
       ) {
-        lazyEngineNames.push(flattenFileName(addon.name));
-      } else if (addon.addons.length) {
+        // do not flatten the package name as we ember-asest-loader looks up and expects the require statement to match the package name
+        // @foo/bar !== @foo-bar.
+        lazyEngineNames.push(addon.name);
+      } else if (addon.addons.length || deps.get(addon.pkg.name)) {
+        // addons can be flattened as they are rolled up into the app, test or engine buckets.
         addonNames.push(flattenFileName(addon.name));
       }
 
@@ -436,8 +445,14 @@ export default class WebpackBundler extends Plugin implements Bundler {
       this.writeEntryFile('app', deps.get('app')!, addonNames, lazyEngineNames);
       this.writeEntryFile('tests', deps.get('tests')!, ['app'], []);
     } else {
-      let name = project.name;
-      this.writeEntryFile(name, deps.get(name), addonNames, lazyEngineNames);
+      let name = project.pkg.name;
+      let addonName = project.name;
+      this.writeEntryFile(
+        addonName,
+        deps.get(name),
+        addonNames,
+        lazyEngineNames
+      );
     }
   }
 

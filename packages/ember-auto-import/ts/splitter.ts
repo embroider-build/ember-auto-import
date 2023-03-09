@@ -237,22 +237,61 @@ export default class Splitter {
       getOrCreate(deps, bundleName);
     });
 
+    const testAppImportCache: {
+      [key: string]: {
+        dynamicImports: Map<ResolvedImport, boolean>;
+        staticImports: Map<ResolvedImport, boolean>;
+        dynamicTemplateImports: Map<ResolvedTemplateImport, boolean>;
+        staticTemplateImports: Map<ResolvedTemplateImport, boolean>;
+      };
+    } = {};
+
     for (let target of targets.targets.values()) {
       target.importedBy.forEach((i) => {
         let bundleName = this.chooseBundle([i]);
 
         if (bundleName === 'tests') {
+          if (!testAppImportCache[bundleName]) {
+            testAppImportCache[bundleName] = {
+              staticImports: new Map(),
+              staticTemplateImports: new Map(),
+              dynamicImports: new Map(),
+              dynamicTemplateImports: new Map(),
+            };
+          }
+
           if (i.isDynamic) {
-            getOrCreate(deps, 'tests').dynamicImports.push(target);
+            if (!testAppImportCache[bundleName].dynamicImports.has(target)) {
+              getOrCreate(deps, 'tests').dynamicImports.push(target);
+              testAppImportCache[bundleName].dynamicImports.set(target, true);
+            }
           } else {
-            getOrCreate(deps, 'tests').staticImports.push(target);
+            if (!testAppImportCache[bundleName].staticImports.has(target)) {
+              getOrCreate(deps, 'tests').staticImports.push(target);
+              testAppImportCache[bundleName].staticImports.set(target, true);
+            }
           }
         } else {
           let depName = i.package.isAddon ? i.package.name : 'app';
+          if (!testAppImportCache[depName]) {
+            testAppImportCache[depName] = {
+              staticImports: new Map(),
+              staticTemplateImports: new Map(),
+              dynamicImports: new Map(),
+              dynamicTemplateImports: new Map(),
+            };
+          }
+
           if (i.isDynamic) {
-            getOrCreate(deps, depName).dynamicImports.push(target);
+            if (!testAppImportCache[depName].dynamicImports.has(target)) {
+              getOrCreate(deps, depName).dynamicImports.push(target);
+              testAppImportCache[depName].dynamicImports.set(target, true);
+            }
           } else {
-            getOrCreate(deps, depName).staticImports.push(target);
+            if (!testAppImportCache[depName].staticImports.has(target)) {
+              getOrCreate(deps, depName).staticImports.push(target);
+              testAppImportCache[depName].staticImports.set(target, true);
+            }
           }
         }
       });
@@ -262,19 +301,60 @@ export default class Splitter {
       target.importedBy.forEach((i) => {
         let bundleName = this.chooseBundle([i]);
 
+        if (!testAppImportCache[bundleName]) {
+          testAppImportCache[bundleName] = {
+            staticImports: new Map(),
+            staticTemplateImports: new Map(),
+            dynamicImports: new Map(),
+            dynamicTemplateImports: new Map(),
+          };
+        }
+
         if (bundleName === 'tests') {
           if (i.isDynamic) {
-            getOrCreate(deps, 'tests').dynamicTemplateImports.push(target);
+            if (
+              !testAppImportCache[bundleName].dynamicTemplateImports.has(target)
+            ) {
+              getOrCreate(deps, bundleName).dynamicTemplateImports.push(target);
+              testAppImportCache[bundleName].dynamicTemplateImports.set(
+                target,
+                true
+              );
+            }
           } else {
-            getOrCreate(deps, 'tests').staticTemplateImports.push(target);
+            if (
+              !testAppImportCache[bundleName].staticTemplateImports.has(target)
+            ) {
+              getOrCreate(deps, bundleName).staticTemplateImports.push(target);
+              testAppImportCache[bundleName].staticTemplateImports.set(
+                target,
+                true
+              );
+            }
           }
         } else {
           let depName = i.package.isAddon ? i.package.name : 'app';
 
           if (i.isDynamic) {
-            getOrCreate(deps, depName).dynamicTemplateImports.push(target);
+            if (
+              !testAppImportCache[depName].dynamicTemplateImports.has(target)
+            ) {
+              getOrCreate(deps, depName).dynamicTemplateImports.push(target);
+              testAppImportCache[depName].dynamicTemplateImports.set(
+                target,
+                true
+              );
+            }
           } else {
-            getOrCreate(deps, depName).staticTemplateImports.push(target);
+            if (
+              !testAppImportCache[depName].staticTemplateImports.has(target)
+            ) {
+              getOrCreate(deps, depName).staticTemplateImports.push(target);
+              testAppImportCache[depName].staticTemplateImports.set(
+                target,
+                true
+              );
+            }
           }
         }
       });
@@ -372,7 +452,12 @@ class LazyPrintDeps {
         ),
       };
     }
-    return JSON.stringify(output, null, 2);
+    try {
+      return JSON.stringify(output, null, 2);
+    } catch (ex) {
+      // output is too large
+      return JSON.stringify({});
+    }
   }
 }
 
