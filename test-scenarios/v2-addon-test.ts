@@ -497,8 +497,37 @@ Scenarios.fromProject(baseApp)
       },
     });
 
+    /**
+      * RSVP is included with ember, and we should defer to
+      * the ember copy when RSVP is imported.
+      *
+      * Reasons for including RSVP in a package.json:
+      * - types
+      * - node usage
+      *
+      * Issue came up here: https://github.com/ef4/ember-auto-import/issues/564
+      *
+      * Note that we dont' even need to import this package for the problem to occur
+      * (if you undo the fix accompanying this test change)
+      */
+    let v1Addon_declaresRSVP = baseAddon();
+    v1Addon_declaresRSVP.pkg.name = 'v1-addon_2';
+    merge(v1Addon_declaresRSVP.files, {
+      addon: {
+        'index.js': `
+          import * as RSVP from 'rsvp';
+          export const Promise = RSVP.Promise;
+        `
+      },
+    });
+
+    v1Addon_declaresRSVP.linkDependency('ember-auto-import', { baseDir: __dirname });
+    v1Addon_declaresRSVP.linkDependency('webpack', { baseDir: __dirname });
+    v1Addon_declaresRSVP.linkDependency('rsvp', { baseDir: __dirname });
+
     project.addDependency(v2Addon);
     project.addDependency(v1Addon);
+    project.addDependency(v1Addon_declaresRSVP);
 
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.linkDependency('webpack', { baseDir: __dirname });

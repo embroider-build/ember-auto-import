@@ -1,3 +1,4 @@
+import fse from 'fs-extra';
 import Splitter from './splitter';
 import { Bundler, debugBundler } from './bundler';
 import Analyzer from './analyzer';
@@ -25,6 +26,7 @@ import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
 import { MARKER } from './analyzer-syntax';
 import path from 'path';
+import walkSync from 'walk-sync';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -115,11 +117,43 @@ export default class AutoImport implements AutoImportSharedAPI {
     // "dependencies" of the app even though they're not really.
     this.rootPackage.magicDeps = this.v2Addons;
 
+    /**
+     * ember-source is the only known trouble-maker here, so
+     * we gather ember-source's bundled dependencies, and prevent them
+     * from being included in webpack.
+     *
+     * As ember-source migrates to a Real Package™, this list will automatically update.
+     * However, it is dependent on ember-source keeping the same general folder structure.
+     * This is technically private API, so it's still not bullet proof.
+     */
+    let alreadyBundled = new Set();
+
+    if (this.rootPackage.hasDependency('ember-source')) {
+      let emberPackageJsonPath = resolvePackagePath(
+        'ember-source',
+        this.rootPackage.root
+      );
+
+      if (emberPackageJsonPath) {
+        let emberPath = path.dirname(emberPackageJsonPath);
+        let dependenciesPath = path.join(emberPath, 'dist/dependencies');
+
+        if (fse.existsSync(dependenciesPath)) {
+          let deps = walkSync(dependenciesPath, { directories: false });
+
+          for (let bundledDep of deps) {
+            alreadyBundled.add(bundledDep.replace(/\.js$/, ''));
+          }
+        }
+      }
+    }
+
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
     let splitter = new Splitter({
       analyzers: this.analyzers,
       bundles: this.bundles,
+      isPreBundled: (specifier: string) => alreadyBundled.has(specifier),
     });
 
     let webpack: typeof webpackType;

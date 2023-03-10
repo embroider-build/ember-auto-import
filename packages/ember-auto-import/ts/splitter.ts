@@ -35,6 +35,7 @@ export interface SplitterOptions {
   // list of bundle names in priority order
   bundles: BundleConfig;
   analyzers: Map<Analyzer, Package>;
+  isPreBundled: (specifier: string) => boolean;
 }
 
 export default class Splitter {
@@ -243,6 +244,10 @@ export default class Splitter {
     });
 
     for (let target of targets.targets.values()) {
+      if (this.options.isPreBundled(target.specifier)) {
+        continue;
+      }
+
       let [dynamicUses, staticUses] = partition(
         target.importedBy,
         (imp) => imp.isDynamic
