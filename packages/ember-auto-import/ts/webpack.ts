@@ -517,7 +517,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
      */
     let host = this.opts.rootPackage;
     let emberSource = host.requestedRange('ember-source');
-    let emberSourceVersion = semver.coerce(emberSource);
+    let emberSourceVersion = semver.valid(emberSource);
 
     if (emberSourceVersion && semver.lt(emberSourceVersion, '3.27.0')) {
       if (this.opts.earlyBootSet) {
