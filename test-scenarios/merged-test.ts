@@ -5,6 +5,7 @@ import merge from 'lodash/merge';
 const { module: Qmodule, test } = QUnit;
 
 appScenarios
+  .skip('lts') // webpack will duplicate the inner module when ember-welcome-page is on v5
   .map('merged', project => {
     let innerLib = project.addDevDependency('inner-lib', {
       files: {

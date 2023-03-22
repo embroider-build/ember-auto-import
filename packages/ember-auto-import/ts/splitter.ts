@@ -2,7 +2,7 @@ import makeDebug from 'debug';
 import Analyzer, { Import, LiteralImport, TemplateImport } from './analyzer';
 import Package, { DepResolution } from './package';
 import { shallowEqual } from './util';
-import { flatten, partition } from 'lodash';
+import { flatten } from 'lodash';
 import BundleConfig from './bundle-config';
 import { join } from 'path';
 import { satisfies } from 'semver';
@@ -234,42 +234,130 @@ export default class Splitter {
     let deps: Map<string, BundleDependencies> = new Map();
 
     this.options.bundles.names.forEach((bundleName) => {
-      deps.set(bundleName, {
-        staticImports: [],
-        staticTemplateImports: [],
-        dynamicImports: [],
-        dynamicTemplateImports: [],
-      });
+      getOrCreate(deps, bundleName);
     });
 
+    const testAppImportCache: {
+      [key: string]: {
+        dynamicImports: Map<ResolvedImport, boolean>;
+        staticImports: Map<ResolvedImport, boolean>;
+        dynamicTemplateImports: Map<ResolvedTemplateImport, boolean>;
+        staticTemplateImports: Map<ResolvedTemplateImport, boolean>;
+      };
+    } = {};
+
     for (let target of targets.targets.values()) {
-      let [dynamicUses, staticUses] = partition(
-        target.importedBy,
-        (imp) => imp.isDynamic
-      );
-      if (staticUses.length > 0) {
-        let bundleName = this.chooseBundle(staticUses);
-        deps.get(bundleName)!.staticImports.push(target);
-      }
-      if (dynamicUses.length > 0) {
-        let bundleName = this.chooseBundle(dynamicUses);
-        deps.get(bundleName)!.dynamicImports.push(target);
-      }
+      target.importedBy.forEach((i) => {
+        let bundleName = this.chooseBundle([i]);
+
+        if (bundleName === 'tests') {
+          if (!testAppImportCache[bundleName]) {
+            testAppImportCache[bundleName] = {
+              staticImports: new Map(),
+              staticTemplateImports: new Map(),
+              dynamicImports: new Map(),
+              dynamicTemplateImports: new Map(),
+            };
+          }
+
+          if (i.isDynamic) {
+            if (!testAppImportCache[bundleName].dynamicImports.has(target)) {
+              getOrCreate(deps, 'tests').dynamicImports.push(target);
+              testAppImportCache[bundleName].dynamicImports.set(target, true);
+            }
+          } else {
+            if (!testAppImportCache[bundleName].staticImports.has(target)) {
+              getOrCreate(deps, 'tests').staticImports.push(target);
+              testAppImportCache[bundleName].staticImports.set(target, true);
+            }
+          }
+        } else {
+          let depName = i.package.isAddon ? i.package.name : 'app';
+          if (!testAppImportCache[depName]) {
+            testAppImportCache[depName] = {
+              staticImports: new Map(),
+              staticTemplateImports: new Map(),
+              dynamicImports: new Map(),
+              dynamicTemplateImports: new Map(),
+            };
+          }
+
+          if (i.isDynamic) {
+            if (!testAppImportCache[depName].dynamicImports.has(target)) {
+              getOrCreate(deps, depName).dynamicImports.push(target);
+              testAppImportCache[depName].dynamicImports.set(target, true);
+            }
+          } else {
+            if (!testAppImportCache[depName].staticImports.has(target)) {
+              getOrCreate(deps, depName).staticImports.push(target);
+              testAppImportCache[depName].staticImports.set(target, true);
+            }
+          }
+        }
+      });
     }
 
     for (let target of targets.templateTargets.values()) {
-      let [dynamicUses, staticUses] = partition(
-        target.importedBy,
-        (imp) => imp.isDynamic
-      );
-      if (staticUses.length > 0) {
-        let bundleName = this.chooseBundle(staticUses);
-        deps.get(bundleName)!.staticTemplateImports.push(target);
-      }
-      if (dynamicUses.length > 0) {
-        let bundleName = this.chooseBundle(dynamicUses);
-        deps.get(bundleName)!.dynamicTemplateImports.push(target);
-      }
+      target.importedBy.forEach((i) => {
+        let bundleName = this.chooseBundle([i]);
+
+        if (!testAppImportCache[bundleName]) {
+          testAppImportCache[bundleName] = {
+            staticImports: new Map(),
+            staticTemplateImports: new Map(),
+            dynamicImports: new Map(),
+            dynamicTemplateImports: new Map(),
+          };
+        }
+
+        if (bundleName === 'tests') {
+          if (i.isDynamic) {
+            if (
+              !testAppImportCache[bundleName].dynamicTemplateImports.has(target)
+            ) {
+              getOrCreate(deps, bundleName).dynamicTemplateImports.push(target);
+              testAppImportCache[bundleName].dynamicTemplateImports.set(
+                target,
+                true
+              );
+            }
+          } else {
+            if (
+              !testAppImportCache[bundleName].staticTemplateImports.has(target)
+            ) {
+              getOrCreate(deps, bundleName).staticTemplateImports.push(target);
+              testAppImportCache[bundleName].staticTemplateImports.set(
+                target,
+                true
+              );
+            }
+          }
+        } else {
+          let depName = i.package.isAddon ? i.package.name : 'app';
+
+          if (i.isDynamic) {
+            if (
+              !testAppImportCache[depName].dynamicTemplateImports.has(target)
+            ) {
+              getOrCreate(deps, depName).dynamicTemplateImports.push(target);
+              testAppImportCache[depName].dynamicTemplateImports.set(
+                target,
+                true
+              );
+            }
+          } else {
+            if (
+              !testAppImportCache[depName].staticTemplateImports.has(target)
+            ) {
+              getOrCreate(deps, depName).staticTemplateImports.push(target);
+              testAppImportCache[depName].staticTemplateImports.set(
+                target,
+                true
+              );
+            }
+          }
+        }
+      });
     }
 
     this.sortDependencies(deps);
@@ -364,6 +452,24 @@ class LazyPrintDeps {
         ),
       };
     }
-    return JSON.stringify(output, null, 2);
+    try {
+      return JSON.stringify(output, null, 2);
+    } catch (ex) {
+      // output is too large
+      return JSON.stringify({});
+    }
   }
+}
+
+function getOrCreate(deps: Map<string, BundleDependencies>, name: string) {
+  if (!deps.has(name)) {
+    deps.set(name, {
+      staticImports: [],
+      staticTemplateImports: [],
+      dynamicImports: [],
+      dynamicTemplateImports: [],
+    });
+  }
+
+  return deps.get(name)!;
 }

@@ -37,6 +37,7 @@
     "ember-cli-typescript-2": "npm:ember-cli-typescript@^2.0.0-beta.3",
     "ember-cli-typescript-3": "npm:ember-cli-typescript@^3.0.0",
     "ember-cli-typescript-4": "npm:ember-cli-typescript@^4.0.0-alpha.1",
+    "ember-engines": "^0.9.0",
     "ember-source-3": "npm:ember-source@^3.0.0",
     "ember-source-lts": "npm:ember-source@~3.4.0",
     "ember-source-beta": "npm:ember-source@beta",

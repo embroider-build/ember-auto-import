@@ -4,6 +4,7 @@
 */
 
 import { dirname } from 'path';
+import { AppInstance } from '@embroider/shared-internals';
 const testsPattern = new RegExp(`^(@[^/]+)?/?[^/]+/(tests|test-support)/`);
 
 import type { TreeType } from './analyzer';
@@ -26,12 +27,16 @@ interface OutputPaths {
 }
 
 export default class BundleConfig {
-  constructor(private outputPaths: OutputPaths) {}
+  constructor(private outputPaths: OutputPaths, private host?: AppInstance) {}
 
   // This list of valid bundles, in priority order. The first one in the list that
   // needs a given import will end up with that import.
   get names(): ReadonlyArray<BundleName> {
     return Object.freeze(['app', 'tests']);
+  }
+
+  get hostProject() {
+    return this.host!.project;
   }
 
   isBuiltInBundleName(name: string): name is BundleName {
