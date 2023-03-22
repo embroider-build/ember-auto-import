@@ -238,7 +238,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         library: '__ember_auto_import__',
       },
       optimization: {
-        removeAvailableModules: true,
+        removeAvailableModules: this.opts.environment === 'production',
         splitChunks: {
           chunks: 'all',
         },
