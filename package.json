@@ -3,8 +3,8 @@
   "scripts": {
     "test": "cd test-scenarios && npm run test",
     "watch": "cd packages/ember-auto-import && npm run compile -- --watch",
-    "prepare": "cd packages/ember-auto-import && npm run compile",
-    "nom": "rm -rf node_modules packages/*/node_modules test-scenarios/node_modules types/*/node_modules"
+    "nom": "rm -rf node_modules packages/*/node_modules test-scenarios/node_modules types/*/node_modules",
+    "postinstall": "patch-package"
   },
   "workspaces": [
     "packages/*",
@@ -20,10 +20,11 @@
     "eslint-plugin-ember": "^5.0.0",
     "eslint-plugin-node": "^6.0.1",
     "eslint-plugin-prettier": "^3.3.0",
+    "patch-package": "^6.5.1",
     "prettier": "^2.2.1"
   },
   "volta": {
-    "node": "14.16.0",
+    "node": "14.21.3",
     "npm": "8.3.0"
   },
   "dependencies": {
