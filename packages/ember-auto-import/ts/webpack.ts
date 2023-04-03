@@ -350,7 +350,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           'utf8'
         );
         let outputSrc = inputSrc.replace(
-          /EAI_DISCOVERED_EXTERNALS\('([^']+)'\)/g,
+          /EAI_DISCOVERED_EXTERNALS\(['"]([^'"]+)['"]\)/g,
           (_substr: string, matched: string) => {
             let deps = build.externalDepsFor(matched);
             return '[' + deps.map((d) => `'${d}'`).join(',') + ']';
