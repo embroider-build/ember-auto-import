@@ -504,19 +504,6 @@ Scenarios.fromProject(baseApp)
     project.linkDependency('webpack', { baseDir: __dirname });
 
     merge(project.files, {
-      'ember-cli-build.js': `
-        const EmberApp = require('ember-cli/lib/broccoli/ember-app');
-        module.exports = function (defaults) {
-          let app = new EmberApp(defaults, {
-            autoImport: {
-              earlyBootSet(defaults) {
-                return [...defaults, 'v1-addon'];
-              }
-            }
-          });
-          return app.toTree();
-        };
-      `,
       tests: {
         unit: {
           'dep-chain-test.js': `

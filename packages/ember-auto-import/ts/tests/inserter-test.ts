@@ -54,6 +54,7 @@ Qmodule('inserter', function (hooks) {
     buildResult = {
       entrypoints: new Map(),
       lazyAssets: [],
+      externalDepsFor: () => [],
     };
     bundleConfig = new BundleConfig({
       app: {
