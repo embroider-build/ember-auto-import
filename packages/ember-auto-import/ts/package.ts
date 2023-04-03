@@ -515,28 +515,45 @@ export default class Package {
     let templateCompilerPath: string = (emberSource as any).absolutePaths
       .templateCompiler;
 
+    const babelPluginPrecompile = ensureModuleApiPolyfill
+      ? [
+          require.resolve('babel-plugin-htmlbars-inline-precompile'),
+          {
+            ensureModuleApiPolyfill,
+            templateCompilerPath,
+            modules: {
+              'ember-cli-htmlbars': 'hbs',
+              '@ember/template-compilation': {
+                export: 'precompileTemplate',
+                disableTemplateLiteral: true,
+                shouldParseScope: true,
+                isProduction: process.env.EMBER_ENV === 'production',
+              },
+            },
+          },
+        ]
+      : [
+          require.resolve('babel-plugin-ember-template-compilation'),
+          {
+            // As above, we present the AST transforms in reverse order
+            // transforms: [...pluginInfo.plugins].reverse(),
+            compilerPath: require.resolve(templateCompilerPath),
+            enableLegacyModules: [
+              'ember-cli-htmlbars',
+              'ember-cli-htmlbars-inline-precompile',
+              'htmlbars-inline-precompile',
+            ],
+          },
+          'ember-cli-htmlbars:inline-precompile',
+        ];
+
     let plugins = [
       [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
       [
         require.resolve('@babel/plugin-proposal-class-properties'),
         { loose: false },
       ],
-      [
-        require.resolve('babel-plugin-htmlbars-inline-precompile'),
-        {
-          ensureModuleApiPolyfill,
-          templateCompilerPath,
-          modules: {
-            'ember-cli-htmlbars': 'hbs',
-            '@ember/template-compilation': {
-              export: 'precompileTemplate',
-              disableTemplateLiteral: true,
-              shouldParseScope: true,
-              isProduction: process.env.EMBER_ENV === 'production',
-            },
-          },
-        },
-      ],
+      babelPluginPrecompile,
       ...macrosConfig.babelPluginConfig(),
     ];
 
