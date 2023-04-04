@@ -277,13 +277,15 @@ export default class WebpackBundler extends Plugin implements Bundler {
     };
   }
 
+  private externalizedByUs = new Set<string>();
+
   @Memoize()
   private get externalsHandler(): Configuration['externals'] {
     let packageCache = PackageCache.shared(
       'ember-auto-import',
       this.opts.appRoot
     );
-    return function (params, callback) {
+    return (params, callback) => {
       let { context, request } = params;
       if (!context || !request) {
         return callback();
@@ -304,6 +306,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       }
 
       if (pkg.meta.externals?.includes(name)) {
+        this.externalizedByUs.add(request);
         return callback(undefined, 'commonjs ' + request);
       }
 
@@ -317,6 +320,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         } else {
           // the package exists but it is a v1 ember addon, so it's not
           // resolvable at build time, so we externalize it.
+          this.externalizedByUs.add(request);
           return callback(undefined, 'commonjs ' + request);
         }
       } catch (err) {
@@ -324,6 +328,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           throw err;
         }
         // real package doesn't exist, so externalize it
+        this.externalizedByUs.add(request);
         return callback(undefined, 'commonjs ' + request);
       }
     };
@@ -352,7 +357,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
         let outputSrc = inputSrc.replace(
           /EAI_DISCOVERED_EXTERNALS\(['"]([^'"]+)['"]\)/g,
           (_substr: string, matched: string) => {
-            let deps = build.externalDepsFor(matched);
+            let deps = build
+              .externalDepsFor(matched)
+              .filter((dep) => this.externalizedByUs.has(dep));
             return '[' + deps.map((d) => `'${d}'`).join(',') + ']';
           }
         );
