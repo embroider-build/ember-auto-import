@@ -21,7 +21,6 @@ export interface BundlerOptions {
   browserslist: string;
   webpack: typeof webpack;
   hasFastboot: boolean;
-  earlyBootSet: undefined | ((defaultModules: string[]) => string[]);
   v2Addons: Map<string, string>;
   rootPackage: Package;
 }
@@ -32,6 +31,7 @@ export interface BuildResult {
   // names (because users can also add more entrypoints to the webpack config)
   entrypoints: Map<BundleName | string, string[]>;
   lazyAssets: string[];
+  externalDepsFor(request: string): string[];
 }
 
 export type Bundler = Plugin & {
