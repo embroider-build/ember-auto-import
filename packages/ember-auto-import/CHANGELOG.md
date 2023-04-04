@@ -1,5 +1,12 @@
 # Changelog
 
+### 2.6.2
+
+- BUGFIX: automatically detect when our module shims need AMD dependencies. This eliminates the previous `earlyBootSet` manual workaround.
+- BUGFIX: use babel-plugin-ember-template-compilation on new-enough ember versions by @candunaj
+- INTERNAL: update tests for latest ember canary
+- BUGFIX: Fix wrong detection of ember-source version for earlyBootSet by @simonihmig
+
 ### 2.6.1
 
 - BUGFIX: `earlyBootSet` now defaults to empty, because it was causing problems for some apps. If you need it you need to turn it on explicitly. @NullVoxPopuli [568](https://github.com/ef4/ember-auto-import/pull/568)
