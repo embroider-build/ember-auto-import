@@ -1,5 +1,9 @@
 # Changelog
 
+### 2.6.3
+
+- BUGFIX: the babel-plugin-ember-template-compilation bugfix in the previous release was missing an explicit dependency declaration, so it didn't work 100% of the time. Fix by @mansona.
+
 ### 2.6.2
 
 - BUGFIX: automatically detect when our module shims need AMD dependencies. This eliminates the previous `earlyBootSet` manual workaround.
