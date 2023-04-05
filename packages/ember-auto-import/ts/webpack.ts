@@ -310,6 +310,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
         return callback(undefined, 'commonjs ' + request);
       }
 
+      function isModuleNotFoundError(err: any): boolean {
+        return err?.code === 'MODULE_NOT_FOUND';
+      }
+
       try {
         let found = packageCache.resolve(name, pkg);
         if (!found.isEmberPackage() || found.isV2Addon()) {
@@ -324,7 +328,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           return callback(undefined, 'commonjs ' + request);
         }
       } catch (err) {
-        if (err.code !== 'MODULE_NOT_FOUND') {
+        if (!isModuleNotFoundError(err)) {
           throw err;
         }
         // real package doesn't exist, so externalize it

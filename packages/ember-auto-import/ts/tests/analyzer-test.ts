@@ -453,10 +453,12 @@ Qmodule('analyzer', function (hooks) {
       await builder.build();
       throw new Error(`expected not to get here, build was supposed to fail`);
     } catch (err) {
-      assert.contains(
-        err.message,
-        'import() is only allowed to contain string literals or template string literals'
-      );
+      if (err instanceof Error) {
+        assert.contains(
+          err.message,
+          'import() is only allowed to contain string literals or template string literals'
+        );
+      }
     }
   });
 });
