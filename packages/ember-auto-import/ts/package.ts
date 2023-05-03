@@ -1,6 +1,6 @@
 import resolvePackagePath from 'resolve-package-path';
 import { join, dirname } from 'path';
-import { readFileSync } from 'fs';
+import { lstatSync, readFileSync } from 'fs';
 import { Memoize } from 'typescript-memoize';
 import type { Configuration } from 'webpack';
 import {
@@ -473,10 +473,43 @@ export default class Package {
             if (!path) {
               return undefined;
             }
+
+            // This TS file is actually cjs
+            // require is synchronous and will cache if this node process requires the same file.
+            //
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            let manifest = require(path);
+
+            if (manifest.files) {
+              let root = dirname(path);
+
+              /**
+               * These *must* be directories because they are given to Broccoli WatchedDir,
+               * and that tool errors when given a file.
+               *
+               * To check if something is a directory, we have to hit the file system with lstat.
+               *
+               * If a directory does not exist, the consumer's build will fail before
+               * `watchedDependencies` is evaluated.
+               *
+               * So for "dist" style output directories it's safe to rely on the .isDirectory
+               * and overall "presence" result of lstat.
+               */
+              cursor = manifest.files
+                .map((filePath: string) => join(root, filePath))
+                .filter((filePath: string) => {
+                  let info = lstat(filePath);
+                  return info.isDirectory;
+                });
+
+              break;
+            }
+
             cursor = dirname(path);
           }
           return cursor;
         })
+        .flat()
         .filter(Boolean) as string[];
     }
   }
@@ -627,4 +660,18 @@ function ensureTrailingSlash(url: string): string {
     url = url + '/';
   }
   return url;
+}
+
+function lstat(filePath: string) {
+  // Node docs say lstatSync has an options argument
+  //
+  // https://nodejs.org/docs/latest-v14.x/api/fs.html#fs_fs_lstatsync_path_options
+  // @ts-expect-error
+  let stat = lstatSync(filePath, { throwIfNoEntry: false });
+
+  if (stat) {
+    return { exists: true, isDirectory: stat.isDirectory() };
+  }
+
+  return { exists: false, isDirectory: false };
 }
