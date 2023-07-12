@@ -23,6 +23,9 @@ function staticImportTest(project: Project) {
               },
               watchDependencies: [
                'original-package'
+              ],
+              allowAppImports: [
+               'lib/**'
               ]
             }
           });
@@ -69,6 +72,10 @@ function staticImportTest(project: Project) {
               }),
             });
           `,
+      },
+      lib: {
+        'example1.js': 'export default function() { return "example1 worked" }',
+        'example2.js': 'export default function() { return "example2 worked" }',
       },
       templates: {
         'application.hbs': `{{hello-world}}`,
@@ -133,6 +140,24 @@ function staticImportTest(project: Project) {
               });
             });
           `,
+        'allow-app-imports-test.js': `
+          import { module, test } from 'qunit';
+          import example1 from '@ef4/app-template/lib/example1';
+          import example2 from '../../lib/example2';
+
+          module('Unit | allow-app-import', function () {
+            test("importing from the app's module namespace", function (assert) {
+              assert.equal(example1(), 'example1 worked');
+            });
+            test("relative import", function (assert) {
+              assert.equal(example2(), 'example2 worked');
+            });
+            test("not visible in AMD loader", function(assert) {
+              assert.equal(require.has('@ef4/app-template/lib/example1'), false, 'should not have example1 in loader');
+              assert.equal(require.has('@ef4/app-template/lib/example2'), false, 'should not have example2 in loader');
+            });
+          });
+        `,
       },
     },
   });
