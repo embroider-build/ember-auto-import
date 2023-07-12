@@ -24,8 +24,7 @@
     "prettier": "^2.2.1"
   },
   "volta": {
-    "node": "14.21.3",
-    "npm": "8.3.0"
+    "node": "16.20.1"
   },
   "dependencies": {
     "resolve-package-path": "^3.1.0",
