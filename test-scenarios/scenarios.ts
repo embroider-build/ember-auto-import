@@ -6,6 +6,7 @@ import { merge } from 'lodash';
 async function lts(project: Project) {
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-lts' });
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-lts' });
+  project.linkDevDependency('@ember/test-helpers', { baseDir: __dirname, resolveName: 'ember-test-helpers-lts' });
 
   project.pkg.volta = {
     node: '12.22.1',
