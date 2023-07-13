@@ -36,6 +36,7 @@ export interface Options {
   forbidEval?: boolean;
   skipBabel?: { package: string; semverRange?: string }[];
   watchDependencies?: (string | string[])[];
+  allowAppImports?: string[];
   insertScriptsAt?: string;
   insertStylesAt?: string;
 }
@@ -479,6 +480,15 @@ export default class Package {
         })
         .filter(Boolean) as string[];
     }
+  }
+
+  get allowAppImports(): string[] {
+    // only apps (not addons) are allowed to set this
+    if (!this.isAddon) {
+      return this.autoImportOptions?.allowAppImports ?? [];
+    }
+
+    return [];
   }
 
   cleanBabelConfig(): TransformOptions {

@@ -25,6 +25,7 @@ import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
 import { MARKER } from './analyzer-syntax';
 import path from 'path';
+import funnel from 'broccoli-funnel';
 
 const debugTree = buildDebugCallback('ember-auto-import');
 
@@ -66,6 +67,9 @@ export default class AutoImport implements AutoImportSharedAPI {
     let topmostAddon = findTopmostAddon(addonInstance);
     this.packages.add(Package.lookupParentOf(topmostAddon));
     let host = topmostAddon.app;
+
+    this.installAppFilter(host);
+
     this.env = host.env;
     this.bundles = new BundleConfig(host.options.outputPaths);
     if (!this.env) {
@@ -73,6 +77,20 @@ export default class AutoImport implements AutoImportSharedAPI {
     }
 
     this.consoleWrite = (...args) => addonInstance.project.ui.write(...args);
+  }
+
+  installAppFilter(_host: AppInstance) {
+    // TODO upstream this type change to @embroider/shared-internals
+    let host: AppInstance & {
+      trees: {
+        app: Node;
+      };
+    } = _host as any;
+    if (this.rootPackage.allowAppImports.length) {
+      host.trees.app = funnel(host.trees.app, {
+        exclude: this.rootPackage.allowAppImports,
+      });
+    }
   }
 
   // we don't actually call this ourselves anymore, but earlier versions of
