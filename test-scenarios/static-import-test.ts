@@ -76,6 +76,7 @@ function staticImportTest(project: Project) {
       lib: {
         'example1.js': 'export default function() { return "example1 worked" }',
         'example2.js': 'export default function() { return "example2 worked" }',
+        'example3.js': 'export default function() { return "example3 worked" }',
       },
       templates: {
         'application.hbs': `{{hello-world}}`,
@@ -152,9 +153,8 @@ function staticImportTest(project: Project) {
             test("relative import", function (assert) {
               assert.equal(example2(), 'example2 worked');
             });
-            test("not visible in AMD loader", function(assert) {
-              assert.equal(require.has('@ef4/app-template/lib/example1'), false, 'should not have example1 in loader');
-              assert.equal(require.has('@ef4/app-template/lib/example2'), false, 'should not have example2 in loader');
+            test("unused module not visible in AMD loader", function(assert) {
+              assert.equal(require.has('@ef4/app-template/lib/example3'), false, 'should not have example3 in loader');
             });
           });
         `,
