@@ -406,7 +406,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         for (let dep of module.dependencies) {
           if ((dep as any).request === request) {
             return [
-              ...gatherExternals(stats.compilation.moduleGraph.getModule(dep)),
+              ...gatherExternals(stats.compilation.moduleGraph.getModule(dep)!),
             ];
           }
         }
