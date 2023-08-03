@@ -12,7 +12,7 @@ import {
 import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
 import { MacrosConfig } from '@embroider/macros/src/node';
-import { minimatch } from 'minimatch';
+import minimatch from 'minimatch';
 
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
