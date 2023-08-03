@@ -22,6 +22,11 @@ appScenarios
                 require('ember-auto-import/babel-plugin')
               ],
             },
+            autoImport: {
+              allowAppImports: [
+               'lib/**'
+              ]
+            }
           });
           return app.toTree();
         };
@@ -46,6 +51,11 @@ appScenarios
           export default Router;
 
         `,
+        lib: {
+          'example1.js': 'export default function() { return "example1 worked" }',
+          'example2.js': 'export default function() { return "example2 worked" }',
+          'example3.js': 'export default function() { return "example3 worked" }',
+        },
         templates: {
           'dynamic-import.hbs': `<div data-test="dynamic-import-result">{{this.model.result}}</div>`,
           'dynamic-flavor.hbs': `<div data-test="dynamic-import-result">{{this.model.name}}</div>`,
@@ -135,6 +145,26 @@ appScenarios
                 assert.equal(currentURL(), '/data-import');
                 let expected = typeof FastBoot === 'undefined' ? 'browser' : 'server';
                 assert.equal(document.querySelector('[data-test="dynamic-import-result"]').textContent.trim(), expected);
+              });
+            });
+          `,
+        },
+        unit: {
+          'allow-app-imports-test.js': `
+            import { module, test } from 'qunit';
+            module('Unit | allow-app-import', function () {
+              test("importing from the app's module namespace", async function (assert) {
+                let { default: example1 } = await import('@ef4/app-template/lib/example1');
+                assert.equal(example1(), 'example1 worked');
+              });
+              test("relative import", async function (assert) {
+                let { default: example2 } = await import('../../lib/example2');
+                assert.equal(example2(), 'example2 worked');
+              });
+              test("modules not visible in AMD loader", function(assert) {
+                assert.equal(require.has('@ef4/app-template/lib/example1'), false, 'should not have example1 in loader');
+                assert.equal(require.has('@ef4/app-template/lib/example2'), false, 'should not have example2 in loader');
+                assert.equal(require.has('@ef4/app-template/lib/example3'), false, 'should not have example3 in loader');
               });
             });
           `,
