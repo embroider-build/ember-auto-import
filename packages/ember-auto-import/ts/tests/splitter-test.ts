@@ -28,7 +28,19 @@ Qmodule('splitter', function (hooks) {
   let setup: (options?: Options) => void;
 
   hooks.beforeEach(function (this: any) {
-    project = new Project('my-app');
+    project = new Project('my-app', {
+      files: {
+        lib: {
+          'example1.js':
+            'export default function() { return "example1 worked" }',
+          'example2.js':
+            'export default function() { return "example2 worked" }',
+          'example3.js':
+            'export default function() { return "example3 worked" }',
+        },
+      },
+    });
+
     let alpha = project.addDependency('alpha');
     merge(alpha.files, {
       'index.js': '',
@@ -435,6 +447,59 @@ Qmodule('splitter', function (hooks) {
       ]
     );
   });
+
+  test('app imports correcly via app name', async function (assert) {
+    setup({
+      allowAppImports: ['lib/**'],
+    });
+
+    let src = `import example1 from 'my-app/lib/example1';
+    import missing from 'my-app/face/missing-import';`;
+
+    outputFileSync(join(project.baseDir, 'sample.js'), src);
+    await builder.build();
+    let deps = await splitter.deps();
+
+    assert.deepEqual(
+      deps.get('app')?.staticImports.map((i) => ({
+        specifier: i.specifier,
+      })),
+      [
+        {
+          specifier: 'my-app/lib/example1',
+        },
+      ]
+    );
+  });
+
+  // when testing this in the scenario tester we found out that the splitter would never be given
+  // a relative import because ember-cli-babel uses babel-plugin-module-resolver to rewrite
+  // relateive imports to imports with the full app name included. Skipping for now but if people
+  // have any issues we can unskip this test and fix it
+  QUnit.skip(
+    'app imports correctly with a relative import',
+    async function (assert) {
+      setup({
+        allowAppImports: ['lib/**'],
+      });
+
+      let src = `import example2 from './lib/example2';`;
+
+      outputFileSync(join(project.baseDir, 'sample.js'), src);
+      await builder.build();
+      let deps = await splitter.deps();
+      assert.deepEqual(
+        deps.get('app')?.staticImports.map((i) => ({
+          specifier: i.specifier,
+        })),
+        [
+          {
+            specifier: 'app-name/lib/example1', // this might need to be adjusted
+          },
+        ]
+      );
+    }
+  );
 });
 
 function stubAddonInstance(

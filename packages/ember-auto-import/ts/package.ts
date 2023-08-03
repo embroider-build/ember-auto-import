@@ -12,6 +12,7 @@ import {
 import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
 import { MacrosConfig } from '@embroider/macros/src/node';
+import { minimatch } from 'minimatch';
 
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
@@ -264,12 +265,7 @@ export default class Package {
     importedPath: string,
     fromPath: string,
     partial: true
-  ):
-    | DepResolution
-    | LocalResolution
-    | URLResolution
-    | ImpreciseResolution
-    | undefined;
+  ): Resolution | undefined;
   resolve(
     importedPath: string,
     fromPath: string,
@@ -306,6 +302,20 @@ export default class Package {
         type: 'local',
         local: path,
       };
+    }
+
+    if (!this.isAddon && packageName === this.name) {
+      let localPath = path.slice(packageName.length + 1);
+      if (
+        this.allowAppImports.some((pattern) => minimatch(localPath, pattern))
+      ) {
+        return {
+          type: 'package',
+          path: localPath,
+          packageName: this.name,
+          packageRoot: join(this.root, 'app'),
+        };
+      }
     }
 
     if (this.excludesDependency(packageName)) {
