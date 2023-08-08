@@ -75,8 +75,14 @@ function staticImportTest(project: Project) {
       },
       lib: {
         'example1.js': 'export default function() { return "example1 worked" }',
-        'example2.js': 'export default function() { return "example2 worked" }',
+        'example2.js': `
+        export { default as Service } from '@ember/service';
+        export { default as example4 } from './example4.js';
+
+        export default function() { return "example2 worked" }
+        `,
         'example3.js': 'export default function() { return "example3 worked" }',
+        'example4.js': 'export default function() { return "example4 worked" }',
       },
       templates: {
         'application.hbs': `{{hello-world}}`,
@@ -144,7 +150,8 @@ function staticImportTest(project: Project) {
         'allow-app-imports-test.js': `
           import { module, test } from 'qunit';
           import example1 from '@ef4/app-template/lib/example1';
-          import example2 from '../../lib/example2';
+          import example2, { Service as AppService, example4 } from '../../lib/example2';
+          import Service from '@ember/service';
 
           module('Unit | allow-app-import', function () {
             test("importing from the app's module namespace", function (assert) {
@@ -152,6 +159,13 @@ function staticImportTest(project: Project) {
             });
             test("relative import", function (assert) {
               assert.equal(example2(), 'example2 worked');
+            });
+            test("imported module can see ember modules", function (assert) {
+              assert.strictEqual(AppService, Service);
+            });
+            test("local imports work and do not show up in AMD loader", function(assert) {
+              assert.equal(example4(), 'example4 worked');
+              assert.equal(require.has('@ef4/app-template/lib/example4'), false, 'should not have example4 in loader');
             });
             test("unused module not visible in AMD loader", function(assert) {
               assert.equal(require.has('@ef4/app-template/lib/example3'), false, 'should not have example3 in loader');

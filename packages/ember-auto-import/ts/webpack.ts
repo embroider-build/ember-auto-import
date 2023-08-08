@@ -7,7 +7,7 @@ import type {
   WebpackPluginInstance,
   Module,
 } from 'webpack';
-import { join, dirname, resolve } from 'path';
+import { join, dirname, resolve, relative } from 'path';
 import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync, readFileSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
@@ -16,13 +16,14 @@ import { BundleDependencies, ResolvedTemplateImport } from './splitter';
 import { BuildResult, Bundler, BundlerOptions } from './bundler';
 import type { InputNode } from 'broccoli-node-api';
 import Plugin from 'broccoli-plugin';
-import { babelFilter, packageName } from '@embroider/shared-internals';
+import { babelFilter, packageName, Package } from '@embroider/shared-internals';
 import { Options } from './package';
 import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import minimatch from 'minimatch';
 
 const debug = makeDebug('ember-auto-import:webpack');
 
@@ -286,7 +287,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       this.opts.appRoot
     );
     return (params, callback) => {
-      let { context, request } = params;
+      let { context, request, contextInfo } = params;
       if (!context || !request) {
         return callback();
       }
@@ -300,12 +301,22 @@ export default class WebpackBundler extends Plugin implements Bundler {
         return callback();
       }
       let pkg = packageCache.ownerOfFile(context);
-      if (!pkg?.isV2Addon()) {
-        // we're only interested in imports that appear inside v2 addons
+
+      if (!pkg) {
+        // we couldn't find the package in the package cache
         return callback();
       }
 
-      if (pkg.meta.externals?.includes(name)) {
+      // if we're not in a v2 addon and the file that is doing the import doesn't match one of the allowAppImports patterns
+      // then we don't implement the "fallback behaviour" below i.e. this won't be handled by ember-auto-import
+      if (
+        !pkg.isV2Addon() &&
+        !this.matchesAppImports(pkg, contextInfo?.issuer)
+      ) {
+        return callback();
+      }
+
+      if (pkg.isV2Addon() && pkg.meta.externals?.includes(name)) {
         this.externalizedByUs.add(request);
         return callback(undefined, 'commonjs ' + request);
       }
@@ -332,6 +343,20 @@ export default class WebpackBundler extends Plugin implements Bundler {
         return callback(undefined, 'commonjs ' + request);
       }
     };
+  }
+
+  matchesAppImports(pkg: Package, request: string | undefined): boolean {
+    if (!request) {
+      return false;
+    }
+
+    if (pkg.root !== this.opts.appRoot) {
+      return false;
+    }
+
+    return this.opts.rootPackage.allowAppImports.some((pattern) =>
+      minimatch(relative(join(pkg.root, 'app'), request), pattern)
+    );
   }
 
   async build(): Promise<void> {
