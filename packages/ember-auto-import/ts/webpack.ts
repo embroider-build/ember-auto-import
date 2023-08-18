@@ -25,6 +25,8 @@ import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import minimatch from 'minimatch';
 
+const EXTENSIONS = ['.js', '.ts', '.json'];
+
 const debug = makeDebug('ember-auto-import:webpack');
 
 registerHelper('js-string-escape', jsStringEscape);
@@ -180,10 +182,15 @@ export default class WebpackBundler extends Plugin implements Bundler {
         },
       },
       resolve: {
-        extensions: ['.js', '.ts', '.json'],
+        extensions: EXTENSIONS,
         mainFields: ['browser', 'module', 'main'],
         alias: Object.assign(
-          {},
+          {
+            // this is because of the allowAppImports feature needs to be able to import things
+            // like app-name/lib/something from within webpack handled code but that needs to be
+            // able to resolve to app-root/app/lib/something.
+            [this.opts.rootPackage.name]: `${this.opts.rootPackage.root}/app`,
+          },
           ...removeUndefined([...this.opts.packages].map((pkg) => pkg.aliases))
         ),
       },
@@ -307,6 +314,18 @@ export default class WebpackBundler extends Plugin implements Bundler {
         return callback();
       }
 
+      // Handling full-name imports that point at the app itself e.g. app-name/lib/thingy
+      if (name === this.opts.rootPackage.name) {
+        if (this.importMatchesAppImports(request.slice(name.length + 1))) {
+          // webpack should handle this because it's another file in the app that matches allowAppImports
+          return callback();
+        } else {
+          // use ember's module because this is part of the app that doesn't match allowAppImports
+          this.externalizedByUs.add(request);
+          return callback(undefined, 'commonjs ' + request);
+        }
+      }
+
       // if we're not in a v2 addon and the file that is doing the import doesn't match one of the allowAppImports patterns
       // then we don't implement the "fallback behaviour" below i.e. this won't be handled by ember-auto-import
       if (
@@ -345,8 +364,35 @@ export default class WebpackBundler extends Plugin implements Bundler {
     };
   }
 
-  matchesAppImports(pkg: Package, request: string | undefined): boolean {
-    if (!request) {
+  *withResolvableExtensions(
+    importSpecifier: string
+  ): Generator<string, void, void> {
+    if (importSpecifier.match(/\.\w{1,3}$/)) {
+      yield importSpecifier;
+    } else {
+      for (let ext of EXTENSIONS) {
+        yield `${importSpecifier}${ext}`;
+      }
+    }
+  }
+
+  importMatchesAppImports(relativeImportSpecifier: string): boolean {
+    for (let candidate of this.withResolvableExtensions(
+      relativeImportSpecifier
+    )) {
+      if (
+        this.opts.rootPackage.allowAppImports.some((pattern) =>
+          minimatch(candidate, pattern)
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  matchesAppImports(pkg: Package, requestingFile: string | undefined): boolean {
+    if (!requestingFile) {
       return false;
     }
 
@@ -355,7 +401,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
     }
 
     return this.opts.rootPackage.allowAppImports.some((pattern) =>
-      minimatch(relative(join(pkg.root, 'app'), request), pattern)
+      minimatch(relative(join(pkg.root, 'app'), requestingFile), pattern)
     );
   }
 

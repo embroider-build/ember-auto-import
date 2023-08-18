@@ -76,13 +76,30 @@ function staticImportTest(project: Project) {
       lib: {
         'example1.js': 'export default function() { return "example1 worked" }',
         'example2.js': `
-        export { default as Service } from '@ember/service';
-        export { default as example4 } from './example4.js';
+          export { default as Service } from '@ember/service';
+          export { default as example4, dont_find_me_4 } from './example4.js';
+          export { default as example5 } from '@ef4/app-template/lib/example5.js';
+          // this will be externalised to amd and you cannont use an extension in this context :(
+          export { default as example6 } from '@ef4/app-template/utils/example6';
 
-        export default function() { return "example2 worked" }
+          export default function () {
+            return 'example2 worked';
+          }
+          export let please_find_me =
+            'a761ae81ea95881286817847d330e50f0971b6bb06be850d4e1172bc72e75526';
+
         `,
         'example3.js': 'export default function() { return "example3 worked" }',
-        'example4.js': 'export default function() { return "example4 worked" }',
+        'example4.js': `export default function () {
+            return 'example4 worked';
+          }
+          export const dont_find_me_4 = "don't find this string in the bundle";
+        `,
+        'example5.js': 'export default function() { return "example5 worked" }',
+      },
+      utils: {
+        'example6.js':
+          'export default function() { return "example6 worked" }; export let dont_find_me = "2634a160bb3d83eae65ffd576f383dc35f77d6577402220d6f19e2eeea7e328a";',
       },
       templates: {
         'application.hbs': `{{hello-world}}`,
@@ -150,25 +167,92 @@ function staticImportTest(project: Project) {
         'allow-app-imports-test.js': `
           import { module, test } from 'qunit';
           import example1 from '@ef4/app-template/lib/example1';
-          import example2, { Service as AppService, example4 } from '../../lib/example2';
+          import example2, {
+            Service as AppService,
+            example4,
+            example5,
+            example6,
+            please_find_me,
+            dont_find_me_4,
+          } from '../../lib/example2';
           import Service from '@ember/service';
+          import example6Direct, { dont_find_me } from '@ef4/app-template/utils/example6';
+
+          async function checkScripts(scriptSrcPattern, needle) {
+            let scripts = [...document.querySelectorAll('script')];
+
+            let matchingScripts = scripts.filter((item) =>
+              scriptSrcPattern.test(item.src)
+            );
+
+            let matchingScriptContent = await Promise.all(
+              matchingScripts.map(async (item) => {
+                let response = await fetch(item.src);
+                return response.text();
+              })
+            );
+
+            return matchingScriptContent.some((item) => item.includes(needle));
+          }
 
           module('Unit | allow-app-import', function () {
             test("importing from the app's module namespace", function (assert) {
               assert.equal(example1(), 'example1 worked');
             });
-            test("relative import", function (assert) {
+            test('relative import', function (assert) {
               assert.equal(example2(), 'example2 worked');
             });
-            test("imported module can see ember modules", function (assert) {
+            test('imported module can see ember modules', function (assert) {
               assert.strictEqual(AppService, Service);
             });
-            test("local imports work and do not show up in AMD loader", function(assert) {
+            test('local imports work and do not show up in AMD loader', async function (assert) {
               assert.equal(example4(), 'example4 worked');
-              assert.equal(require.has('@ef4/app-template/lib/example4'), false, 'should not have example4 in loader');
+              assert.equal(
+                require.has('@ef4/app-template/lib/example4'),
+                false,
+                'should not have example4 in loader'
+              );
+              assert.notOk(
+                await checkScripts(/app-template.js/, dont_find_me_4),
+                "expect to not find the 'dont_find_me_4' sha in app-js because it's being consumed by webpack"
+              );
+              assert.ok(
+                await checkScripts(/chunk/, dont_find_me_4),
+                "expect to find the 'dont_find_me_4' sha in chunks because it's being consumed by webpack"
+              );
             });
-            test("unused module not visible in AMD loader", function(assert) {
-              assert.equal(require.has('@ef4/app-template/lib/example3'), false, 'should not have example3 in loader');
+            test('local app-name appImports work and do not show up in AMD loader', function (assert) {
+              assert.equal(example5(), 'example5 worked');
+              assert.equal(
+                require.has('@ef4/app-template/lib/example5'),
+                false,
+                'should not have example5 in loader'
+              );
+            });
+            test('local app-name imports outside of appImports work and do show up in AMD loader', function (assert) {
+              assert.equal(example6(), 'example6 worked');
+              assert.ok(
+                require.has('@ef4/app-template/utils/example6'),
+                'should have example6 in loader'
+              );
+              assert.strictEqual(example6, example6Direct);
+            });
+            test('make sure externalised import doesnt end up in the chunks', async function (assert) {
+              assert.ok(
+                await checkScripts(/chunk/, please_find_me),
+                "expect to find the 'please_find_me' sha in chunks"
+              );
+              assert.notOk(
+                await checkScripts(/chunk/, dont_find_me),
+                "expect to not find the 'dont_find_me' sha in chunks because it's not being consumed by webpack"
+              );
+            });
+            test('unused module not visible in AMD loader', function (assert) {
+              assert.equal(
+                require.has('@ef4/app-template/lib/example3'),
+                false,
+                'should not have example3 in loader'
+              );
             });
           });
         `,
