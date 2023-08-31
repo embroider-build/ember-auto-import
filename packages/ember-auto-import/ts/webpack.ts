@@ -7,7 +7,7 @@ import type {
   WebpackPluginInstance,
   Module,
 } from 'webpack';
-import { join, dirname, resolve, relative } from 'path';
+import { join, dirname, resolve, relative, posix, isAbsolute } from 'path';
 import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync, readFileSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
@@ -302,16 +302,27 @@ export default class WebpackBundler extends Plugin implements Bundler {
       if (request.startsWith('!')) {
         return callback();
       }
-      let name = packageName(request);
-      if (!name) {
-        // we're only interested in handling inter-package resolutions
-        return callback();
-      }
-      let pkg = packageCache.ownerOfFile(context);
 
+      let pkg = packageCache.ownerOfFile(context);
       if (!pkg) {
         // we couldn't find the package in the package cache
         return callback();
+      }
+
+      let name = packageName(request);
+      if (!name) {
+        if (!isAbsolute(request) && pkg.root === this.opts.rootPackage.root) {
+          let appRelativeContext = relative(
+            resolve(this.opts.rootPackage.root, 'app'),
+            context
+          );
+
+          name = this.opts.rootPackage.name;
+          request = posix.join(name, appRelativeContext, request);
+        } else {
+          // we're only interested in handling inter-package resolutions
+          return callback();
+        }
       }
 
       // Handling full-name imports that point at the app itself e.g. app-name/lib/thingy
@@ -459,7 +470,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           let nextModule = stats.compilation.moduleGraph.getModule(dep);
           if (nextModule) {
             if ((nextModule as any).externalType) {
-              ownExternals.add((dep as any).request);
+              ownExternals.add((nextModule as any).request);
             } else {
               gatherExternals(nextModule, ownExternals);
             }

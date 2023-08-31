@@ -81,6 +81,7 @@ function staticImportTest(project: Project) {
           export { default as example5 } from '@ef4/app-template/lib/example5.js';
           // this will be externalised to amd and you cannont use an extension in this context :(
           export { default as example6 } from '@ef4/app-template/utils/example6';
+          export { default as example7, secret_string as secret_string_7 } from '../utils/example7';
 
           export default function () {
             return 'example2 worked';
@@ -100,6 +101,8 @@ function staticImportTest(project: Project) {
       utils: {
         'example6.js':
           'export default function() { return "example6 worked" }; export let dont_find_me = "2634a160bb3d83eae65ffd576f383dc35f77d6577402220d6f19e2eeea7e328a";',
+        'example7.js':
+          'export default function() { return "example7 worked" }; export let secret_string = "95c34c842bd06504a541559d0ebf104e0a135f9ebc42c7a9bbf99b70dd6a5c96";',
       },
       templates: {
         'application.hbs': `{{hello-world}}`,
@@ -172,11 +175,14 @@ function staticImportTest(project: Project) {
             example4,
             example5,
             example6,
+            example7,
             please_find_me,
             dont_find_me_4,
+            secret_string_7
           } from '../../lib/example2';
           import Service from '@ember/service';
           import example6Direct, { dont_find_me } from '@ef4/app-template/utils/example6';
+          import example7Direct, { secret_string } from '@ef4/app-template/utils/example7';
 
           async function checkScripts(scriptSrcPattern, needle) {
             let scripts = [...document.querySelectorAll('script')];
@@ -236,6 +242,22 @@ function staticImportTest(project: Project) {
                 'should have example6 in loader'
               );
               assert.strictEqual(example6, example6Direct);
+            });
+            test('local relative imports to files outside of appImports work and do show up in AMD loader', async function (assert) {
+              assert.equal(example7(), 'example7 worked');
+              assert.ok(
+                require.has('@ef4/app-template/utils/example7'),
+                'should have example7 in loader'
+              );
+              assert.strictEqual(example7, example7Direct, "example 7 object equality");
+              assert.notOk(
+                await checkScripts(/chunk/, secret_string_7),
+                "expect not to find the 'secret_string_7' sha in chunks"
+              );
+              assert.ok(
+                await checkScripts(/app-template.js/, secret_string_7),
+                "expect to find the 'secret_string_7' sha in app js asset"
+              );
             });
             test('make sure externalised import doesnt end up in the chunks', async function (assert) {
               assert.ok(
