@@ -51,8 +51,25 @@ function makeAddon() {
   addon.addDependency('some-lib', {
     files: {
       'index.js': `
+
+    class ClassWithStaticBlockAndPrivateProperties {
+      static #message;
+
+      static {
+        this.#message = "This is the message";
+      }
+
+      #getMessage() {
+        return ClassWithStaticBlockAndPrivateProperties.#message;
+      }
+
+      getMessage() {
+        return this.#getMessage();
+      }
+    }
+
     export function makeMessage() {
-      return "This is the message";
+      return new ClassWithStaticBlockAndPrivateProperties().getMessage();
     }
   `,
     },

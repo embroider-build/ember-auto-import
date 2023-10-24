@@ -537,8 +537,13 @@ export default class Package {
 
     let plugins = [
       [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
+      [require.resolve('@babel/plugin-transform-class-static-block')],
       [
         require.resolve('@babel/plugin-proposal-class-properties'),
+        { loose: false },
+      ],
+      [
+        require.resolve('@babel/plugin-proposal-private-methods'),
         { loose: false },
       ],
       babelPluginPrecompile,

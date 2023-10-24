@@ -36,6 +36,8 @@
     "@babel/core": "^7.16.7",
     "@babel/plugin-proposal-class-properties": "^7.16.7",
     "@babel/plugin-proposal-decorators": "^7.16.7",
+    "@babel/plugin-proposal-private-methods": "^7.16.7",
+    "@babel/plugin-transform-class-static-block": "^7.16.7",
     "@babel/preset-env": "^7.16.7",
     "@embroider/macros": "^1.0.0",
     "@embroider/shared-internals": "^2.0.0",
