@@ -370,7 +370,7 @@ let app = new EmberApp(defaults, {
 
 Some modules, often times polyfills, don't provide values meant for direct import. Instead, the module is meant to provide certain side affects, such as mutating global variables.
 
-To import a module for side affects only, you can simply [import the module directly](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#:~:text=Import%20a%20module%20for%20its%20side%20effects%20only).<br>
+To import a module for side affects only, you can simply [import the module directly](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#import_a_module_for_its_side_effects_only).<br>
 Any side affects the module provides will take affect.
 
 Example: the `eventsource` package provides a ready to use [eventsource-polyfill.js](https://github.com/EventSource/eventsource/blob/master/example/eventsource-polyfill.js) module.
