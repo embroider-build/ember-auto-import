@@ -367,6 +367,7 @@ let app = new EmberApp(defaults, {
 ```
 
 ### I want to import a module for side effects only.
+
 Some modules, often times polyfills, don't provide values meant for direct import. Instead, the module is meant to provide certain side affects, such as mutating global variables.
 
 To import a module for side affects only, you can simply [import the module directly](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#:~:text=Import%20a%20module%20for%20its%20side%20effects%20only).<br>
