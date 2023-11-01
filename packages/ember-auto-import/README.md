@@ -366,6 +366,24 @@ let app = new EmberApp(defaults, {
 });
 ```
 
+### I want to import a module for side effects only.
+
+Some modules, often times polyfills, don't provide values meant for direct import. Instead, the module is meant to provide certain side affects, such as mutating global variables.
+
+To import a module for side affects only, you can simply [import the module directly](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#import_a_module_for_its_side_effects_only).<br>
+Any side affects the module provides will take affect.
+
+Example: the `eventsource` package provides a ready to use [eventsource-polyfill.js](https://github.com/EventSource/eventsource/blob/master/example/eventsource-polyfill.js) module.
+
+This can be imported like:
+
+```js
+// In any js file, likely the file you need to access the polyfill, purely for organization.
+
+// Importing the polyfill adds a new global object EventSourcePolyfill.
+import 'eventsource/example/eventsource-polyfill.js';
+```
+
 ## Debugging Tips
 
 Set the environment variable `DEBUG="ember-auto-import:*"` to see debug logging during the build.
