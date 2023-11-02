@@ -340,7 +340,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
       let pkg = packageCache.ownerOfFile(context);
       if (!pkg) {
-        // we couldn't find the package in the package cache
+        // we're not inside any identifiable NPM package
         return callback();
       }
 
