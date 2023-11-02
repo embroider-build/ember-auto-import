@@ -576,6 +576,16 @@ export default class Package {
       ]);
     }
 
+    // this is to facilitate testing external dependencies against our cleanBabelConfig.
+    // We only want to do this in our own testing as it checks for the name of all string
+    // identifiers and is only ever going to be necessary in our tests.
+    // previously we tested that a `let` got transpiled to a var, but since the IE11 target
+    // was removed that test wasn't checking the right thing. This was the simplest way that
+    // we could think to test that would be future-proof
+    if (process.env.USE_EAI_BABEL_WATERMARK) {
+      plugins.push([require.resolve('./watermark-plugin')]);
+    }
+
     return {
       // do not use the host project's own `babel.config.js` file. Only a strict
       // subset of features are allowed in the third-party code we're
@@ -612,7 +622,7 @@ export default class Package {
     if (this.isAddon) {
       throw new Error(`Only the app can determine the browserslist`);
     }
-    // cast here is safe because we just checked isAddon is false
+
     let parent = this._parent as Project;
     return (parent.targets as { browsers: string[] }).browsers.join(',');
   }

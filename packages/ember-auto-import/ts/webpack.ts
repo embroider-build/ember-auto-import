@@ -24,6 +24,7 @@ import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import minimatch from 'minimatch';
+import { TransformOptions } from '@babel/core';
 
 const EXTENSIONS = ['.js', '.ts', '.json'];
 
@@ -157,10 +158,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
       // this controls webpack's own runtime code generation. You still need
       // preset-env to preprocess the libraries themselves (which is already
       // part of this.opts.babelConfig)
-      target: `browserslist:${this.opts.browserslist}`,
+      target: `browserslist:${this.opts.rootPackage.browserslist()}`,
       output: {
         path: join(this.outputPath, 'assets'),
-        publicPath: this.opts.publicAssetURL,
+        publicPath: this.opts.rootPackage.publicAssetURL(),
         filename: `chunk.[id].[chunkhash].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,
         libraryTarget: 'var',
@@ -198,7 +199,16 @@ export default class WebpackBundler extends Plugin implements Bundler {
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.cjs'),
         rules: [
-          this.babelRule(stagingDir),
+          this.babelRule(
+            stagingDir,
+            (filename) => !this.fileIsInApp(filename),
+            this.opts.rootPackage.cleanBabelConfig()
+          ),
+          this.babelRule(
+            stagingDir,
+            (filename) => this.fileIsInApp(filename),
+            this.opts.rootPackage.babelOptions
+          ),
           {
             test: /\.css$/i,
             use: [
@@ -232,7 +242,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
     loader: RuleSetUseItem;
     plugin: WebpackPluginInstance | undefined;
   } {
-    if (this.opts.environment === 'production' || this.opts.hasFastboot) {
+    if (
+      this.opts.environment === 'production' ||
+      this.opts.rootPackage.isFastBootEnabled
+    ) {
       return {
         loader: MiniCssExtractPlugin.loader,
         plugin: new MiniCssExtractPlugin({
@@ -265,22 +278,44 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return output;
   }
 
-  private babelRule(stagingDir: string): RuleSetRule {
-    let shouldTranspile = babelFilter(this.skipBabel(), this.opts.appRoot);
+  private fileIsInApp(filename: string) {
+    let packageCache = PackageCache.shared(
+      'ember-auto-import',
+      this.opts.rootPackage.root
+    );
+
+    const pkg = packageCache.ownerOfFile(filename);
+
+    return pkg?.root === this.opts.rootPackage.root;
+  }
+
+  private babelRule(
+    stagingDir: string,
+    filter: (filename: string) => boolean,
+    babelConfig: TransformOptions
+  ): RuleSetRule {
+    let shouldTranspile = babelFilter(
+      this.skipBabel(),
+      this.opts.rootPackage.root
+    );
 
     return {
-      test(filename: string) {
+      test: (filename: string) => {
         // We don't apply babel to our own stagingDir (it contains only our own
         // entrypoints that we wrote, and it can use `import()`, which we want
         // to leave directly for webpack).
         //
         // And we otherwise defer to the `skipBabel` setting as implemented by
         // `@embroider/shared-internals`.
-        return dirname(filename) !== stagingDir && shouldTranspile(filename);
+        return (
+          dirname(filename) !== stagingDir &&
+          shouldTranspile(filename) &&
+          filter(filename)
+        );
       },
       use: {
         loader: 'babel-loader-8',
-        options: this.opts.babelConfig,
+        options: babelConfig,
       },
     };
   }
@@ -291,7 +326,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
   private get externalsHandler(): Configuration['externals'] {
     let packageCache = PackageCache.shared(
       'ember-auto-import',
-      this.opts.appRoot
+      this.opts.rootPackage.root
     );
     return (params, callback) => {
       let { context, request, contextInfo } = params;
@@ -407,7 +442,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       return false;
     }
 
-    if (pkg.root !== this.opts.appRoot) {
+    if (pkg.root !== this.opts.rootPackage.root) {
       return false;
     }
 
@@ -558,7 +593,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           deps.dynamicTemplateImports.map(mapTemplateImports),
         staticTemplateImports:
           deps.staticTemplateImports.map(mapTemplateImports),
-        publicAssetURL: this.opts.publicAssetURL,
+        publicAssetURL: this.opts.rootPackage.publicAssetURL(),
       })
     );
   }
