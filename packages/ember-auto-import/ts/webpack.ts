@@ -353,7 +353,13 @@ export default class WebpackBundler extends Plugin implements Bundler {
           );
 
           name = this.opts.rootPackage.name;
-          request = posix.join(name, appRelativeContext, request);
+          let candidateName = posix.join(name, appRelativeContext, request);
+          if (candidateName.startsWith(name)) {
+            request = candidateName;
+          } else {
+            // the relative request does not target the traditional "app" dir
+            return callback();
+          }
         } else {
           // we're only interested in handling inter-package resolutions
           return callback();
