@@ -168,7 +168,15 @@ export default class Package {
     let version = parseInt(babelAddon.pkg.version.split('.')[0], 10);
     let babelOptions, extensions;
 
-    babelOptions = babelAddon.buildBabelOptions(options);
+    babelOptions = babelAddon.buildBabelOptions({
+      ...options,
+      'ember-cli-babel': {
+        ...options['ember-cli-babel'],
+        compileModules: false,
+        disableEmberModulesAPIPolyfill: false,
+      },
+    });
+
     extensions = babelOptions.filterExtensions || ['js'];
 
     // https://github.com/babel/ember-cli-babel/issues/227
