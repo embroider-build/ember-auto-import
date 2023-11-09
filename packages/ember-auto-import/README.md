@@ -70,6 +70,26 @@ export default Route.extend({
 
 If you're using custom deployment code, make sure it will include all the Javascript files in `dist/assets`, not just the default `app.js` and `vendor.js`.
 
+## App imports
+
+`ember-auto-import` was originally designed to allow Ember apps to import from npm packages easily, and would have no influence on your app's files (i.e. files that exist in your `app` folder). This meant that every time you had an import like `import someBigLib from 'my-app-name/lib/massive'` there was no way for you to: 
+
+- use webpack plugins to influence the loading of `my-app-name/lib/massive`
+- dynamically import `my-app-name/lib/massive` in such a way that it wouldn't increase the size of your asset.
+- import assets from your app that would go through webpack loaders
+
+Fortunatly there is a way to configure ember-auto-import to work on certain parts of your app using the `allowAppImports` configuration option. If you set the option to: 
+
+```js
+let app = new EmberApp(defaults, {
+  autoImport: {
+    allowAppImports: [ 'lib/*' ],
+  }
+});
+```
+
+Then the `my-app-name/lib/massive` file (and all other files in lib) would now be handled by ember-auto-import. This would then allow you to dynamically `import('my-app-name/lib/massive')` which means that you can dynamically load parts of your app on demand without first splitting them into an addon or an npm package.
+
 ## Customizing Build Behavior
 
 While most NPM packages authored in CommonJS or ES Modules will Just Work, for others you may need to give ember-auto-import a hint about what to do.
@@ -100,6 +120,9 @@ let app = new EmberApp(defaults, {
       // but leave "some-package/beta" alone.
       'some-package/alpha$': 'customized',
     },
+    allowAppImports: [
+      // minimatch patterns for app files that you want to be handled by ember-auto-import
+    ],
     exclude: ['some-package'],
     skipBabel: [
       {
@@ -126,6 +149,7 @@ let app = new EmberApp(defaults, {
 Supported Options
 
 - `alias`: _object_, Map from imported names to substitute names that will be imported instead. This is a prefix match by default. To opt out of prefix-matching and only match exactly, add a `$` suffix to the pattern.
+- `allowAppImports`: _list of strings, defaults to []_. Files in your app folder that match these minimatch patterns will be handled by ember-auto-import (and thus Webpack) and no longer be part of the regular ember-cli pipeline.
 - `exclude`: _list of strings, defaults to []_. Packages in this list will be ignored by ember-auto-import. Can be helpful if the package is already included another way (like a shim from some other Ember addon).
 - `forbidEval`: _boolean_, defaults to false. We use `eval` in development by default (because that is the fastest way to provide sourcemaps). If you need to comply with a strict Content Security Policy (CSP), you can set `forbidEval: true`. You will still get sourcemaps, they will just use a slower implementation.
 - `insertScriptsAt`: _string_, defaults to undefined. Optionally allows you to take manual control over where ember-auto-import's generated `<script>` tags will be inserted into your HTML and what attributes they will have. See "Customizing HTML Insertion" below.
