@@ -3,6 +3,7 @@ import { PreparedApp } from 'scenario-tester';
 import QUnit from 'qunit';
 import merge from 'lodash/merge';
 import { setupFastboot } from './fastboot-helper';
+import { CHECK_SCRIPTS_MODULE } from './static-import-test';
 
 const { module: Qmodule, test } = QUnit;
 
@@ -52,9 +53,14 @@ appScenarios
 
         `,
         lib: {
-          'example1.js': 'export default function() { return "example1 worked" }',
-          'example2.js': 'export default function() { return "example2 worked" }',
-          'example3.js': 'export default function() { return "example3 worked" }',
+          'example1.js':
+            'export default function() { return "example1 worked" }; export const NO_FIND = "please dont look at this string"',
+          'example2.js':
+            'export default function() { return "example2 worked" }; export const NO_FIND = "this string should be hidden"',
+          'example3.js':
+            'export default function() { return "example3 worked" }; export const NO_FIND = "string or not to string"',
+          'example4.js':
+            'export default function() { return "example4 worked" }; export const NO_FIND = "please look away"',
         },
         templates: {
           'dynamic-import.hbs': `<div data-test="dynamic-import-result">{{this.model.result}}</div>`,
@@ -109,6 +115,9 @@ appScenarios
         'my-target.js': `export const name = 'browser';`,
       },
       tests: {
+        helpers: {
+          'check-scripts.js': CHECK_SCRIPTS_MODULE,
+        },
         acceptance: {
           'dynamic-import-test.js': `
             import { module, test } from 'qunit';
@@ -152,20 +161,51 @@ appScenarios
         unit: {
           'allow-app-imports-test.js': `
             import { module, test } from 'qunit';
+            import checkScripts from '../helpers/check-scripts';
+
             module('Unit | allow-app-import', function () {
+              test("check scripts smoke test", async function(assert) {
+                assert.ok(
+                  await checkScripts(/(app-template|tests)\.js/, "checkscripts can see this line (woah)"),
+                  "make sure that check scripts is able to see code in the tests asset"
+                );
+              })
               test("importing from the app's module namespace", async function (assert) {
-                let { default: example1 } = await import('@ef4/app-template/lib/example1');
+                let { default: example1, NO_FIND } = await import('@ef4/app-template/lib/example1');
                 assert.equal(example1(), 'example1 worked');
+                assert.notOk(
+                  await checkScripts(/(app-template|tests)\.js/, NO_FIND),
+                  "expect to not find the 'example1 NO_FIND' in app-js because it's being consumed by webpack"
+                );
+                // we can't test the positive side here because webpack is dynamically adding and then removing
+                // the script on us, and the timing is not reliable enough for us to check it while it exists
               });
               test("relative import", async function (assert) {
-                let { default: example2 } = await import('../../lib/example2');
+                let { default: example2, NO_FIND } = await import('../../lib/example2');
                 assert.equal(example2(), 'example2 worked');
+                assert.notOk(
+                  await checkScripts(/(app-template|tests)\.js/, NO_FIND),
+                  "expect to not find the 'example2 NO_FIND' in app-js because it's being consumed by webpack"
+                );
               });
-              test("modules not visible in AMD loader", function(assert) {
-                assert.equal(require.has('@ef4/app-template/lib/example1'), false, 'should not have example1 in loader');
-                assert.equal(require.has('@ef4/app-template/lib/example2'), false, 'should not have example2 in loader');
-                assert.equal(require.has('@ef4/app-template/lib/example3'), false, 'should not have example3 in loader');
-              });
+              test("importing from the app's module namespace with a template string", async function (assert) {
+                const whichExample = 'example3'
+                let { default: example3, NO_FIND } = await import(\`@ef4/app-template/lib/\${whichExample}\`);
+                assert.equal(example3(), 'example3 worked');
+                assert.notOk(
+                  await checkScripts(/(app-template|tests)\.js/, NO_FIND),
+                  "expect to not find the 'example3 NO_FIND' in app-js because it's being consumed by webpack"
+                );
+              })
+              test("relative import with a template string", async function (assert) {
+                const whichExample = 'example4'
+                let { default: example4, NO_FIND } = await import(\`../../lib/\${whichExample}\`);
+                assert.equal(example4(), 'example4 worked');
+                assert.notOk(
+                  await checkScripts(/(app-template|tests)\.js/, NO_FIND),
+                  "expect to not find the 'example4 NO_FIND' in app-js because it's being consumed by webpack"
+                );
+              })
             });
           `,
         },

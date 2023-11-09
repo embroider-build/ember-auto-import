@@ -5,6 +5,23 @@ import merge from 'lodash/merge';
 import { setupFastboot } from './fastboot-helper';
 const { module: Qmodule, test } = QUnit;
 
+export const CHECK_SCRIPTS_MODULE = `export default async function checkScripts(scriptSrcPattern, needle) {
+  let scripts = [...document.querySelectorAll('script')];
+
+  let matchingScripts = scripts.filter((item) =>
+    scriptSrcPattern.test(item.src)
+  );
+
+  let matchingScriptContent = await Promise.all(
+    matchingScripts.map(async (item) => {
+      let response = await fetch(item.src);
+      return response.text();
+    })
+  );
+
+  return matchingScriptContent.some((item) => item.includes(needle));
+}`;
+
 function staticImportTest(project: Project) {
   project.linkDependency('ember-auto-import', { baseDir: __dirname });
   project.linkDependency('webpack', { baseDir: __dirname });
@@ -117,6 +134,9 @@ function staticImportTest(project: Project) {
       },
     },
     tests: {
+      helpers: {
+        'check-scripts.js': CHECK_SCRIPTS_MODULE,
+      },
       integration: {
         components: {
           'hello-world-test.js': `
@@ -183,23 +203,7 @@ function staticImportTest(project: Project) {
           import Service from '@ember/service';
           import example6Direct, { dont_find_me } from '@ef4/app-template/utils/example6';
           import example7Direct, { secret_string } from '@ef4/app-template/utils/example7';
-
-          async function checkScripts(scriptSrcPattern, needle) {
-            let scripts = [...document.querySelectorAll('script')];
-
-            let matchingScripts = scripts.filter((item) =>
-              scriptSrcPattern.test(item.src)
-            );
-
-            let matchingScriptContent = await Promise.all(
-              matchingScripts.map(async (item) => {
-                let response = await fetch(item.src);
-                return response.text();
-              })
-            );
-
-            return matchingScriptContent.some((item) => item.includes(needle));
-          }
+          import checkScripts from '../helpers/check-scripts';
 
           module('Unit | allow-app-import', function () {
             test("importing from the app's module namespace", function (assert) {
