@@ -12,6 +12,7 @@ import {
 import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
 import { MacrosConfig } from '@embroider/macros/src/node';
+import minimatch from 'minimatch';
 
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
@@ -36,6 +37,7 @@ export interface Options {
   forbidEval?: boolean;
   skipBabel?: { package: string; semverRange?: string }[];
   watchDependencies?: (string | string[])[];
+  allowAppImports?: string[];
   insertScriptsAt?: string;
   insertStylesAt?: string;
 }
@@ -166,7 +168,15 @@ export default class Package {
     let version = parseInt(babelAddon.pkg.version.split('.')[0], 10);
     let babelOptions, extensions;
 
-    babelOptions = babelAddon.buildBabelOptions(options);
+    babelOptions = babelAddon.buildBabelOptions({
+      ...options,
+      'ember-cli-babel': {
+        ...options['ember-cli-babel'],
+        compileModules: false,
+        disableEmberModulesAPIPolyfill: false,
+      },
+    });
+
     extensions = babelOptions.filterExtensions || ['js'];
 
     // https://github.com/babel/ember-cli-babel/issues/227
@@ -263,12 +273,7 @@ export default class Package {
     importedPath: string,
     fromPath: string,
     partial: true
-  ):
-    | DepResolution
-    | LocalResolution
-    | URLResolution
-    | ImpreciseResolution
-    | undefined;
+  ): Resolution | undefined;
   resolve(
     importedPath: string,
     fromPath: string,
@@ -305,6 +310,20 @@ export default class Package {
         type: 'local',
         local: path,
       };
+    }
+
+    if (!this.isAddon && packageName === this.name) {
+      let localPath = path.slice(packageName.length + 1);
+      if (
+        this.allowAppImports.some((pattern) => minimatch(localPath, pattern))
+      ) {
+        return {
+          type: 'package',
+          path: localPath,
+          packageName: this.name,
+          packageRoot: join(this.root, 'app'),
+        };
+      }
     }
 
     if (this.excludesDependency(packageName)) {
@@ -481,6 +500,15 @@ export default class Package {
     }
   }
 
+  get allowAppImports(): string[] {
+    // only apps (not addons) are allowed to set this
+    if (!this.isAddon) {
+      return this.autoImportOptions?.allowAppImports ?? [];
+    }
+
+    return [];
+  }
+
   cleanBabelConfig(): TransformOptions {
     if (this.isAddon) {
       throw new Error(`Only the app can generate auto-import's babel config`);
@@ -556,6 +584,16 @@ export default class Package {
       ]);
     }
 
+    // this is to facilitate testing external dependencies against our cleanBabelConfig.
+    // We only want to do this in our own testing as it checks for the name of all string
+    // identifiers and is only ever going to be necessary in our tests.
+    // previously we tested that a `let` got transpiled to a var, but since the IE11 target
+    // was removed that test wasn't checking the right thing. This was the simplest way that
+    // we could think to test that would be future-proof
+    if (process.env.USE_EAI_BABEL_WATERMARK) {
+      plugins.push([require.resolve('./watermark-plugin')]);
+    }
+
     return {
       // do not use the host project's own `babel.config.js` file. Only a strict
       // subset of features are allowed in the third-party code we're
@@ -592,7 +630,7 @@ export default class Package {
     if (this.isAddon) {
       throw new Error(`Only the app can determine the browserslist`);
     }
-    // cast here is safe because we just checked isAddon is false
+
     let parent = this._parent as Project;
     return (parent.targets as { browsers: string[] }).browsers.join(',');
   }

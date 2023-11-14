@@ -7,7 +7,7 @@ import type {
   WebpackPluginInstance,
   Module,
 } from 'webpack';
-import { join, dirname, resolve } from 'path';
+import { join, dirname, resolve, relative, posix, isAbsolute } from 'path';
 import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync, readFileSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
@@ -16,13 +16,17 @@ import { BundleDependencies, ResolvedTemplateImport } from './splitter';
 import { BuildResult, Bundler, BundlerOptions } from './bundler';
 import type { InputNode } from 'broccoli-node-api';
 import Plugin from 'broccoli-plugin';
-import { babelFilter, packageName } from '@embroider/shared-internals';
+import { babelFilter, packageName, Package } from '@embroider/shared-internals';
 import { Options } from './package';
 import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import minimatch from 'minimatch';
+import { TransformOptions } from '@babel/core';
+
+const EXTENSIONS = ['.js', '.ts', '.json'];
 
 const debug = makeDebug('ember-auto-import:webpack');
 
@@ -154,10 +158,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
       // this controls webpack's own runtime code generation. You still need
       // preset-env to preprocess the libraries themselves (which is already
       // part of this.opts.babelConfig)
-      target: `browserslist:${this.opts.browserslist}`,
+      target: `browserslist:${this.opts.rootPackage.browserslist()}`,
       output: {
         path: join(this.outputPath, 'assets'),
-        publicPath: this.opts.publicAssetURL,
+        publicPath: this.opts.rootPackage.publicAssetURL(),
         filename: `chunk.[id].[chunkhash].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,
         libraryTarget: 'var',
@@ -179,10 +183,15 @@ export default class WebpackBundler extends Plugin implements Bundler {
         },
       },
       resolve: {
-        extensions: ['.js', '.ts', '.json'],
+        extensions: EXTENSIONS,
         mainFields: ['browser', 'module', 'main'],
         alias: Object.assign(
-          {},
+          {
+            // this is because of the allowAppImports feature needs to be able to import things
+            // like app-name/lib/something from within webpack handled code but that needs to be
+            // able to resolve to app-root/app/lib/something.
+            [this.opts.rootPackage.name]: `${this.opts.rootPackage.root}/app`,
+          },
           ...removeUndefined([...this.opts.packages].map((pkg) => pkg.aliases))
         ),
       },
@@ -190,7 +199,16 @@ export default class WebpackBundler extends Plugin implements Bundler {
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.cjs'),
         rules: [
-          this.babelRule(stagingDir),
+          this.babelRule(
+            stagingDir,
+            (filename) => !this.fileIsInApp(filename),
+            this.opts.rootPackage.cleanBabelConfig()
+          ),
+          this.babelRule(
+            stagingDir,
+            (filename) => this.fileIsInApp(filename),
+            this.opts.rootPackage.babelOptions
+          ),
           {
             test: /\.css$/i,
             use: [
@@ -224,7 +242,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
     loader: RuleSetUseItem;
     plugin: WebpackPluginInstance | undefined;
   } {
-    if (this.opts.environment === 'production' || this.opts.hasFastboot) {
+    if (
+      this.opts.environment === 'production' ||
+      this.opts.rootPackage.isFastBootEnabled
+    ) {
       return {
         loader: MiniCssExtractPlugin.loader,
         plugin: new MiniCssExtractPlugin({
@@ -257,22 +278,44 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return output;
   }
 
-  private babelRule(stagingDir: string): RuleSetRule {
-    let shouldTranspile = babelFilter(this.skipBabel(), this.opts.appRoot);
+  private fileIsInApp(filename: string) {
+    let packageCache = PackageCache.shared(
+      'ember-auto-import',
+      this.opts.rootPackage.root
+    );
+
+    const pkg = packageCache.ownerOfFile(filename);
+
+    return pkg?.root === this.opts.rootPackage.root;
+  }
+
+  private babelRule(
+    stagingDir: string,
+    filter: (filename: string) => boolean,
+    babelConfig: TransformOptions
+  ): RuleSetRule {
+    let shouldTranspile = babelFilter(
+      this.skipBabel(),
+      this.opts.rootPackage.root
+    );
 
     return {
-      test(filename: string) {
+      test: (filename: string) => {
         // We don't apply babel to our own stagingDir (it contains only our own
         // entrypoints that we wrote, and it can use `import()`, which we want
         // to leave directly for webpack).
         //
         // And we otherwise defer to the `skipBabel` setting as implemented by
         // `@embroider/shared-internals`.
-        return dirname(filename) !== stagingDir && shouldTranspile(filename);
+        return (
+          dirname(filename) !== stagingDir &&
+          shouldTranspile(filename) &&
+          filter(filename)
+        );
       },
       use: {
         loader: 'babel-loader-8',
-        options: this.opts.babelConfig,
+        options: babelConfig,
       },
     };
   }
@@ -283,10 +326,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
   private get externalsHandler(): Configuration['externals'] {
     let packageCache = PackageCache.shared(
       'ember-auto-import',
-      this.opts.appRoot
+      this.opts.rootPackage.root
     );
     return (params, callback) => {
-      let { context, request } = params;
+      let { context, request, contextInfo } = params;
       if (!context || !request) {
         return callback();
       }
@@ -294,18 +337,57 @@ export default class WebpackBundler extends Plugin implements Bundler {
       if (request.startsWith('!')) {
         return callback();
       }
-      let name = packageName(request);
-      if (!name) {
-        // we're only interested in handling inter-package resolutions
-        return callback();
-      }
+
       let pkg = packageCache.ownerOfFile(context);
-      if (!pkg?.isV2Addon()) {
-        // we're only interested in imports that appear inside v2 addons
+      if (!pkg) {
+        // we're not inside any identifiable NPM package
         return callback();
       }
 
-      if (pkg.meta.externals?.includes(name)) {
+      let name = packageName(request);
+      if (!name) {
+        if (!isAbsolute(request) && pkg.root === this.opts.rootPackage.root) {
+          let appRelativeContext = relative(
+            resolve(this.opts.rootPackage.root, 'app'),
+            context
+          );
+
+          name = this.opts.rootPackage.name;
+          let candidateName = posix.join(name, appRelativeContext, request);
+          if (candidateName.startsWith(name)) {
+            request = candidateName;
+          } else {
+            // the relative request does not target the traditional "app" dir
+            return callback();
+          }
+        } else {
+          // we're only interested in handling inter-package resolutions
+          return callback();
+        }
+      }
+
+      // Handling full-name imports that point at the app itself e.g. app-name/lib/thingy
+      if (name === this.opts.rootPackage.name) {
+        if (this.importMatchesAppImports(request.slice(name.length + 1))) {
+          // webpack should handle this because it's another file in the app that matches allowAppImports
+          return callback();
+        } else {
+          // use ember's module because this is part of the app that doesn't match allowAppImports
+          this.externalizedByUs.add(request);
+          return callback(undefined, 'commonjs ' + request);
+        }
+      }
+
+      // if we're not in a v2 addon and the file that is doing the import doesn't match one of the allowAppImports patterns
+      // then we don't implement the "fallback behaviour" below i.e. this won't be handled by ember-auto-import
+      if (
+        !pkg.isV2Addon() &&
+        !this.matchesAppImports(pkg, contextInfo?.issuer)
+      ) {
+        return callback();
+      }
+
+      if (pkg.isV2Addon() && pkg.meta.externals?.includes(name)) {
         this.externalizedByUs.add(request);
         return callback(undefined, 'commonjs ' + request);
       }
@@ -332,6 +414,47 @@ export default class WebpackBundler extends Plugin implements Bundler {
         return callback(undefined, 'commonjs ' + request);
       }
     };
+  }
+
+  *withResolvableExtensions(
+    importSpecifier: string
+  ): Generator<string, void, void> {
+    if (importSpecifier.match(/\.\w{1,3}$/)) {
+      yield importSpecifier;
+    } else {
+      for (let ext of EXTENSIONS) {
+        yield `${importSpecifier}${ext}`;
+      }
+    }
+  }
+
+  importMatchesAppImports(relativeImportSpecifier: string): boolean {
+    for (let candidate of this.withResolvableExtensions(
+      relativeImportSpecifier
+    )) {
+      if (
+        this.opts.rootPackage.allowAppImports.some((pattern) =>
+          minimatch(candidate, pattern)
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  matchesAppImports(pkg: Package, requestingFile: string | undefined): boolean {
+    if (!requestingFile) {
+      return false;
+    }
+
+    if (pkg.root !== this.opts.rootPackage.root) {
+      return false;
+    }
+
+    return this.opts.rootPackage.allowAppImports.some((pattern) =>
+      minimatch(relative(join(pkg.root, 'app'), requestingFile), pattern)
+    );
   }
 
   async build(): Promise<void> {
@@ -388,7 +511,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           let nextModule = stats.compilation.moduleGraph.getModule(dep);
           if (nextModule) {
             if ((nextModule as any).externalType) {
-              ownExternals.add((dep as any).request);
+              ownExternals.add((nextModule as any).request);
             } else {
               gatherExternals(nextModule, ownExternals);
             }
@@ -476,7 +599,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           deps.dynamicTemplateImports.map(mapTemplateImports),
         staticTemplateImports:
           deps.staticTemplateImports.map(mapTemplateImports),
-        publicAssetURL: this.opts.publicAssetURL,
+        publicAssetURL: this.opts.rootPackage.publicAssetURL(),
       })
     );
   }
