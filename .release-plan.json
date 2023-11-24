@@ -1,0 +1,25 @@
+{
+  "solution": {
+    "ember-auto-import": {
+      "impact": "minor",
+      "oldVersion": "2.6.3",
+      "newVersion": "2.7.0",
+      "constraints": [
+        {
+          "impact": "minor",
+          "reason": "Appears in changelog section :rocket: Enhancement"
+        },
+        {
+          "impact": "patch",
+          "reason": "Appears in changelog section :memo: Documentation"
+        },
+        {
+          "impact": "patch",
+          "reason": "Appears in changelog section :house: Internal"
+        }
+      ],
+      "pkgJSONPath": "./packages/ember-auto-import/package.json"
+    }
+  },
+  "description": "## Release (2023-11-24)\n\nember-auto-import 2.7.0 (minor)\n\n#### :rocket: Enhancement\n* `ember-auto-import`\n  * [#587](https://github.com/embroider-build/ember-auto-import/pull/587) Feature: allowAppImports ([@mansona](https://github.com/mansona))\n  * [#596](https://github.com/embroider-build/ember-auto-import/pull/596) Support private properties and static blocks ([@andreyfel](https://github.com/andreyfel))\n\n#### :memo: Documentation\n* `ember-auto-import`\n  * [#594](https://github.com/embroider-build/ember-auto-import/pull/594) Add section on importing a module for side affects only to the README.md ([@keithZmudzinski](https://github.com/keithZmudzinski))\n\n#### :house: Internal\n* `addon-template`\n  * [#598](https://github.com/embroider-build/ember-auto-import/pull/598) Add release-plan for automating releases ([@mansona](https://github.com/mansona))\n* Other\n  * [#597](https://github.com/embroider-build/ember-auto-import/pull/597) update package-lock.json ([@mansona](https://github.com/mansona))\n* `app-template`, `ember-auto-import`\n  * [#585](https://github.com/embroider-build/ember-auto-import/pull/585) Update ci ([@ef4](https://github.com/ef4))\n\n#### Committers: 4\n- Andrey Fel ([@andreyfel](https://github.com/andreyfel))\n- Chris Manson ([@mansona](https://github.com/mansona))\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n- Keith Zmudzinski ([@keithZmudzinski](https://github.com/keithZmudzinski))\n"
+}

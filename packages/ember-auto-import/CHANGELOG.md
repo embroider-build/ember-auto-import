@@ -1,4 +1,30 @@
 # Changelog
+## Release (2023-11-24)
+
+ember-auto-import 2.7.0 (minor)
+
+#### :rocket: Enhancement
+* `ember-auto-import`
+  * [#587](https://github.com/embroider-build/ember-auto-import/pull/587) Feature: allowAppImports ([@mansona](https://github.com/mansona))
+  * [#596](https://github.com/embroider-build/ember-auto-import/pull/596) Support private properties and static blocks ([@andreyfel](https://github.com/andreyfel))
+
+#### :memo: Documentation
+* `ember-auto-import`
+  * [#594](https://github.com/embroider-build/ember-auto-import/pull/594) Add section on importing a module for side affects only to the README.md ([@keithZmudzinski](https://github.com/keithZmudzinski))
+
+#### :house: Internal
+* `addon-template`
+  * [#598](https://github.com/embroider-build/ember-auto-import/pull/598) Add release-plan for automating releases ([@mansona](https://github.com/mansona))
+* Other
+  * [#597](https://github.com/embroider-build/ember-auto-import/pull/597) update package-lock.json ([@mansona](https://github.com/mansona))
+* `app-template`, `ember-auto-import`
+  * [#585](https://github.com/embroider-build/ember-auto-import/pull/585) Update ci ([@ef4](https://github.com/ef4))
+
+#### Committers: 4
+- Andrey Fel ([@andreyfel](https://github.com/andreyfel))
+- Chris Manson ([@mansona](https://github.com/mansona))
+- Edward Faulkner ([@ef4](https://github.com/ef4))
+- Keith Zmudzinski ([@keithZmudzinski](https://github.com/keithZmudzinski))
 
 ### 2.6.3
 
