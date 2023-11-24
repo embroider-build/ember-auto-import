@@ -1,4 +1,4 @@
-# For every push to the master branch, this checks if the release-plan was
+# For every push to the main branch, this checks if the release-plan was
 # updated and if it was it will publish stable npm packages based on the
 # release plan
 
