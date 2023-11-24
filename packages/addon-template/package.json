@@ -1,5 +1,6 @@
 {
   "name": "@ef4/addon-template",
+  "private": true,
   "version": "0.0.0",
   "description": "The default blueprint for ember-cli addons.",
   "keywords": [

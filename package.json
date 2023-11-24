@@ -6,6 +6,7 @@
     "nom": "rm -rf node_modules packages/*/node_modules test-scenarios/node_modules types/*/node_modules",
     "postinstall": "patch-package"
   },
+  "repository": "https://github.com/embroider-build/ember-auto-import",
   "workspaces": [
     "packages/*",
     "test-scenarios",
@@ -21,7 +22,8 @@
     "eslint-plugin-node": "^6.0.1",
     "eslint-plugin-prettier": "^3.3.0",
     "patch-package": "^6.5.1",
-    "prettier": "^2.2.1"
+    "prettier": "^2.2.1",
+    "release-plan": "^0.3.0"
   },
   "volta": {
     "node": "16.20.1"
