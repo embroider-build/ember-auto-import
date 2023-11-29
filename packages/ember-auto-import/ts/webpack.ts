@@ -419,7 +419,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
   *withResolvableExtensions(
     importSpecifier: string
   ): Generator<string, void, void> {
-    if (importSpecifier.match(/\.\w{1,3}$/)) {
+    if (importSpecifier.match(/\.\w+$/)) {
       yield importSpecifier;
     } else {
       for (let ext of EXTENSIONS) {
