@@ -42,8 +42,19 @@ function staticImportTest(project: Project) {
                'original-package'
               ],
               allowAppImports: [
-               'lib/**'
-              ]
+               'lib/**',
+               'assets/*.specialfile',
+              ],
+              webpack: {
+                module: {
+                  rules: [
+                    {
+                      test: /\.specialfile/,
+                      use: 'specialfile-loader',
+                    },
+                  ],
+                },
+              },
             }
           });
           return app.toTree();
@@ -132,6 +143,9 @@ function staticImportTest(project: Project) {
             `,
         },
       },
+      assets: {
+        'test.specialfile': 'This is just plain text.',
+      },
     },
     tests: {
       helpers: {
@@ -200,6 +214,8 @@ function staticImportTest(project: Project) {
             dont_find_me_4,
             secret_string_7
           } from '../../lib/example2';
+          import testAsset from '@ef4/app-template/assets/test.specialfile';
+          import { query as testAssetQuery } from '@ef4/app-template/assets/test.specialfile?foo=bar';
           import Service from '@ember/service';
           import example6Direct, { dont_find_me } from '@ef4/app-template/utils/example6';
           import example7Direct, { secret_string } from '@ef4/app-template/utils/example7';
@@ -280,6 +296,20 @@ function staticImportTest(project: Project) {
                 'should not have example3 in loader'
               );
             });
+            test('it can import assets handled by loader', function (assert) {
+              assert.strictEqual(
+                testAsset,
+                'This is just plain text.',
+                'Content loaded from customloader can be imported'
+              );
+            });
+            test('it can import assets that have query params', function (assert) {
+              assert.strictEqual(
+                testAssetQuery,
+                '?foo=bar',
+                'query params are correctly handled'
+              );
+            });
           });
         `,
       },
@@ -310,6 +340,20 @@ function staticImportTest(project: Project) {
           module.exports = function() {
             return 'this-is-from-inner-lib';
           }`,
+    },
+  });
+
+  project.addDevDependency('specialfile-loader', {
+    files: {
+      'index.js': `
+        export default function customLoader(source) {
+          return \`export const query = \${JSON.stringify(this.resourceQuery)};
+          export default \${JSON.stringify(source)}\`;
+        }
+      `,
+      'package.json': JSON.stringify({
+        type: 'module',
+      }),
     },
   });
 }
