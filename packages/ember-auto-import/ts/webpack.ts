@@ -8,6 +8,7 @@ import type {
   Module,
 } from 'webpack';
 import { join, dirname, resolve, relative, posix, isAbsolute } from 'path';
+import { createHash } from 'crypto';
 import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync, readFileSync } from 'fs';
 import { compile, registerHelper } from 'handlebars';
@@ -25,6 +26,7 @@ import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import minimatch from 'minimatch';
 import { TransformOptions } from '@babel/core';
+import { stripQuery } from './util';
 
 const EXTENSIONS = ['.js', '.ts', '.json'];
 
@@ -34,6 +36,27 @@ registerHelper('js-string-escape', jsStringEscape);
 registerHelper('join', function (list, connector) {
   return list.join(connector);
 });
+
+const moduleIdMap = new Map<string, string>();
+
+function moduleToId(moduleSpecifier: string) {
+  let id = moduleSpecifier;
+
+  // if the module contains characters that need to be escaped, then map this to a hash instead, so we can easily replace this later
+  if (moduleSpecifier.includes('"') || moduleSpecifier.includes("'")) {
+    id = createHash('md5').update('some_string').digest('hex');
+
+    moduleIdMap.set(id, moduleSpecifier);
+  }
+
+  return id;
+}
+
+function idToModule(id: string) {
+  return moduleIdMap.get(id) ?? id;
+}
+
+registerHelper('module-to-id', moduleToId);
 
 const entryTemplate = compile(
   `
@@ -52,7 +75,7 @@ module.exports = (function(){
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
   {{#each staticImports as |module|}}
-    d('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{js-string-escape module.specifier}}'), function() { return require('{{js-string-escape module.specifier}}'); });
+    d('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.specifier}}'), function() { return require('{{js-string-escape module.specifier}}'); });
   {{/each}}
   {{#each dynamicImports as |module|}}
     d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.specifier}}'); });
@@ -368,7 +391,11 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
       // Handling full-name imports that point at the app itself e.g. app-name/lib/thingy
       if (name === this.opts.rootPackage.name) {
-        if (this.importMatchesAppImports(request.slice(name.length + 1))) {
+        if (
+          this.importMatchesAppImports(
+            stripQuery(request.slice(name.length + 1))
+          )
+        ) {
           // webpack should handle this because it's another file in the app that matches allowAppImports
           return callback();
         } else {
@@ -481,7 +508,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           /EAI_DISCOVERED_EXTERNALS\(['"]([^'"]+)['"]\)/g,
           (_substr: string, matched: string) => {
             let deps = build
-              .externalDepsFor(matched)
+              .externalDepsFor(idToModule(matched))
               .filter((dep) => this.externalizedByUs.has(dep));
             return '[' + deps.map((d) => `'${d}'`).join(',') + ']';
           }

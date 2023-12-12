@@ -13,6 +13,7 @@ import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
 import { MacrosConfig } from '@embroider/macros/src/node';
 import minimatch from 'minimatch';
+import { stripQuery } from './util';
 
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
@@ -315,7 +316,9 @@ export default class Package {
     if (!this.isAddon && packageName === this.name) {
       let localPath = path.slice(packageName.length + 1);
       if (
-        this.allowAppImports.some((pattern) => minimatch(localPath, pattern))
+        this.allowAppImports.some((pattern) =>
+          minimatch(stripQuery(localPath), pattern)
+        )
       ) {
         return {
           type: 'package',
