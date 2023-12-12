@@ -1,4 +1,20 @@
 # Changelog
+## Release (2023-12-12)
+
+ember-auto-import 2.7.1 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#603](https://github.com/embroider-build/ember-auto-import/pull/603) Fix imports with a query part ([@simonihmig](https://github.com/simonihmig))
+* `ember-auto-import`
+  * [#602](https://github.com/embroider-build/ember-auto-import/pull/602) Allow arbitrary extensions for app-imports ([@simonihmig](https://github.com/simonihmig))
+
+#### :house: Internal
+* [#604](https://github.com/embroider-build/ember-auto-import/pull/604) update release-plan ([@mansona](https://github.com/mansona))
+
+#### Committers: 2
+- Chris Manson ([@mansona](https://github.com/mansona))
+- Simon Ihmig ([@simonihmig](https://github.com/simonihmig))
 ## Release (2023-11-24)
 
 ember-auto-import 2.7.0 (minor)
