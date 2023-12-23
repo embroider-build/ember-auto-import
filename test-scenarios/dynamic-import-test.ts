@@ -61,6 +61,19 @@ appScenarios
             'export default function() { return "example3 worked" }; export const NO_FIND = "string or not to string"',
           'example4.js':
             'export default function() { return "example4 worked" }; export const NO_FIND = "please look away"',
+          'does-dynamic-import.js': `
+            export async function getRelativeTarget() {
+              return (await import('./dynamic-target.js')).default;
+            }
+            export async function getPackageTarget() {
+              return (await import('dynamic-target')).default;
+            }
+          `,
+          'dynamic-target.js': `
+            export default function() {
+              return 'relative dynamic target loaded OK';
+            }
+          `,
         },
         templates: {
           'dynamic-import.hbs': `<div data-test="dynamic-import-result">{{this.model.result}}</div>`,
@@ -162,6 +175,7 @@ appScenarios
           'allow-app-imports-test.js': `
             import { module, test } from 'qunit';
             import checkScripts from '../helpers/check-scripts';
+            import { getRelativeTarget, getPackageTarget } from '@ef4/app-template/lib/does-dynamic-import';
 
             module('Unit | allow-app-import', function () {
               test("check scripts smoke test", async function(assert) {
@@ -206,6 +220,14 @@ appScenarios
                   "expect to not find the 'example4 NO_FIND' in app-js because it's being consumed by webpack"
                 );
               })
+              test("dynamic relative import from inside the allowAppImports dir", async function (assert) {
+                let fn = await getRelativeTarget();
+                assert.equal(fn(), 'relative dynamic target loaded OK');
+              })
+              test("dynamic package import from inside the allowAppImports dir", async function (assert) {
+                let fn = await getPackageTarget();
+                assert.equal(fn(), 'package dynamic target loaded OK');
+              })
             });
           `,
         },
@@ -221,6 +243,15 @@ appScenarios
           'vanilla.js': `export const name = "vanilla";`,
           'chocolate.js': `export const name = "chocolate";`,
         },
+      },
+    });
+    project.addDevDependency('dynamic-target', {
+      files: {
+        'index.js': `
+          export default function() {
+            return 'package dynamic target loaded OK';
+          }
+        `,
       },
     });
   })

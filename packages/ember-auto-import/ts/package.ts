@@ -10,7 +10,7 @@ import {
   packageName as getPackageName,
 } from '@embroider/shared-internals';
 import semver from 'semver';
-import type { TransformOptions } from '@babel/core';
+import type { PluginItem, TransformOptions } from '@babel/core';
 import { MacrosConfig } from '@embroider/macros/src/node';
 import minimatch from 'minimatch';
 import { stripQuery } from './util';
@@ -141,6 +141,19 @@ export default class Package {
     this._hasBabelDetails = true;
   }
 
+  // this is used for two things:
+  // - when interoperating with older versions of ember-auto-import, it's used
+  //   to configure the parser that we use to analyze source code. The parser
+  //   cares about the user's babel config so it will support all the same
+  //   syntax. (Newer EAI versions don't need to do this because they use the
+  //   faster analyzer that happens inside the existing babel parse.)
+  // - when transpiling parts of the app itself that are configured with
+  //   allowAppImports. It would be surprising if these didn't get transpiled
+  //   with the same babel config that the rest of the app is getting. There is,
+  //   however, one exception: if the user has added
+  //   ember-auto-import/babel-plugin to get dynamic import support, we need to
+  //   remove that because inside the natively webpack-owned area it's not
+  //   needed and would actually break dynamic imports.
   get babelOptions(): TransformOptions {
     this._ensureBabelDetails();
     return this._babelOptions;
@@ -187,7 +200,11 @@ export default class Package {
 
     if (babelOptions.plugins) {
       babelOptions.plugins = babelOptions.plugins.filter(
-        (p: any) => !p._parallelBabel
+        // removing the weird "_parallelBabel" entry that's only used by
+        // broccoli-babel-transpiler and removing our own dynamic import babel
+        // plugin if it was added (because it's only correct to use it against
+        // the classic ember build, not the webpack-owned parts of the build.
+        (p: any) => !p._parallelBabel && !isEAIBabelPlugin(p)
       );
     }
 
@@ -673,4 +690,23 @@ function ensureTrailingSlash(url: string): string {
     url = url + '/';
   }
   return url;
+}
+
+function isEAIBabelPlugin(item: PluginItem) {
+  let pluginPath: string | undefined;
+  if (typeof item === 'string') {
+    pluginPath = item;
+  } else if (
+    Array.isArray(item) &&
+    item.length > 0 &&
+    typeof item[0] === 'string'
+  ) {
+    pluginPath = item[0];
+  }
+
+  if (pluginPath) {
+    return /ember-auto-import[\\/]babel-plugin/.test(pluginPath);
+  }
+
+  return (item as any).baseDir?.() === __dirname;
 }
