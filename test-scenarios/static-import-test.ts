@@ -43,6 +43,7 @@ function staticImportTest(project: Project) {
               ],
               allowAppImports: [
                'lib/**',
+               '**/*.txt',
                'assets/*.specialfile',
               ],
               webpack: {
@@ -51,6 +52,10 @@ function staticImportTest(project: Project) {
                     {
                       test: /\.specialfile/,
                       use: 'specialfile-loader',
+                    },
+                    {
+                      test: /\.txt/,
+                      type: 'asset/resource',
                     },
                   ],
                 },
@@ -64,6 +69,17 @@ function staticImportTest(project: Project) {
       'reexport.js': `
           export { default as innerLib } from 'inner-lib';
         `,
+      'uses-an-asset.js': `
+        import txtURL from './images/example.txt';
+        export default async function fetchTxt() {
+          let response = await fetch(txtURL);
+          let body = await response.text();
+          return body;
+        }
+      `,
+      images: {
+        'example.txt': 'here is some text',
+      },
       components: {
         'hello-world.js': `
             import Component from '@ember/component';
@@ -191,6 +207,17 @@ function staticImportTest(project: Project) {
               });
             });
           `,
+        'asset-test.js': `
+          import { module, test } from 'qunit';
+          import loadTxt from '@ef4/app-template/uses-an-asset';
+
+          module('Unit | reexports are found', function () {
+            test('can load an asset URL', async function (assert) {
+              let txt = await loadTxt();
+              assert.equal(txt, 'here is some text');
+            });
+          });        
+        `,
         'import-into-tests-test.js': `
             import { module, test } from 'qunit';
             import { capitalize } from 'lodash-es';
