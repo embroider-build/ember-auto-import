@@ -41,7 +41,7 @@ Scenarios.fromProject(baseApp)
         unit: {
           'asset-test.js': `
             import { module, test } from 'qunit';
-            import * as example from 'images/thing.png';
+            import example from 'images/thing.png';
 
             module('Unit | webpack5', function () {
               test('can use webpack5 asset loading', function (assert) {

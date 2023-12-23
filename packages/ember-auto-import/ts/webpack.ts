@@ -74,8 +74,12 @@ module.exports = (function(){
     {{! this is only used for synchronous importSync() using a template string }}
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
+  {{!- es compatibility. Where we're using "require", webpack doesn't necessarily know to apply its own ES compatibility stuff -}}
+  function esc(m) {
+    return m && m.__esModule ? m : Object.assign({ default: m }, m);
+  }
   {{#each staticImports as |module|}}
-    d('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.specifier}}'), function() { return require('{{js-string-escape module.specifier}}'); });
+    d('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.specifier}}'), function() { return esc(require('{{js-string-escape module.specifier}}')); });
   {{/each}}
   {{#each dynamicImports as |module|}}
     d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.specifier}}'); });
@@ -83,7 +87,7 @@ module.exports = (function(){
   {{#each staticTemplateImports as |module|}}
     d('_eai_sync_{{js-string-escape module.key}}', [], function() {
       return function({{module.args}}) {
-        return require({{{module.template}}});
+        return esc(require({{{module.template}}}));
       }
     });
   {{/each}}
