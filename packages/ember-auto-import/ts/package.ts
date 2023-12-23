@@ -638,6 +638,7 @@ export default class Package {
         [
           require.resolve('@babel/preset-env'),
           {
+            bugfixes: true,
             modules: false,
             targets: parent.targets,
           },
