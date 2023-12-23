@@ -1,4 +1,15 @@
 # Changelog
+## Release (2023-12-23)
+
+ember-auto-import 2.7.2 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#605](https://github.com/embroider-build/ember-auto-import/pull/605) Add es-compat to make asset loaders work as expected ([@ef4](https://github.com/ef4))
+  * [#606](https://github.com/embroider-build/ember-auto-import/pull/606) Fix dynamic import inside allowAppImports dirs ([@ef4](https://github.com/ef4))
+
+#### Committers: 1
+- Edward Faulkner ([@ef4](https://github.com/ef4))
 ## Release (2023-12-12)
 
 ember-auto-import 2.7.1 (patch)
