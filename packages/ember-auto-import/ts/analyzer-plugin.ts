@@ -1,6 +1,7 @@
 import type { types as t, NodePath } from '@babel/core';
 import type * as Babel from '@babel/core';
 import { ImportSyntax, serialize } from './analyzer-syntax';
+import assert from 'assert';
 
 interface State {
   imports: ImportSyntax[];
@@ -43,55 +44,68 @@ function analyzerPlugin(babel: typeof Babel) {
           path.unshiftContainer('body', meta);
         },
       },
-      CallExpression(path: NodePath<t.CallExpression>, state: State) {
-        if (state.handled.has(path.node)) {
-          // We see the same CallExpression multiple times if it has a
-          // TemplateLiteral argument and another plugin or preset is rewriting
-          // TemplateLiterals to something else. We need to guard against that
-          // because the first time is fine and we capture our analysis, but the
-          // second time would cause us to throw an exception when we see an
-          // illegal argument.
+      EmptyStatement(path: NodePath<t.EmptyStatement>, state: State) {
+        if (!path.node.extra?.E_A_I_END) {
           return;
         }
-        let callee = path.get('callee');
-        if (callee.type === 'Import') {
-          state.imports.push(processImportCallExpression(path, true));
-          state.handled.add(path.node);
-        } else if (
-          callee.isIdentifier() &&
-          callee.referencesImport('@embroider/macros', 'importSync')
-        ) {
-          state.imports.push(processImportCallExpression(path, false));
-          state.handled.add(path.node);
-        }
-      },
-      ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: State) {
-        if (erasedImportKinds.has(path.node.importKind)) return;
-        state.imports.push({
-          isDynamic: false,
-          specifier: path.node.source.value,
-        });
-      },
-      ExportNamedDeclaration(
-        path: NodePath<t.ExportNamedDeclaration>,
-        state: State
-      ) {
-        if (!path.node.source) return;
-        if (erasedExportKinds.has(path.node.exportKind)) return;
-        state.imports.push({
-          isDynamic: false,
-          specifier: path.node.source.value,
-        });
-      },
-      ExportAllDeclaration(
-        path: NodePath<t.ExportAllDeclaration>,
-        state: State
-      ) {
-        if (erasedExportKinds.has(path.node.exportKind)) return;
-        state.imports.push({
-          isDynamic: false,
-          specifier: path.node.source.value,
-        });
+        assert(path.parent.type === 'Program');
+        babel.traverse(
+          path.parent,
+          {
+            CallExpression(path: NodePath<t.CallExpression>, state) {
+              if (state.handled.has(path.node)) {
+                // We see the same CallExpression multiple times if it has a
+                // TemplateLiteral argument and another plugin or preset is rewriting
+                // TemplateLiterals to something else. We need to guard against that
+                // because the first time is fine and we capture our analysis, but the
+                // second time would cause us to throw an exception when we see an
+                // illegal argument.
+                return;
+              }
+              let callee = path.get('callee');
+              if (callee.type === 'Import') {
+                state.imports.push(processImportCallExpression(path, true));
+                state.handled.add(path.node);
+              } else if (
+                callee.isIdentifier() &&
+                callee.referencesImport('@embroider/macros', 'importSync')
+              ) {
+                state.imports.push(processImportCallExpression(path, false));
+                state.handled.add(path.node);
+              }
+            },
+            ImportDeclaration(path: NodePath<t.ImportDeclaration>, state) {
+              if (erasedImportKinds.has(path.node.importKind)) return;
+              state.imports.push({
+                isDynamic: false,
+                specifier: path.node.source.value,
+              });
+            },
+            ExportNamedDeclaration(
+              path: NodePath<t.ExportNamedDeclaration>,
+              state
+            ) {
+              if (!path.node.source) return;
+              if (erasedExportKinds.has(path.node.exportKind)) return;
+              state.imports.push({
+                isDynamic: false,
+                specifier: path.node.source.value,
+              });
+            },
+            ExportAllDeclaration(
+              path: NodePath<t.ExportAllDeclaration>,
+              state
+            ) {
+              if (erasedExportKinds.has(path.node.exportKind)) return;
+              state.imports.push({
+                isDynamic: false,
+                specifier: path.node.source.value,
+              });
+            },
+          },
+          path.scope,
+          state
+        );
       },
     },
   };
