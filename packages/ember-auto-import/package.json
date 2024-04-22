@@ -17,7 +17,7 @@
   "main": "js/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ef4/ember-auto-import",
+    "url": "https://github.com/ember-auto-import/ember-auto-import",
     "directory": "packages/ember-auto-import"
   },
   "scripts": {
