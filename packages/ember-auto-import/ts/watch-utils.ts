@@ -9,6 +9,9 @@ type PackageEntryPoints = {
   [subpath: string]: ConditionToPath[];
 };
 
+/**
+ * Given a list of files, it will return the smallest set of directories that contain all these files
+ */
 export function commonAncestorDirectories(dirs: string[]): string[] {
   return dirs.reduce((results, fileOrDir) => {
     let dir = dirname(fileOrDir);
@@ -29,6 +32,10 @@ export function commonAncestorDirectories(dirs: string[]): string[] {
   }, [] as string[]);
 }
 
+/**
+ * Given a path to a package, it will return all its internal(!) module files that are importable,
+ * taking into account explicit package.json exports, filtered down to only include importable runtime code
+ */
 export async function getImportableModules(
   packagePath: string
 ): Promise<string[]> {
@@ -51,11 +58,17 @@ export async function getImportableModules(
     .filter((item, index, array) => array.indexOf(item) === index);
 }
 
+/**
+ * Given a package path, it will return the list smallest set of directories that contain importable code.
+ * This can be used to constrain the set of directories used for file watching, to not include the whole package directory.
+ */
 export async function getWatchedDirectories(
   packagePath: string
 ): Promise<string[]> {
-  const modules = (await getImportableModules(packagePath)).filter(
-    (module) => module !== './addon-main.cjs'
+  const modules = (await getImportableModules(packagePath)).filter((module) =>
+    // this is a workaround for excluding the addon-main.cjs module commonly used in v2 addons, which is _not_ importable in runtime code,
+    // but the generic logic based on (conditional) exports does not exclude that out of the box.
+    module.match(/\/addon-main.c?js$/)
   );
   return commonAncestorDirectories(modules);
 }
