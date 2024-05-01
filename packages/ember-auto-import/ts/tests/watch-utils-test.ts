@@ -91,7 +91,7 @@ Qmodule('importableModules', function (hooks) {
       exports: './dist/index.js',
     });
 
-    const result = await getImportableModules(project.baseDir);
+    const result = getImportableModules(project.baseDir);
 
     assert.deepEqual(result, ['./dist/index.js']);
   });
@@ -106,7 +106,7 @@ Qmodule('importableModules', function (hooks) {
       },
     });
 
-    const result = await getImportableModules(project.baseDir);
+    const result = getImportableModules(project.baseDir);
 
     assert.deepEqual(result, ['./dist/index.js']);
   });
@@ -124,7 +124,7 @@ Qmodule('importableModules', function (hooks) {
       },
     });
 
-    const result = await getImportableModules(project.baseDir);
+    const result = getImportableModules(project.baseDir);
 
     assert.deepEqual(result, ['./dist/index.js']);
   });
@@ -139,7 +139,7 @@ Qmodule('importableModules', function (hooks) {
       },
     });
 
-    const result = await getImportableModules(project.baseDir);
+    const result = getImportableModules(project.baseDir);
 
     assert.deepEqual(result, ['./dist/index.js']);
   });
@@ -156,7 +156,7 @@ Qmodule('importableModules', function (hooks) {
       },
     });
 
-    const result = await getImportableModules(project.baseDir);
+    const result = getImportableModules(project.baseDir);
 
     assert.deepEqual(result, ['./dist/index.js']);
   });
@@ -179,7 +179,7 @@ Qmodule('importableModules', function (hooks) {
       },
     });
 
-    const result = await getImportableModules(project.baseDir);
+    const result = getImportableModules(project.baseDir);
 
     assert.deepEqual(result, [
       './dist/index.js',
@@ -202,7 +202,7 @@ Qmodule('importableModules', function (hooks) {
       },
     });
 
-    const result = await getImportableModules(project.baseDir);
+    const result = getImportableModules(project.baseDir);
 
     assert.deepEqual(result, [
       './dist/index.js',
@@ -216,7 +216,7 @@ Qmodule('importableModules', function (hooks) {
       main: './dist/index.js',
     });
 
-    const result = await getImportableModules(project.baseDir);
+    const result = getImportableModules(project.baseDir);
 
     assert.deepEqual(result, [
       './declarations/index.d.ts',
@@ -262,7 +262,7 @@ Qmodule('getWatchedDirectories', function (hooks) {
       }
     );
 
-    const result = await getWatchedDirectories(project.baseDir);
+    const result = getWatchedDirectories(project.baseDir);
 
     assert.deepEqual(result, ['./dist']);
   });
