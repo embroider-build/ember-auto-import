@@ -4,7 +4,7 @@ import {
   commonAncestorDirectories,
   getImportableModules,
   getWatchedDirectories,
-} from '../util';
+} from '../watch-utils';
 import { Project } from 'scenario-tester';
 
 const { module: Qmodule, test } = QUnit;
