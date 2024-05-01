@@ -1,11 +1,15 @@
 import QUnit from 'qunit';
 import 'qunit-assertions-extra';
-import { commonAncestorDirectories, getImportableModules } from '../util';
+import {
+  commonAncestorDirectories,
+  getImportableModules,
+  getWatchedDirectories,
+} from '../util';
 import { Project } from 'scenario-tester';
 
 const { module: Qmodule, test } = QUnit;
 
-async function generateProject(packageJson = {}) {
+async function generateProject(packageJson = {}, additionalFiles = {}) {
   const project = new Project('my-package', {
     files: {
       'package.json': JSON.stringify(packageJson),
@@ -33,6 +37,7 @@ async function generateProject(packageJson = {}) {
       lib: {
         'module.js': 'export default 123',
       },
+      ...additionalFiles,
     },
   });
 
@@ -227,5 +232,38 @@ Qmodule('importableModules', function (hooks) {
       './src/module.js',
       './src/nested/module.js',
     ]);
+  });
+});
+
+Qmodule('getWatchedDirectories', function (hooks) {
+  let project: Project;
+
+  hooks.afterEach(function (this: any) {
+    project?.dispose();
+  });
+
+  test('returns only dist for typical v2 addon', async function (assert) {
+    project = await generateProject(
+      {
+        exports: {
+          '.': {
+            types: './declarations/index.d.ts',
+            default: './dist/index.js',
+          },
+          './*': {
+            types: './declarations/*.d.ts',
+            default: './dist/*.js',
+          },
+          './addon-main.js': './addon-main.cjs',
+        },
+      },
+      {
+        'addon-main.cjs': 'module.exports = {}',
+      }
+    );
+
+    const result = await getWatchedDirectories(project.baseDir);
+
+    assert.deepEqual(result, ['./dist']);
   });
 });
