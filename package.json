@@ -13,6 +13,7 @@
     "watch": "cd packages/ember-auto-import && npm run compile -- --watch"
   },
   "dependencies": {
+    "pkg-entry-points": "^1.0.2",
     "resolve-package-path": "^3.1.0",
     "semver": "^7.3.5"
   },
