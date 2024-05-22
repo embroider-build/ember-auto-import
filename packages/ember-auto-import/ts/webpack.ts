@@ -109,6 +109,20 @@ module.exports = (function(){
   publicAssetURL: string | undefined;
 }) => string;
 
+const strictEntryTemplate = compile(
+  `
+{{#each staticImports as |module index|}}
+  import * as m{{index}} from "{{js-string-escape module.specifier}}";
+  System.register('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.specifier}}'), function(_export, _context) {
+    for (let [key, value] of Object.entries(m{{index}})) {
+      _export(key, value);
+    }
+  });
+{{/each}}
+`,
+  { noEscape: true }
+) as (args: { staticImports: { specifier: string }[] }) => string;
+
 // this goes in a file by itself so we can tell webpack not to parse it. That
 // allows us to grab the "require" and "define" from our enclosing scope without
 // webpack messing with them.
@@ -167,10 +181,13 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
     let entry: { [name: string]: string[] } = {};
     this.opts.bundles.names.forEach((bundle) => {
-      entry[bundle] = [
-        join(stagingDir, 'l.cjs'),
-        join(stagingDir, `${bundle}.cjs`),
-      ];
+      let config: string[];
+      if (this.opts.strictLoaderKey) {
+        config = [join(stagingDir, `${bundle}.mjs`)];
+      } else {
+        config = [join(stagingDir, 'l.cjs'), join(stagingDir, `${bundle}.cjs`)];
+      }
+      entry[bundle] = config;
     });
 
     let { plugin: stylePlugin, loader: styleLoader } = this.setupStyleLoader();
@@ -191,8 +208,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
         publicPath: this.opts.rootPackage.publicAssetURL(),
         filename: `chunk.[id].[chunkhash].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,
-        libraryTarget: 'var',
-        library: '__ember_auto_import__',
+        library: {
+          name: '__ember_auto_import__',
+          type: this.opts.strictLoaderKey ? 'system' : 'var',
+        },
       },
       optimization: {
         splitChunks: {
@@ -355,6 +374,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
       'ember-auto-import',
       this.opts.rootPackage.root
     );
+
+    let externalType = this.opts.strictLoaderKey ? 'system' : 'commonjs';
+
     return (params, callback) => {
       let { context, request, contextInfo } = params;
       if (!context || !request) {
@@ -405,7 +427,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         } else {
           // use ember's module because this is part of the app that doesn't match allowAppImports
           this.externalizedByUs.add(request);
-          return callback(undefined, 'commonjs ' + request);
+          return callback(undefined, `${externalType} ${request}`);
         }
       }
 
@@ -420,7 +442,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
       if (pkg.isV2Addon() && pkg.meta.externals?.includes(name)) {
         this.externalizedByUs.add(request);
-        return callback(undefined, 'commonjs ' + request);
+        return callback(undefined, `${externalType} ${request}`);
       }
 
       try {
@@ -434,7 +456,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           // the package exists but it is a v1 ember addon, so it's not
           // resolvable at build time, so we externalize it.
           this.externalizedByUs.add(request);
-          return callback(undefined, 'commonjs ' + request);
+          return callback(undefined, `${externalType} ${request}`);
         }
       } catch (err) {
         if (err.code !== 'MODULE_NOT_FOUND') {
@@ -442,7 +464,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         }
         // real package doesn't exist, so externalize it
         this.externalizedByUs.add(request);
-        return callback(undefined, 'commonjs ' + request);
+        return callback(undefined, `${externalType} ${request}`);
       }
     };
   }
@@ -494,7 +516,9 @@ export default class WebpackBundler extends Plugin implements Bundler {
     for (let [bundle, deps] of bundleDeps.entries()) {
       this.writeEntryFile(bundle, deps);
     }
-    this.writeLoaderFile();
+    if (!this.opts.strictLoaderKey) {
+      this.writeLoaderFile();
+    }
     this.linkDeps(bundleDeps);
     let stats = await this.runWebpack();
     this.lastBuildResult = this.summarizeStats(stats, bundleDeps);
@@ -621,18 +645,27 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private writeEntryFile(name: string, deps: BundleDependencies) {
-    writeFileSync(
-      join(this.stagingDir, `${name}.cjs`),
-      entryTemplate({
-        staticImports: deps.staticImports,
-        dynamicImports: deps.dynamicImports,
-        dynamicTemplateImports:
-          deps.dynamicTemplateImports.map(mapTemplateImports),
-        staticTemplateImports:
-          deps.staticTemplateImports.map(mapTemplateImports),
-        publicAssetURL: this.opts.rootPackage.publicAssetURL(),
-      })
-    );
+    if (this.opts.strictLoaderKey) {
+      writeFileSync(
+        join(this.stagingDir, `${name}.mjs`),
+        strictEntryTemplate({
+          staticImports: deps.staticImports,
+        })
+      );
+    } else {
+      writeFileSync(
+        join(this.stagingDir, `${name}.cjs`),
+        entryTemplate({
+          staticImports: deps.staticImports,
+          dynamicImports: deps.dynamicImports,
+          dynamicTemplateImports:
+            deps.dynamicTemplateImports.map(mapTemplateImports),
+          staticTemplateImports:
+            deps.staticTemplateImports.map(mapTemplateImports),
+          publicAssetURL: this.opts.rootPackage.publicAssetURL(),
+        })
+      );
+    }
   }
 
   private writeLoaderFile() {

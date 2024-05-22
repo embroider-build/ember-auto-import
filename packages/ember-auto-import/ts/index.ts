@@ -63,4 +63,19 @@ module.exports = {
       return tree;
     }
   },
+
+  // new-enough versions of ember-cli will invoke this when the
+  // strict-es-modules optional feature is enabled. It invites ember-auto-import
+  // to participate in the VERY INTENTIONALLY PRIVATE runtime systemjs loader
+  // that powers classic builds when strict-es-modules is enabled.
+  enableStrictESModules(privateLoaderKey: string) {
+    let instance = AutoImport.lookup(this);
+    if (typeof instance.enableStrictESModules === 'function') {
+      instance.enableStrictESModules(privateLoaderKey);
+    } else {
+      throw new Error(
+        `The leading copy of ember-auto-import is not new enough to work with strict-es-modules`
+      );
+    }
+  },
 };

@@ -17,6 +17,7 @@ export interface BundlerOptions {
   webpack: typeof webpack;
   v2Addons: Map<string, string>;
   rootPackage: Package;
+  strictLoaderKey: string | undefined;
 }
 
 export interface BuildResult {

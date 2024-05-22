@@ -43,6 +43,7 @@ export interface AutoImportSharedAPI {
   included(addonInstance: AddonInstance): void;
   addTo(tree: Node): Node;
   registerV2Addon(packageName: string, packageRoot: string): void;
+  enableStrictESModules?(loaderKey: string): void;
 }
 
 export default class AutoImport implements AutoImportSharedAPI {
@@ -51,6 +52,7 @@ export default class AutoImport implements AutoImportSharedAPI {
   private consoleWrite: (msg: string) => void;
   private analyzers: Map<Analyzer, Package> = new Map();
   private bundles: BundleConfig;
+  private strictLoaderKey: string | undefined;
 
   // maps packageName to packageRoot
   private v2Addons = new Map<string, string>();
@@ -122,6 +124,10 @@ export default class AutoImport implements AutoImportSharedAPI {
     this.v2Addons.set(packageName, packageRoot);
   }
 
+  enableStrictESModules(loaderKey: string): void {
+    this.strictLoaderKey = loaderKey;
+  }
+
   private makeBundler(allAppTree: Node): Bundler {
     // this is a concession to compatibility with ember-cli's treeForApp
     // merging. Addons are allowed to inject modules into the app, and it's
@@ -166,6 +172,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       webpack,
       v2Addons: this.v2Addons,
       rootPackage: this.rootPackage,
+      strictLoaderKey: this.strictLoaderKey,
     });
   }
 
