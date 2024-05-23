@@ -118,6 +118,7 @@ const strictEntryTemplate = compile(
     for (let [key, value] of Object.entries(m{{index}})) {
       _export(key, value);
     }
+    return { execute: () => {} }
   });
 {{/each}}
 `,
