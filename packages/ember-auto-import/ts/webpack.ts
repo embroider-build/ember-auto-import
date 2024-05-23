@@ -27,6 +27,7 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import minimatch from 'minimatch';
 import { TransformOptions } from '@babel/core';
 import { stripQuery } from './util';
+import ReplacePlugin from './replace-plugin';
 
 const EXTENSIONS = ['.js', '.ts', '.json'];
 
@@ -113,7 +114,7 @@ const strictEntryTemplate = compile(
   `
 {{#each staticImports as |module index|}}
   import * as m{{index}} from "{{js-string-escape module.specifier}}";
-  System.register('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.specifier}}'), function(_export, _context) {
+  {{../strictLoaderKey}}.register('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.specifier}}'), function(_export, _context) {
     for (let [key, value] of Object.entries(m{{index}})) {
       _export(key, value);
     }
@@ -121,7 +122,10 @@ const strictEntryTemplate = compile(
 {{/each}}
 `,
   { noEscape: true }
-) as (args: { staticImports: { specifier: string }[] }) => string;
+) as (args: {
+  staticImports: { specifier: string }[];
+  strictLoaderKey: string;
+}) => string;
 
 // this goes in a file by itself so we can tell webpack not to parse it. That
 // allows us to grab the "require" and "define" from our enclosing scope without
@@ -241,7 +245,16 @@ export default class WebpackBundler extends Plugin implements Bundler {
           ...removeUndefined([...this.opts.packages].map((pkg) => pkg.aliases))
         ),
       },
-      plugins: removeUndefined([stylePlugin]),
+      plugins: removeUndefined([
+        stylePlugin,
+        this.opts.strictLoaderKey
+          ? new ReplacePlugin([
+              // webpack's systemJS mode doesn't allow customization of the
+              // System global. So we replace it after-the-fact.
+              [/System\.register/g, `${this.opts.strictLoaderKey}.register`],
+            ])
+          : undefined,
+      ]),
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.cjs'),
         rules: [
@@ -650,6 +663,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         join(this.stagingDir, `${name}.mjs`),
         strictEntryTemplate({
           staticImports: deps.staticImports,
+          strictLoaderKey: this.opts.strictLoaderKey,
         })
       );
     } else {
