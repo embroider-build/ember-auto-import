@@ -27,7 +27,6 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import minimatch from 'minimatch';
 import { TransformOptions } from '@babel/core';
 import { stripQuery } from './util';
-import ReplacePlugin from './replace-plugin';
 
 const EXTENSIONS = ['.js', '.ts', '.json'];
 
@@ -215,7 +214,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         chunkFilename: `chunk.[id].[chunkhash].js`,
         library: {
           name: '__ember_auto_import__',
-          type: this.opts.strictLoaderKey ? 'system' : 'var',
+          type: 'var',
         },
       },
       optimization: {
@@ -246,16 +245,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           ...removeUndefined([...this.opts.packages].map((pkg) => pkg.aliases))
         ),
       },
-      plugins: removeUndefined([
-        stylePlugin,
-        this.opts.strictLoaderKey
-          ? new ReplacePlugin([
-              // webpack's systemJS mode doesn't allow customization of the
-              // System global. So we replace it after-the-fact.
-              [/System\.register/g, `${this.opts.strictLoaderKey}.register`],
-            ])
-          : undefined,
-      ]),
+      plugins: removeUndefined([stylePlugin]),
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.cjs'),
         rules: [
@@ -389,7 +379,19 @@ export default class WebpackBundler extends Plugin implements Bundler {
       this.opts.rootPackage.root
     );
 
-    let externalType = this.opts.strictLoaderKey ? 'system' : 'commonjs';
+    let externalType = this.opts.strictLoaderKey
+      ? (id: string) =>
+          /* the externals we're getting from systemjs are always formatted as
+          modules. But webpack doesn't automatically have any interop for them,
+          so we need to mark them here.
+
+          The syntax here is weird, but only because the webpack-ism here is
+          that we're returning an eternalType of "promise" followed by an
+          arbitrary javascript expression that's supposed to result in a promise
+          that gives back the external module.
+          */
+          `promise (async () => { let m = await ${this.opts.strictLoaderKey}.import('${id}'); m.__esModule = true; return m })()`
+      : (id: string) => `commonjs ${id}`;
 
     return (params, callback) => {
       let { context, request, contextInfo } = params;
@@ -441,7 +443,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         } else {
           // use ember's module because this is part of the app that doesn't match allowAppImports
           this.externalizedByUs.add(request);
-          return callback(undefined, `${externalType} ${request}`);
+          return callback(undefined, externalType(request));
         }
       }
 
@@ -456,7 +458,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
       if (pkg.isV2Addon() && pkg.meta.externals?.includes(name)) {
         this.externalizedByUs.add(request);
-        return callback(undefined, `${externalType} ${request}`);
+        return callback(undefined, externalType(request));
       }
 
       try {
@@ -470,7 +472,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           // the package exists but it is a v1 ember addon, so it's not
           // resolvable at build time, so we externalize it.
           this.externalizedByUs.add(request);
-          return callback(undefined, `${externalType} ${request}`);
+          return callback(undefined, externalType(request));
         }
       } catch (err) {
         if (err.code !== 'MODULE_NOT_FOUND') {
@@ -478,7 +480,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         }
         // real package doesn't exist, so externalize it
         this.externalizedByUs.add(request);
-        return callback(undefined, `${externalType} ${request}`);
+        return callback(undefined, externalType(request));
       }
     };
   }
