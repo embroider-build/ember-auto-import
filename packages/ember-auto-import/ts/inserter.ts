@@ -23,7 +23,6 @@ interface ScriptTarget {
   // inserted after particular files in the HTML (vendor.js and
   // test-support.js). Other custom bundles won't have this.
   afterFile: string | undefined;
-  inserted: boolean;
 }
 
 interface StyleTarget {
@@ -33,7 +32,6 @@ interface StyleTarget {
   // inserted after particular files in the HTML (vendor.css and
   // test-support.css). Other custom bundles won't have this.
   afterFile: string | undefined;
-  inserted: boolean;
 }
 
 interface Targets {
@@ -134,6 +132,12 @@ export class Inserter extends Plugin {
       );
     }
 
+    if (includesTests(targets, ast, this.options)) {
+      targets = useTestTargets(targets);
+    }
+
+    let inserted: { kind: 'script' | 'styles'; bundleName: string }[] = [];
+
     traverse(ast, (element) => {
       if (this.options.insertScriptsAt) {
         if (element.tagName === this.options.insertScriptsAt) {
@@ -148,7 +152,8 @@ export class Inserter extends Plugin {
             fastbootInfo,
             stringInserter,
             element,
-            entrypoint.value
+            entrypoint.value,
+            inserted
           );
         }
       } else if (element.tagName === 'script') {
@@ -160,7 +165,8 @@ export class Inserter extends Plugin {
             fastbootInfo,
             stringInserter,
             element,
-            src
+            src,
+            inserted
           );
         }
       }
@@ -177,7 +183,8 @@ export class Inserter extends Plugin {
             targets,
             stringInserter,
             element,
-            entrypoint.value
+            entrypoint.value,
+            inserted
           );
         }
       } else if (element.tagName === 'link') {
@@ -189,7 +196,7 @@ export class Inserter extends Plugin {
           let href = element.attrs.find((a) => a.name === 'href')?.value;
           if (href) {
             debug(`found stylesheet with href=%s`, href);
-            this.insertStyles(targets, stringInserter, element, href);
+            this.insertStyles(targets, stringInserter, element, href, inserted);
           }
         }
       }
@@ -198,10 +205,14 @@ export class Inserter extends Plugin {
     let appScripts = [...targets.scripts].find(
       (entry) => entry.bundleName === 'app'
     );
-    if (appScripts && !appScripts.inserted) {
+
+    if (
+      appScripts &&
+      !inserted.find((i) => i.bundleName === 'app' && i.kind === 'script')
+    ) {
       if (this.options.insertScriptsAt) {
         throw new Error(
-          `ember-auto-import cannot find <${this.options.insertScriptsAt} entrypoint="${appScripts.bundleName}"> in ${filename}.`
+          `ember-auto-import cannot find <${this.options.insertScriptsAt} entrypoint="app"> in ${filename}.`
         );
       } else {
         throw new Error(
@@ -213,7 +224,10 @@ export class Inserter extends Plugin {
     let appStyles = [...targets.styles.values()].find(
       (entry) => entry.bundleName === 'app'
     );
-    if (appStyles && !appStyles.inserted) {
+    if (
+      appStyles &&
+      !inserted.find((i) => i.bundleName === 'app' && i.kind === 'styles')
+    ) {
       if (this.options.insertStylesAt) {
         throw new Error(
           `ember-auto-import cannot find <${this.options.insertStylesAt} entrypoint="${appStyles.bundleName}"> in ${filename}.`
@@ -233,12 +247,13 @@ export class Inserter extends Plugin {
     fastbootInfo: ReturnType<typeof Inserter.prototype.fastbootManifestInfo>,
     stringInserter: StringInserter,
     element: parse5.Element,
-    src: string
+    src: string,
+    inserted: { kind: 'script' | 'styles'; bundleName: string }[]
   ) {
     for (let entry of targets.scripts) {
       if (entry.afterFile && src.endsWith(entry.afterFile)) {
         let { scriptChunks, bundleName } = entry;
-        entry.inserted = true;
+        inserted.push({ bundleName, kind: 'script' });
         debug(`inserting %s`, scriptChunks);
         let insertedSrc = scriptChunks
           .map((chunk) => `\n<script src="${this.chunkURL(chunk)}"></script>`)
@@ -272,7 +287,8 @@ export class Inserter extends Plugin {
     fastbootInfo: ReturnType<typeof Inserter.prototype.fastbootManifestInfo>,
     stringInserter: StringInserter,
     element: parse5.Element,
-    bundleName: string
+    bundleName: string,
+    insertedEntrypoints: { kind: 'script' | 'styles'; bundleName: string }[]
   ) {
     let loc = element.sourceCodeLocation!;
     stringInserter.remove(loc.startOffset, loc.endOffset - loc.startOffset);
@@ -281,7 +297,8 @@ export class Inserter extends Plugin {
         continue;
       }
       let { scriptChunks } = entry;
-      entry.inserted = true;
+      insertedEntrypoints.push({ bundleName, kind: 'script' });
+
       debug(`inserting %s`, scriptChunks);
       let tags = scriptChunks.map((chunk) =>
         this.scriptFromCustomElement(element, chunk)
@@ -307,7 +324,8 @@ export class Inserter extends Plugin {
     targets: Targets,
     stringInserter: StringInserter,
     element: parse5.Element,
-    bundleName: string
+    bundleName: string,
+    inserted: { kind: 'script' | 'styles'; bundleName: string }[]
   ) {
     let loc = element.sourceCodeLocation!;
     stringInserter.remove(loc.startOffset, loc.endOffset - loc.startOffset);
@@ -316,7 +334,8 @@ export class Inserter extends Plugin {
         continue;
       }
       let { styleChunks } = entry;
-      entry.inserted = true;
+      inserted.push({ kind: 'styles', bundleName });
+
       debug(`inserting %s`, styleChunks);
       let tags = styleChunks.map((chunk) =>
         this.styleFromCustomElement(element, chunk)
@@ -361,12 +380,14 @@ export class Inserter extends Plugin {
     targets: Targets,
     stringInserter: StringInserter,
     element: parse5.Element,
-    href: string
+    href: string,
+    inserted: { kind: 'script' | 'styles'; bundleName: string }[]
   ) {
     for (let entry of targets.styles) {
       if (entry.afterFile && href.endsWith(entry.afterFile)) {
-        let { styleChunks } = entry;
-        entry.inserted = true;
+        let { styleChunks, bundleName } = entry;
+
+        inserted.push({ kind: 'styles', bundleName });
         debug(`inserting %s`, styleChunks);
         stringInserter.insert(
           element.sourceCodeLocation!.endOffset,
@@ -430,7 +451,6 @@ export class Inserter extends Plugin {
           scriptChunks,
           bundleName,
           afterFile,
-          inserted: false,
         });
       }
       let styleChunks = assets.filter((a) => a.endsWith('.css'));
@@ -443,7 +463,6 @@ export class Inserter extends Plugin {
           styleChunks,
           bundleName,
           afterFile,
-          inserted: false,
         });
       }
     }
@@ -502,4 +521,52 @@ function traverse(node: parse5.ParentNode, fn: (elt: parse5.Element) => void) {
       traverse(child, fn);
     }
   }
+}
+
+function useTestTargets(targets: Targets): Targets {
+  const tests = targets.scripts.find((t) => t.bundleName === 'tests');
+  return {
+    scripts: targets.scripts.map((target) => {
+      if (target.bundleName === 'app') {
+        return { ...target, scriptChunks: tests!.scriptChunks };
+      } else if (target.bundleName === 'tests') {
+        return { ...target, scriptChunks: [] };
+      } else {
+        return target;
+      }
+    }),
+    styles: targets.styles,
+  };
+}
+
+function includesTests(
+  targets: Targets,
+  ast: parse5.Document,
+  options: InserterOptions
+): boolean {
+  const testScript = targets.scripts.find(
+    (script) => script.bundleName === 'tests'
+  );
+  if (!testScript) {
+    return false;
+  }
+  let foundTests = false;
+  traverse(ast, (element) => {
+    if (options.insertScriptsAt) {
+      if (element.tagName === options.insertScriptsAt) {
+        let entrypoint = element.attrs.find((a) => a.name === 'entrypoint');
+        if (entrypoint?.value === 'tests') {
+          foundTests = true;
+        }
+      }
+    } else {
+      if (element.tagName === 'script') {
+        let src = element.attrs.find((a) => a.name === 'src')?.value;
+        if (src && testScript.afterFile && src.endsWith(testScript.afterFile)) {
+          foundTests = true;
+        }
+      }
+    }
+  });
+  return foundTests;
 }
