@@ -525,12 +525,13 @@ function traverse(node: parse5.ParentNode, fn: (elt: parse5.Element) => void) {
 
 function useTestTargets(targets: Targets): Targets {
   const tests = targets.scripts.find((t) => t.bundleName === 'tests');
+  const hasApp = targets.scripts.some((t) => t.bundleName === 'app');
   return {
     scripts: targets.scripts.map((target) => {
       if (target.bundleName === 'app') {
         return { ...target, scriptChunks: tests!.scriptChunks };
       } else if (target.bundleName === 'tests') {
-        return { ...target, scriptChunks: [] };
+        return { ...target, scriptChunks: hasApp ? [] : tests!.scriptChunks };
       } else {
         return target;
       }
