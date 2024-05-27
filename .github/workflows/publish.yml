@@ -1,6 +1,6 @@
 # For every push to the master branch, this checks if the release-plan was
 # updated and if it was it will publish stable npm packages based on the
-# release plan
+# release plan
 
 name: Publish Stable
 
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   check-plan:
-    name: 'Check Release Plan'
+    name: "Check Release Plan"
     runs-on: ubuntu-latest
     outputs:
       command: ${{ steps.check-release.outputs.command }}
@@ -34,10 +34,13 @@ jobs:
         run: if git diff --name-only HEAD HEAD~1 | grep -w -q ".release-plan.json"; then echo "command=release"; fi >> $GITHUB_OUTPUT
 
   publish:
-    name: 'NPM Publish'
+    name: "NPM Publish"
     runs-on: ubuntu-latest
     needs: check-plan
     if: needs.check-plan.outputs.command == 'release'
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -46,11 +49,11 @@ jobs:
           node-version: 18
           # This creates an .npmrc that reads the NODE_AUTH_TOKEN environment variable
           registry-url: 'https://registry.npmjs.org'
-
+      
       - run: npm ci
       - name: npm publish
         run: npx release-plan publish
-
+      
         env:
           GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
