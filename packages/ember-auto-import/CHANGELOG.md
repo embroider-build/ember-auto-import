@@ -1,4 +1,19 @@
 # Changelog
+
+## Release (2024-05-27)
+
+ember-auto-import 2.7.3 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#620](https://github.com/embroider-build/ember-auto-import/pull/620) Improved layering between app and tests bundles ([@mansona](https://github.com/mansona))
+
+#### :house: Internal
+* [#625](https://github.com/embroider-build/ember-auto-import/pull/625) update release-plan ([@mansona](https://github.com/mansona))
+* [#622](https://github.com/embroider-build/ember-auto-import/pull/622) fix glob version on lts tests ([@mansona](https://github.com/mansona))
+
+#### Committers: 1
+- Chris Manson ([@mansona](https://github.com/mansona))
 ## Release (2023-12-23)
 
 ember-auto-import 2.7.2 (patch)
