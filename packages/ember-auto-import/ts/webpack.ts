@@ -114,8 +114,8 @@ const strictEntryTemplate = compile(
 {{#each staticImports as |module index|}}
   {{../strictLoaderKey}}.register('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.specifier}}'), (_export, _context) => ({
     async execute() {
-      // this is a webpack-handled import. It's intentionally not
-      // _context.import, which would be a systemjs import.
+      {{! this is a webpack-handled import. It's intentionally not
+          _context.import, which would be a systemjs import. !}}
       _export(await import("{{js-string-escape module.specifier}}"));
     } 
   }));
