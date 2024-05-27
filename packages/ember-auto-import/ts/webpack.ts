@@ -98,6 +98,9 @@ module.exports = (function(){
       }
     });
   {{/each}}
+  {{#if needsApp}}
+    require('./app.cjs');
+  {{/if}}
 })();
 `,
   { noEscape: true }
@@ -107,6 +110,7 @@ module.exports = (function(){
   staticTemplateImports: { key: string; args: string; template: string }[];
   dynamicTemplateImports: { key: string; args: string; template: string }[];
   publicAssetURL: string | undefined;
+  needsApp: boolean;
 }) => string;
 
 // this goes in a file by itself so we can tell webpack not to parse it. That
@@ -631,6 +635,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
         staticTemplateImports:
           deps.staticTemplateImports.map(mapTemplateImports),
         publicAssetURL: this.opts.rootPackage.publicAssetURL(),
+        needsApp: name === 'tests',
       })
     );
   }
