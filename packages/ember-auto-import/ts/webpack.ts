@@ -112,13 +112,13 @@ module.exports = (function(){
 const strictEntryTemplate = compile(
   `
 {{#each staticImports as |module index|}}
-  import * as m{{index}} from "{{js-string-escape module.specifier}}";
-  {{../strictLoaderKey}}.register('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.specifier}}'), function(_export, _context) {
-    for (let [key, value] of Object.entries(m{{index}})) {
-      _export(key, value);
-    }
-    return { execute: () => {} }
-  });
+  {{../strictLoaderKey}}.register('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.specifier}}'), (_export, _context) => ({
+    async execute() {
+      // this is a webpack-handled import. It's intentionally not
+      // _context.import, which would be a systemjs import.
+      _export(await import("{{js-string-escape module.specifier}}"));
+    } 
+  }));
 {{/each}}
 `,
   { noEscape: true }
