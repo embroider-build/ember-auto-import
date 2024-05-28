@@ -30,12 +30,14 @@ jobs:
         run: for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs npx eslint --
       - id: set-matrix
         working-directory: test-scenarios
-        run: echo "::set-output name=matrix::$(npm run --silent test:list -- --matrix 'npm run test -- --filter %s:')"
+        run: |
+          matrix_json=$(node --require ts-node/register ./suite-setup-util.ts)
+          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
 
   scenarios:
     needs: discover_matrix
     name: ${{ matrix.name }}
-    runs-on: ubuntu-latest
+    runs-on: '${{ matrix.os }}-latest'
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.discover_matrix.outputs.matrix)}}
