@@ -29,6 +29,9 @@ async function githubMatrix() {
     ...suites
       // only run release tests in windows for now as a smoke test and not slow down CI too much
       .filter(s => !['canary', 'beta', 'lts', 'ember3'].some(i => s.name.includes(i)))
+      // this test fails in windows because of a command imcompatibility with powershell.
+      // This is low priority but if someone had the time to look into PRs are welcome 👍
+      .filter(s => s.name !== 'release-sample-addon')
       .map(s => ({
         name: `${s.name} windows`,
         os: 'windows',
