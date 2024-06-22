@@ -254,7 +254,6 @@ export default class Package {
     let { pkg } = this;
     return (
       pkg.dependencies?.[packageName] ||
-      pkg.devDependencies?.[packageName] ||
       pkg.peerDependencies?.[packageName]
     );
   }
