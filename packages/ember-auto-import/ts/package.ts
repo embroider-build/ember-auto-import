@@ -253,8 +253,7 @@ export default class Package {
   requestedRange(packageName: string): string | undefined {
     let { pkg } = this;
     return (
-      pkg.dependencies?.[packageName] ||
-      pkg.peerDependencies?.[packageName]
+      pkg.dependencies?.[packageName] || pkg.peerDependencies?.[packageName]
     );
   }
 
