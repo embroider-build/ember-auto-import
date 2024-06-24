@@ -1,5 +1,20 @@
 # Changelog
 
+## Release (2024-06-24)
+
+ember-auto-import 2.7.4 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`
+  * [#629](https://github.com/embroider-build/ember-auto-import/pull/629) only check devDependencies when checking requested range of an app package ([@mansona](https://github.com/mansona))
+
+#### :house: Internal
+* `@ef4/test-scenarios`
+  * [#626](https://github.com/embroider-build/ember-auto-import/pull/626) setup windows tests ([@mansona](https://github.com/mansona))
+
+#### Committers: 1
+- Chris Manson ([@mansona](https://github.com/mansona))
+
 ## Release (2024-05-27)
 
 ember-auto-import 2.7.3 (patch)
