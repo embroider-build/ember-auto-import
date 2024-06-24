@@ -252,11 +252,15 @@ export default class Package {
   // package.json
   requestedRange(packageName: string): string | undefined {
     let { pkg } = this;
-    return (
-      pkg.dependencies?.[packageName] ||
-      pkg.devDependencies?.[packageName] ||
-      pkg.peerDependencies?.[packageName]
-    );
+    let result =
+      pkg.dependencies?.[packageName] || pkg.peerDependencies?.[packageName];
+
+    // only include devDeps if the package is an app
+    if (!result && !this.isAddon) {
+      result = pkg.devDependencies?.[packageName];
+    }
+
+    return result;
   }
 
   private hasNonDevDependency(name: string): boolean {
