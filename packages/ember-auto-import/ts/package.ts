@@ -14,6 +14,7 @@ import type { PluginItem, TransformOptions } from '@babel/core';
 import { MacrosConfig } from '@embroider/macros/src/node';
 import minimatch from 'minimatch';
 import { stripQuery } from './util';
+import { getWatchedDirectories } from './watch-utils';
 
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
@@ -514,13 +515,15 @@ export default class Package {
           for (let name of names) {
             let path = resolvePackagePath(name, cursor);
             if (!path) {
-              return undefined;
+              return [];
             }
             cursor = dirname(path);
           }
-          return cursor;
+          return getWatchedDirectories(cursor).map((relativeDir) =>
+            join(cursor, relativeDir)
+          );
         })
-        .filter(Boolean) as string[];
+        .flat();
     }
   }
 
