@@ -2,8 +2,8 @@
   "solution": {
     "ember-auto-import": {
       "impact": "patch",
-      "oldVersion": "2.7.2",
-      "newVersion": "2.7.3",
+      "oldVersion": "2.7.3",
+      "newVersion": "2.7.4",
       "constraints": [
         {
           "impact": "patch",
@@ -13,5 +13,5 @@
       "pkgJSONPath": "./packages/ember-auto-import/package.json"
     }
   },
-  "description": "## Release (2024-05-27)\n\nember-auto-import 2.7.3 (patch)\n\n#### :bug: Bug Fix\n* `ember-auto-import`, `@ef4/test-scenarios`\n  * [#620](https://github.com/embroider-build/ember-auto-import/pull/620) Improved layering between app and tests bundles ([@mansona](https://github.com/mansona), [@simonihmig](https://github.com/simonihmig))\n\n#### :house: Internal\n* [#625](https://github.com/embroider-build/ember-auto-import/pull/625) update release-plan ([@mansona](https://github.com/mansona))\n* [#622](https://github.com/embroider-build/ember-auto-import/pull/622) fix glob version on lts tests ([@mansona](https://github.com/mansona))\n\n#### Committers: 2\n- Chris Manson ([@mansona](https://github.com/mansona))\n- Simon Ihmig ([@simonihmig](https://github.com/simonihmig))\n"
+  "description": "## Release (2024-06-24)\n\nember-auto-import 2.7.4 (patch)\n\n#### :bug: Bug Fix\n* `ember-auto-import`\n  * [#629](https://github.com/embroider-build/ember-auto-import/pull/629) only check devDependencies when checking requested range of an app package ([@mansona](https://github.com/mansona))\n\n#### :house: Internal\n* `@ef4/test-scenarios`\n  * [#626](https://github.com/embroider-build/ember-auto-import/pull/626) setup windows tests ([@mansona](https://github.com/mansona))\n\n#### Committers: 1\n- Chris Manson ([@mansona](https://github.com/mansona))\n"
 }
