@@ -441,7 +441,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           return callback(undefined, 'commonjs ' + request);
         }
       } catch (err) {
-        if (err.code !== 'MODULE_NOT_FOUND') {
+        if ((err as NodeJS.ErrnoException).code !== 'MODULE_NOT_FOUND') {
           throw err;
         }
         // real package doesn't exist, so externalize it

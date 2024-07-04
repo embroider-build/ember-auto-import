@@ -317,7 +317,7 @@ Qmodule('splitter', function (hooks) {
       throw new Error(`expected not to get here, build was supposed to fail`);
     } catch (err) {
       assert.contains(
-        err.message,
+        err instanceof Error ? err.message : String(err),
         'Dynamic imports must target unambiguous package names'
       );
     }
@@ -333,7 +333,7 @@ Qmodule('splitter', function (hooks) {
       throw new Error(`expected not to get here, build was supposed to fail`);
     } catch (err) {
       assert.contains(
-        err.message,
+        err instanceof Error ? err.message : String(err),
         'Dynamic imports must target unambiguous package names'
       );
     }
@@ -349,7 +349,7 @@ Qmodule('splitter', function (hooks) {
       throw new Error(`expected not to get here, build was supposed to fail`);
     } catch (err) {
       assert.contains(
-        err.message,
+        err instanceof Error ? err.message : String(err),
         `ember-auto-import does not support dynamic relative imports. "./thing" is relative. To make this work, you need to upgrade to Embroider.`
       );
     }
