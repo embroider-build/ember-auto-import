@@ -5,8 +5,8 @@
   "dependencies": {
     "@types/qunit": "^2.11.1",
     "qunit": "^2.6.1",
+    "scenario-tester": "^4.0.0",
     "ts-node": "^10.9.2",
-    "scenario-tester": "^2.1.2",
     "jsdom": "^11.11.0"
   },
   "scripts": {
