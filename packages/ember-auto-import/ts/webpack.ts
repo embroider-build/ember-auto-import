@@ -11,7 +11,7 @@ import { join, dirname, resolve, relative, posix, isAbsolute } from 'path';
 import { createHash } from 'crypto';
 import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync, readFileSync } from 'fs';
-import { compile, registerHelper } from 'handlebars';
+import Handlebars from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies, ResolvedTemplateImport } from './splitter';
 import { BuildResult, Bundler, BundlerOptions } from './bundler';
@@ -32,8 +32,8 @@ const EXTENSIONS = ['.js', '.ts', '.json'];
 
 const debug = makeDebug('ember-auto-import:webpack');
 
-registerHelper('js-string-escape', jsStringEscape);
-registerHelper('join', function (list, connector) {
+Handlebars.registerHelper('js-string-escape', jsStringEscape);
+Handlebars.registerHelper('join', function (list, connector) {
   return list.join(connector);
 });
 
@@ -56,9 +56,9 @@ function idToModule(id: string) {
   return moduleIdMap.get(id) ?? id;
 }
 
-registerHelper('module-to-id', moduleToId);
+Handlebars.registerHelper('module-to-id', moduleToId);
 
-const entryTemplate = compile(
+const entryTemplate = Handlebars.compile(
   `
 module.exports = (function(){
   var d = _eai_d;
