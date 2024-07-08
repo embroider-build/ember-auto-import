@@ -97,7 +97,7 @@
     "quick-temp": "^0.1.8",
     "qunit": "^2.17.2",
     "qunit-assertions-extra": "^0.8.5",
-    "typescript": "5.0.4"
+    "typescript": "5.1.6"
   },
   "engines": {
     "node": "12.* || 14.* || >= 16"
