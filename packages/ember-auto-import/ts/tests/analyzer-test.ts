@@ -454,7 +454,7 @@ Qmodule('analyzer', function (hooks) {
       throw new Error(`expected not to get here, build was supposed to fail`);
     } catch (err) {
       assert.contains(
-        err.message,
+        err instanceof Error ? err.message : String(err),
         'import() is only allowed to contain string literals or template string literals'
       );
     }
