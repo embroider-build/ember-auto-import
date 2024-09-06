@@ -27,7 +27,7 @@ Qmodule('splitter', function (hooks) {
   let splitter: Splitter;
   let setup: (options?: Options) => void;
 
-  hooks.beforeEach(function (this: any) {
+  hooks.beforeEach(async function (this: any) {
     project = new Project('my-app', {
       files: {
         lib: {
@@ -66,7 +66,7 @@ Qmodule('splitter', function (hooks) {
       },
     });
 
-    project.writeSync();
+    await project.write();
 
     setup = function (options: Options = {}) {
       pack = new Package(stubAddonInstance(project.baseDir, options));
