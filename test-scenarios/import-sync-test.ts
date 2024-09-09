@@ -83,12 +83,13 @@ appScenarios
                   return { message: err.message }
                 }
               },
-            });`
+            });`,
         },
       },
       tests: {
         acceptance: {
-          'import-sync-test.js': `
+          'import-sync-test.js':
+            `
             import { module, test } from 'qunit';
             import { visit, currentURL } from '@ember/test-helpers';
             import { setupApplicationTest } from 'ember-qunit';
@@ -146,7 +147,7 @@ appScenarios
       });
 
       test('npm run test', async function (assert) {
-        let result = await app.execute('volta run npm -- run test');
+        let result = await app.execute('volta run npm run test');
         assert.equal(result.exitCode, 0, result.output);
       });
 

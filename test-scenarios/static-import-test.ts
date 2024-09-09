@@ -216,7 +216,7 @@ function staticImportTest(project: Project) {
               let txt = await loadTxt();
               assert.equal(txt, 'here is some text');
             });
-          });        
+          });
         `,
         'import-into-tests-test.js': `
             import { module, test } from 'qunit';
@@ -397,7 +397,7 @@ scenarios.forEachScenario(scenario => {
     });
 
     test('npm run test', async function (assert) {
-      let result = await app.execute('volta run npm -- run test');
+      let result = await app.execute('volta run npm run test');
       assert.equal(result.exitCode, 0, result.output);
     });
   });
