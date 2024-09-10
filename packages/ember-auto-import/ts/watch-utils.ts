@@ -1,6 +1,5 @@
 import isSubdir from 'is-subdir';
 import { dirname } from 'path';
-// @ts-expect-error types don't resolve as this package exposes them only via package.json exports, which our old TS version does not support
 import { getPackageEntryPointsSync } from 'pkg-entry-points';
 
 // copied from pkg-entry-points, as we cannot use their types, see comment above

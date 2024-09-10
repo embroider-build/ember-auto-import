@@ -62,6 +62,7 @@
     "mini-css-extract-plugin": "^2.5.2",
     "minimatch": "^3.0.0",
     "parse5": "^6.0.1",
+    "pkg-entry-points": "^1.1.0",
     "resolve": "^1.20.0",
     "resolve-package-path": "^4.0.3",
     "semver": "^7.3.4",
