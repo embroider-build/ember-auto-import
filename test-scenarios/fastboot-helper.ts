@@ -4,7 +4,7 @@ import resolve from 'resolve';
 import { realpathSync } from 'fs';
 
 export async function setupFastboot(app: PreparedApp, environment = 'development') {
-  let result = await app.execute(`volta run ember -- build --environment=${environment}`);
+  let result = await app.execute(`volta run ember build --environment=${environment}`);
   if (result.exitCode !== 0) {
     throw new Error(`failed to build app for fastboot: ${result.output}`);
   }

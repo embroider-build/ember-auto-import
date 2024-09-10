@@ -37,7 +37,7 @@ template
       });
       test('npm run test', async function (assert) {
         console.log(app.dir);
-        let result = await app.execute('volta run npm -- run test');
+        let result = await app.execute('volta run npm run test');
         assert.equal(result.exitCode, 0, result.output);
       });
     });

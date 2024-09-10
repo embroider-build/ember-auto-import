@@ -116,6 +116,12 @@ function staticImportTest(project: Project) {
               }),
             });
           `,
+        'hello-world.hbs': `
+          <div class="hello-world">{{this.formattedDate}}</div>
+          <div class="lodash">{{#if this.lodashPresent}}yes{{else}}no{{/if}}</div>
+          <div class="aliased">{{this.aliasedResult}}</div>
+          <div class="scoped">{{this.fromScoped}}</div>
+        `,
       },
       lib: {
         'example1.js': 'export default function() { return "example1 worked" }',
@@ -151,6 +157,7 @@ function staticImportTest(project: Project) {
       templates: {
         'application.hbs': `{{hello-world}}`,
         components: {
+          // Our "lts" scenario runs a very old version of Ember that does not support colocated components, that's why we intentionally keep this here
           'hello-world.hbs': `
               <div class="hello-world">{{this.formattedDate}}</div>
               <div class="lodash">{{#if this.lodashPresent}}yes{{else}}no{{/if}}</div>
@@ -216,7 +223,7 @@ function staticImportTest(project: Project) {
               let txt = await loadTxt();
               assert.equal(txt, 'here is some text');
             });
-          });        
+          });
         `,
         'import-into-tests-test.js': `
             import { module, test } from 'qunit';
@@ -397,7 +404,7 @@ scenarios.forEachScenario(scenario => {
     });
 
     test('npm run test', async function (assert) {
-      let result = await app.execute('volta run npm -- run test');
+      let result = await app.execute('volta run npm run test');
       assert.equal(result.exitCode, 0, result.output);
     });
   });
