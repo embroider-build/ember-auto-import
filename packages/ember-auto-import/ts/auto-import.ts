@@ -26,8 +26,10 @@ import type { TransformOptions } from '@babel/core';
 import { MARKER } from './analyzer-syntax';
 import path from 'path';
 import funnel from 'broccoli-funnel';
+import makeDebug from 'debug';
 
 const debugTree = buildDebugCallback('ember-auto-import');
+const debugWatch = makeDebug('ember-auto-import:watch');
 
 // This interface must be stable across all versions of ember-auto-import that
 // speak the same leader-election protocol. So don't change this unless you know
@@ -244,6 +246,7 @@ function depsFor(allAppTree: Node, packages: Set<Package>) {
     let watched = pkg.watchedDirectories;
     if (watched) {
       deps = deps.concat(watched.map((dir) => new WatchedDir(dir)));
+      debugWatch(`Adding watched directories: ${watched.join(', ')}`);
     }
   }
   return deps;
