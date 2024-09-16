@@ -49,11 +49,9 @@ jobs:
           node-version: 18
           # This creates an .npmrc that reads the NODE_AUTH_TOKEN environment variable
           registry-url: 'https://registry.npmjs.org'
-      
       - run: npm ci
       - name: npm publish
         run: npx release-plan publish
-      
         env:
           GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
