@@ -1,5 +1,28 @@
 # Changelog
 
+## Release (2024-09-16)
+
+ember-auto-import 2.8.0 (minor)
+
+#### :rocket: Enhancement
+* `ember-auto-import`
+  * [#623](https://github.com/embroider-build/ember-auto-import/pull/623) Optimize watched directories ([@simonihmig](https://github.com/simonihmig))
+
+#### :house: Internal
+* `ember-auto-import`
+  * [#621](https://github.com/embroider-build/ember-auto-import/pull/621) fix the repo link in the published package ([@mansona](https://github.com/mansona))
+* Other
+  * [#636](https://github.com/embroider-build/ember-auto-import/pull/636) update release-plan CI jobs ([@mansona](https://github.com/mansona))
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#634](https://github.com/embroider-build/ember-auto-import/pull/634) Update scenario-tester ([@simonihmig](https://github.com/simonihmig))
+  * [#630](https://github.com/embroider-build/ember-auto-import/pull/630) Update TypeScript to latest ([@simonihmig](https://github.com/simonihmig))
+* `@ef4/addon-template`, `@ef4/app-template`, `@ef4/test-scenarios`
+  * [#635](https://github.com/embroider-build/ember-auto-import/pull/635) Fix CI for new Ember v6 canary and volta v2 releases ([@simonihmig](https://github.com/simonihmig))
+
+#### Committers: 2
+- Chris Manson ([@mansona](https://github.com/mansona))
+- Simon Ihmig ([@simonihmig](https://github.com/simonihmig))
+
 ## Release (2024-06-24)
 
 ember-auto-import 2.7.4 (patch)
