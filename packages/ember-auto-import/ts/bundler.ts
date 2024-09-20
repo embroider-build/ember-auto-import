@@ -4,7 +4,6 @@ import type Package from './package';
 import type BundleConfig from './bundle-config';
 import type { BundleName } from './bundle-config';
 import { buildDebugCallback } from 'broccoli-debug';
-import type { TransformOptions } from '@babel/core';
 import type webpack from 'webpack';
 
 const debugTree = buildDebugCallback('ember-auto-import');
@@ -14,14 +13,8 @@ export interface BundlerOptions {
   environment: 'development' | 'test' | 'production';
   splitter: Splitter;
   packages: Set<Package>;
-  appRoot: string;
   bundles: BundleConfig;
-  babelConfig: TransformOptions;
-  publicAssetURL: string | undefined;
-  browserslist: string;
   webpack: typeof webpack;
-  hasFastboot: boolean;
-  earlyBootSet: undefined | ((defaultModules: string[]) => string[]);
   v2Addons: Map<string, string>;
   rootPackage: Package;
 }
@@ -32,6 +25,7 @@ export interface BuildResult {
   // names (because users can also add more entrypoints to the webpack config)
   entrypoints: Map<BundleName | string, string[]>;
   lazyAssets: string[];
+  externalDepsFor(request: string): string[];
 }
 
 export type Bundler = Plugin & {

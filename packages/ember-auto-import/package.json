@@ -1,6 +1,6 @@
 {
   "name": "ember-auto-import",
-  "version": "2.6.1",
+  "version": "2.8.0",
   "description": "Zero-config import from NPM packages",
   "keywords": [
     "ember-addon",
@@ -17,7 +17,7 @@
   "main": "js/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ef4/ember-auto-import",
+    "url": "https://github.com/embroider-build/ember-auto-import",
     "directory": "packages/ember-auto-import"
   },
   "scripts": {
@@ -36,11 +36,14 @@
     "@babel/core": "^7.16.7",
     "@babel/plugin-proposal-class-properties": "^7.16.7",
     "@babel/plugin-proposal-decorators": "^7.16.7",
+    "@babel/plugin-proposal-private-methods": "^7.16.7",
+    "@babel/plugin-transform-class-static-block": "^7.16.7",
     "@babel/preset-env": "^7.16.7",
     "@embroider/macros": "^1.0.0",
     "@embroider/shared-internals": "^2.0.0",
     "babel-loader": "^8.0.6",
     "babel-plugin-ember-modules-api-polyfill": "^3.5.0",
+    "babel-plugin-ember-template-compilation": "^2.0.1",
     "babel-plugin-htmlbars-inline-precompile": "^5.2.1",
     "babel-plugin-syntax-dynamic-import": "^6.18.0",
     "broccoli-debug": "^0.6.4",
@@ -53,10 +56,13 @@
     "fs-extra": "^10.0.0",
     "fs-tree-diff": "^2.0.0",
     "handlebars": "^4.3.1",
+    "is-subdir": "^1.2.0",
     "js-string-escape": "^1.0.1",
     "lodash": "^4.17.19",
     "mini-css-extract-plugin": "^2.5.2",
+    "minimatch": "^3.0.0",
     "parse5": "^6.0.1",
+    "pkg-entry-points": "^1.1.0",
     "resolve": "^1.20.0",
     "resolve-package-path": "^4.0.3",
     "semver": "^7.3.4",
@@ -93,7 +99,8 @@
     "quick-temp": "^0.1.8",
     "qunit": "^2.17.2",
     "qunit-assertions-extra": "^0.8.5",
-    "typescript": "4.3.5"
+    "scenario-tester": "^4.0.0",
+    "typescript": "5.5.3"
   },
   "engines": {
     "node": "12.* || 14.* || >= 16"
@@ -114,7 +121,6 @@
     ]
   },
   "volta": {
-    "node": "14.16.0",
-    "npm": "8.3.0"
+    "node": "16.20.1"
   }
 }

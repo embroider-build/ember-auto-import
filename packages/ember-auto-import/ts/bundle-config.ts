@@ -68,6 +68,28 @@ export default class BundleConfig {
     }
   }
 
+  maybeBundleEntrypoint(
+    bundleName: string,
+    type: BundleType
+  ): string | undefined {
+    if (this.isBuiltInBundleName(bundleName)) {
+      return this.bundleEntrypoint(bundleName, type);
+    }
+    return undefined;
+  }
+
+  bundleNameForEntrypoint(
+    entrypoint: string,
+    type: BundleType
+  ): BundleName | undefined {
+    for (let name of this.names) {
+      if (entrypoint.endsWith(this.bundleEntrypoint(name, type))) {
+        return name;
+      }
+    }
+    return undefined;
+  }
+
   bundleForTreeType(treeType: TreeType): BundleName {
     switch (treeType) {
       case 'app':

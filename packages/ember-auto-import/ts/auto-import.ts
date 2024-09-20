@@ -25,8 +25,11 @@ import semver from 'semver';
 import type { TransformOptions } from '@babel/core';
 import { MARKER } from './analyzer-syntax';
 import path from 'path';
+import funnel from 'broccoli-funnel';
+import makeDebug from 'debug';
 
 const debugTree = buildDebugCallback('ember-auto-import');
+const debugWatch = makeDebug('ember-auto-import:watch');
 
 // This interface must be stable across all versions of ember-auto-import that
 // speak the same leader-election protocol. So don't change this unless you know
@@ -66,6 +69,9 @@ export default class AutoImport implements AutoImportSharedAPI {
     let topmostAddon = findTopmostAddon(addonInstance);
     this.packages.add(Package.lookupParentOf(topmostAddon));
     let host = topmostAddon.app;
+
+    this.installAppFilter(host);
+
     this.env = host.env;
     this.bundles = new BundleConfig(host.options.outputPaths);
     if (!this.env) {
@@ -73,6 +79,20 @@ export default class AutoImport implements AutoImportSharedAPI {
     }
 
     this.consoleWrite = (...args) => addonInstance.project.ui.write(...args);
+  }
+
+  installAppFilter(_host: AppInstance) {
+    // TODO upstream this type change to @embroider/shared-internals
+    let host: AppInstance & {
+      trees: {
+        app: Node;
+      };
+    } = _host as any;
+    if (this.rootPackage.allowAppImports.length) {
+      host.trees.app = funnel(host.trees.app, {
+        exclude: this.rootPackage.allowAppImports,
+      });
+    }
   }
 
   // we don't actually call this ourselves anymore, but earlier versions of
@@ -143,15 +163,9 @@ export default class AutoImport implements AutoImportSharedAPI {
       splitter,
       environment: this.env,
       packages: this.packages,
-      appRoot: this.rootPackage.root,
       consoleWrite: this.consoleWrite,
       bundles: this.bundles,
-      babelConfig: this.rootPackage.cleanBabelConfig(),
-      browserslist: this.rootPackage.browserslist(),
-      publicAssetURL: this.rootPackage.publicAssetURL(),
       webpack,
-      hasFastboot: this.rootPackage.isFastBootEnabled,
-      earlyBootSet: this.rootPackage.earlyBootSet,
       v2Addons: this.v2Addons,
       rootPackage: this.rootPackage,
     });
@@ -232,6 +246,7 @@ function depsFor(allAppTree: Node, packages: Set<Package>) {
     let watched = pkg.watchedDirectories;
     if (watched) {
       deps = deps.concat(watched.map((dir) => new WatchedDir(dir)));
+      debugWatch(`Adding watched directories: ${watched.join(', ')}`);
     }
   }
   return deps;

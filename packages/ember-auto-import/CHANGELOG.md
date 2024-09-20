@@ -1,5 +1,122 @@
 # Changelog
 
+## Release (2024-09-16)
+
+ember-auto-import 2.8.0 (minor)
+
+#### :rocket: Enhancement
+* `ember-auto-import`
+  * [#623](https://github.com/embroider-build/ember-auto-import/pull/623) Optimize watched directories ([@simonihmig](https://github.com/simonihmig))
+
+#### :house: Internal
+* `ember-auto-import`
+  * [#621](https://github.com/embroider-build/ember-auto-import/pull/621) fix the repo link in the published package ([@mansona](https://github.com/mansona))
+* Other
+  * [#636](https://github.com/embroider-build/ember-auto-import/pull/636) update release-plan CI jobs ([@mansona](https://github.com/mansona))
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#634](https://github.com/embroider-build/ember-auto-import/pull/634) Update scenario-tester ([@simonihmig](https://github.com/simonihmig))
+  * [#630](https://github.com/embroider-build/ember-auto-import/pull/630) Update TypeScript to latest ([@simonihmig](https://github.com/simonihmig))
+* `@ef4/addon-template`, `@ef4/app-template`, `@ef4/test-scenarios`
+  * [#635](https://github.com/embroider-build/ember-auto-import/pull/635) Fix CI for new Ember v6 canary and volta v2 releases ([@simonihmig](https://github.com/simonihmig))
+
+#### Committers: 2
+- Chris Manson ([@mansona](https://github.com/mansona))
+- Simon Ihmig ([@simonihmig](https://github.com/simonihmig))
+
+## Release (2024-06-24)
+
+ember-auto-import 2.7.4 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`
+  * [#629](https://github.com/embroider-build/ember-auto-import/pull/629) only check devDependencies when checking requested range of an app package ([@mansona](https://github.com/mansona))
+
+#### :house: Internal
+* `@ef4/test-scenarios`
+  * [#626](https://github.com/embroider-build/ember-auto-import/pull/626) setup windows tests ([@mansona](https://github.com/mansona))
+
+#### Committers: 1
+- Chris Manson ([@mansona](https://github.com/mansona))
+
+## Release (2024-05-27)
+
+ember-auto-import 2.7.3 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#620](https://github.com/embroider-build/ember-auto-import/pull/620) Improved layering between app and tests bundles ([@mansona](https://github.com/mansona))
+
+#### :house: Internal
+* [#625](https://github.com/embroider-build/ember-auto-import/pull/625) update release-plan ([@mansona](https://github.com/mansona))
+* [#622](https://github.com/embroider-build/ember-auto-import/pull/622) fix glob version on lts tests ([@mansona](https://github.com/mansona))
+
+#### Committers: 1
+- Chris Manson ([@mansona](https://github.com/mansona))
+## Release (2023-12-23)
+
+ember-auto-import 2.7.2 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#605](https://github.com/embroider-build/ember-auto-import/pull/605) Add es-compat to make asset loaders work as expected ([@ef4](https://github.com/ef4))
+  * [#606](https://github.com/embroider-build/ember-auto-import/pull/606) Fix dynamic import inside allowAppImports dirs ([@ef4](https://github.com/ef4))
+
+#### Committers: 1
+- Edward Faulkner ([@ef4](https://github.com/ef4))
+## Release (2023-12-12)
+
+ember-auto-import 2.7.1 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#603](https://github.com/embroider-build/ember-auto-import/pull/603) Fix imports with a query part ([@simonihmig](https://github.com/simonihmig))
+* `ember-auto-import`
+  * [#602](https://github.com/embroider-build/ember-auto-import/pull/602) Allow arbitrary extensions for app-imports ([@simonihmig](https://github.com/simonihmig))
+
+#### :house: Internal
+* [#604](https://github.com/embroider-build/ember-auto-import/pull/604) update release-plan ([@mansona](https://github.com/mansona))
+
+#### Committers: 2
+- Chris Manson ([@mansona](https://github.com/mansona))
+- Simon Ihmig ([@simonihmig](https://github.com/simonihmig))
+## Release (2023-11-24)
+
+ember-auto-import 2.7.0 (minor)
+
+#### :rocket: Enhancement
+* `ember-auto-import`
+  * [#587](https://github.com/embroider-build/ember-auto-import/pull/587) Feature: allowAppImports ([@mansona](https://github.com/mansona))
+  * [#596](https://github.com/embroider-build/ember-auto-import/pull/596) Support private properties and static blocks ([@andreyfel](https://github.com/andreyfel))
+
+#### :memo: Documentation
+* `ember-auto-import`
+  * [#594](https://github.com/embroider-build/ember-auto-import/pull/594) Add section on importing a module for side affects only to the README.md ([@keithZmudzinski](https://github.com/keithZmudzinski))
+
+#### :house: Internal
+* `addon-template`
+  * [#598](https://github.com/embroider-build/ember-auto-import/pull/598) Add release-plan for automating releases ([@mansona](https://github.com/mansona))
+* Other
+  * [#597](https://github.com/embroider-build/ember-auto-import/pull/597) update package-lock.json ([@mansona](https://github.com/mansona))
+* `app-template`, `ember-auto-import`
+  * [#585](https://github.com/embroider-build/ember-auto-import/pull/585) Update ci ([@ef4](https://github.com/ef4))
+
+#### Committers: 4
+- Andrey Fel ([@andreyfel](https://github.com/andreyfel))
+- Chris Manson ([@mansona](https://github.com/mansona))
+- Edward Faulkner ([@ef4](https://github.com/ef4))
+- Keith Zmudzinski ([@keithZmudzinski](https://github.com/keithZmudzinski))
+
+### 2.6.3
+
+- BUGFIX: the babel-plugin-ember-template-compilation bugfix in the previous release was missing an explicit dependency declaration, so it didn't work 100% of the time. Fix by @mansona.
+
+### 2.6.2
+
+- BUGFIX: automatically detect when our module shims need AMD dependencies. This eliminates the previous `earlyBootSet` manual workaround.
+- BUGFIX: use babel-plugin-ember-template-compilation on new-enough ember versions by @candunaj
+- INTERNAL: update tests for latest ember canary
+- BUGFIX: Fix wrong detection of ember-source version for earlyBootSet by @simonihmig
+
 ### 2.6.1
 
 - BUGFIX: `earlyBootSet` now defaults to empty, because it was causing problems for some apps. If you need it you need to turn it on explicitly. @NullVoxPopuli [568](https://github.com/ef4/ember-auto-import/pull/568)

@@ -43,7 +43,7 @@ appScenarios
         app = await scenario.prepare();
       });
       test('ensure build succeeds', async function (assert) {
-        let result = await app.execute('volta run npm -- run build');
+        let result = await app.execute('volta run npm run build');
         assert.equal(result.exitCode, 0, result.output);
       });
     });

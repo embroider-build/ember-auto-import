@@ -41,7 +41,7 @@ Scenarios.fromProject(baseApp)
         unit: {
           'asset-test.js': `
             import { module, test } from 'qunit';
-            import * as example from 'images/thing.png';
+            import example from 'images/thing.png';
 
             module('Unit | webpack5', function () {
               test('can use webpack5 asset loading', function (assert) {
@@ -72,7 +72,7 @@ Scenarios.fromProject(baseApp)
         app = await scenario.prepare();
       });
       test('run tests', async function (assert) {
-        let result = await app.execute('volta run npm -- run test');
+        let result = await app.execute('volta run npm run test');
         assert.equal(result.exitCode, 0, result.output);
       });
     });
@@ -98,7 +98,7 @@ Scenarios.fromProject(baseApp)
         app = await scenario.prepare();
       });
       test('ensure error', async function (assert) {
-        let result = await app.execute('volta run npm -- run build');
+        let result = await app.execute('volta run npm run build');
         assert.notEqual(result.exitCode, 0, result.output);
         assert.ok(
           /To use these addons, your app needs ember-auto-import >= 2: .*other-problematic-addon.*problematic-addon/.test(
@@ -128,7 +128,7 @@ Scenarios.fromProject(baseApp)
         app = await scenario.prepare();
       });
       test('ensure error', async function (assert) {
-        let result = await app.execute('volta run npm -- run build');
+        let result = await app.execute('volta run npm run build');
         assert.notEqual(result.exitCode, 0, result.output);
         assert.ok(
           /To use these addons, your app needs ember-auto-import >= 2: .*other-problematic-addon.*problematic-addon/.test(

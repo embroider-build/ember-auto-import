@@ -192,7 +192,7 @@ export default class Analyzer extends Funnel {
       try {
         transformSync(source, options);
       } catch (err) {
-        if (err.name !== 'SyntaxError') {
+        if (err instanceof Error && err.name !== 'SyntaxError') {
           throw err;
         }
         debug('Ignoring an unparseable file');

@@ -1,16 +1,21 @@
 {
   "private": true,
-  "scripts": {
-    "test": "cd test-scenarios && npm run test",
-    "watch": "cd packages/ember-auto-import && npm run compile -- --watch",
-    "prepare": "cd packages/ember-auto-import && npm run compile",
-    "nom": "rm -rf node_modules packages/*/node_modules test-scenarios/node_modules types/*/node_modules"
-  },
+  "repository": "https://github.com/embroider-build/ember-auto-import",
   "workspaces": [
     "packages/*",
     "test-scenarios",
     "types/*"
   ],
+  "scripts": {
+    "postinstall": "patch-package",
+    "nom": "rm -rf node_modules packages/*/node_modules test-scenarios/node_modules types/*/node_modules",
+    "test": "cd test-scenarios && npm run test",
+    "watch": "cd packages/ember-auto-import && npm run compile -- --watch"
+  },
+  "dependencies": {
+    "resolve-package-path": "^3.1.0",
+    "semver": "^7.3.5"
+  },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^4.10.0",
     "@typescript-eslint/parser": "^4.10.0",
@@ -20,14 +25,14 @@
     "eslint-plugin-ember": "^5.0.0",
     "eslint-plugin-node": "^6.0.1",
     "eslint-plugin-prettier": "^3.3.0",
-    "prettier": "^2.2.1"
+    "patch-package": "^6.5.1",
+    "prettier": "^2.2.1",
+    "release-plan": "^0.9.0"
   },
   "volta": {
-    "node": "14.16.0",
-    "npm": "8.3.0"
+    "node": "16.20.1"
   },
-  "dependencies": {
-    "resolve-package-path": "^3.1.0",
-    "semver": "^7.3.5"
+  "overrides": {
+    "glob@>=9.0.0": "^8.0.0"
   }
 }

@@ -18,8 +18,8 @@ jobs:
       - uses: actions/checkout@v1
       - uses: volta-cli/action@v4
         with:
-          node-version: '14'
-      - uses: actions/cache@v2
+          node-version: '16'
+      - uses: actions/cache@v3
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -30,12 +30,14 @@ jobs:
         run: for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs npx eslint --
       - id: set-matrix
         working-directory: test-scenarios
-        run: echo "::set-output name=matrix::$(npm run --silent test:list -- --matrix 'npm run test -- --filter %s:')"
+        run: |
+          matrix_json=$(node --require ts-node/register ./suite-setup-util.ts)
+          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
 
   scenarios:
     needs: discover_matrix
     name: ${{ matrix.name }}
-    runs-on: ubuntu-latest
+    runs-on: '${{ matrix.os }}-latest'
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.discover_matrix.outputs.matrix)}}
@@ -43,8 +45,8 @@ jobs:
       - uses: actions/checkout@v1
       - uses: volta-cli/action@v4
         with:
-          node-version: '14'
-      - uses: actions/cache@v2
+          node-version: '16'
+      - uses: actions/cache@v3
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -62,8 +64,8 @@ jobs:
       - uses: actions/checkout@v1
       - uses: volta-cli/action@v4
         with:
-          node-version: '14'
-      - uses: actions/cache@v2
+          node-version: '16'
+      - uses: actions/cache@v3
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -73,22 +75,3 @@ jobs:
       - name: test
         run: npm run test:node
         working-directory: packages/ember-auto-import
-
-  ie:
-    name: ie11 safety
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: volta-cli/action@v4
-        with:
-          node-version: '14'
-      - uses: actions/cache@v2
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-      - run: npm install
-      - name: test
-        run: 'npm run test -- --filter browser-targets-transpiled:'
-        working-directory: test-scenarios

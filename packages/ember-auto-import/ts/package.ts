@@ -10,8 +10,11 @@ import {
   packageName as getPackageName,
 } from '@embroider/shared-internals';
 import semver from 'semver';
-import type { TransformOptions } from '@babel/core';
+import type { PluginItem, TransformOptions } from '@babel/core';
 import { MacrosConfig } from '@embroider/macros/src/node';
+import minimatch from 'minimatch';
+import { stripQuery } from './util';
+import { getWatchedDirectories } from './watch-utils';
 
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
@@ -30,13 +33,13 @@ export interface Options {
   alias?: { [fromName: string]: string };
   webpack?: Configuration;
   publicAssetURL?: string;
-  earlyBootSet?: (defaultModules: string[]) => string[];
   styleLoaderOptions?: Record<string, unknown>;
   cssLoaderOptions?: Record<string, unknown>;
   miniCssExtractPluginOptions?: Record<string, unknown>;
   forbidEval?: boolean;
   skipBabel?: { package: string; semverRange?: string }[];
   watchDependencies?: (string | string[])[];
+  allowAppImports?: string[];
   insertScriptsAt?: string;
   insertStylesAt?: string;
 }
@@ -139,6 +142,19 @@ export default class Package {
     this._hasBabelDetails = true;
   }
 
+  // this is used for two things:
+  // - when interoperating with older versions of ember-auto-import, it's used
+  //   to configure the parser that we use to analyze source code. The parser
+  //   cares about the user's babel config so it will support all the same
+  //   syntax. (Newer EAI versions don't need to do this because they use the
+  //   faster analyzer that happens inside the existing babel parse.)
+  // - when transpiling parts of the app itself that are configured with
+  //   allowAppImports. It would be surprising if these didn't get transpiled
+  //   with the same babel config that the rest of the app is getting. There is,
+  //   however, one exception: if the user has added
+  //   ember-auto-import/babel-plugin to get dynamic import support, we need to
+  //   remove that because inside the natively webpack-owned area it's not
+  //   needed and would actually break dynamic imports.
   get babelOptions(): TransformOptions {
     this._ensureBabelDetails();
     return this._babelOptions;
@@ -167,7 +183,15 @@ export default class Package {
     let version = parseInt(babelAddon.pkg.version.split('.')[0], 10);
     let babelOptions, extensions;
 
-    babelOptions = babelAddon.buildBabelOptions(options);
+    babelOptions = babelAddon.buildBabelOptions({
+      ...options,
+      'ember-cli-babel': {
+        ...options['ember-cli-babel'],
+        compileModules: false,
+        disableEmberModulesAPIPolyfill: false,
+      },
+    });
+
     extensions = babelOptions.filterExtensions || ['js'];
 
     // https://github.com/babel/ember-cli-babel/issues/227
@@ -177,7 +201,11 @@ export default class Package {
 
     if (babelOptions.plugins) {
       babelOptions.plugins = babelOptions.plugins.filter(
-        (p: any) => !p._parallelBabel
+        // removing the weird "_parallelBabel" entry that's only used by
+        // broccoli-babel-transpiler and removing our own dynamic import babel
+        // plugin if it was added (because it's only correct to use it against
+        // the classic ember build, not the webpack-owned parts of the build.
+        (p: any) => !p._parallelBabel && !isEAIBabelPlugin(p)
       );
     }
 
@@ -225,11 +253,15 @@ export default class Package {
   // package.json
   requestedRange(packageName: string): string | undefined {
     let { pkg } = this;
-    return (
-      pkg.dependencies?.[packageName] ||
-      pkg.devDependencies?.[packageName] ||
-      pkg.peerDependencies?.[packageName]
-    );
+    let result =
+      pkg.dependencies?.[packageName] || pkg.peerDependencies?.[packageName];
+
+    // only include devDeps if the package is an app
+    if (!result && !this.isAddon) {
+      result = pkg.devDependencies?.[packageName];
+    }
+
+    return result;
   }
 
   private hasNonDevDependency(name: string): boolean {
@@ -264,12 +296,7 @@ export default class Package {
     importedPath: string,
     fromPath: string,
     partial: true
-  ):
-    | DepResolution
-    | LocalResolution
-    | URLResolution
-    | ImpreciseResolution
-    | undefined;
+  ): Resolution | undefined;
   resolve(
     importedPath: string,
     fromPath: string,
@@ -306,6 +333,22 @@ export default class Package {
         type: 'local',
         local: path,
       };
+    }
+
+    if (!this.isAddon && packageName === this.name) {
+      let localPath = path.slice(packageName.length + 1);
+      if (
+        this.allowAppImports.some((pattern) =>
+          minimatch(stripQuery(localPath), pattern)
+        )
+      ) {
+        return {
+          type: 'package',
+          path: localPath,
+          packageName: this.name,
+          packageRoot: join(this.root, 'app'),
+        };
+      }
     }
 
     if (this.excludesDependency(packageName)) {
@@ -414,17 +457,6 @@ export default class Package {
     );
   }
 
-  /**
-   * The function for defining the early boot set.
-   * Used when we begin building entry files for webpack, so that we can query all packages listed
-   * in the early boot set to check if they are v2 addons --if they are v2 addons,
-   * we remove them from the early boot set, as this feature is for a rare compatibility circumstance that
-   * only affects v1 addons consumed by v2 addons.
-   */
-  get earlyBootSet(): undefined | ((defaults: string[]) => string[]) {
-    return this.isAddon ? undefined : this.autoImportOptions?.earlyBootSet;
-  }
-
   get styleLoaderOptions(): Record<string, unknown> | undefined {
     // only apps (not addons) are allowed to set this
     return this.isAddon
@@ -483,14 +515,25 @@ export default class Package {
           for (let name of names) {
             let path = resolvePackagePath(name, cursor);
             if (!path) {
-              return undefined;
+              return [];
             }
             cursor = dirname(path);
           }
-          return cursor;
+          return getWatchedDirectories(cursor).map((relativeDir) =>
+            join(cursor, relativeDir)
+          );
         })
-        .filter(Boolean) as string[];
+        .flat();
     }
+  }
+
+  get allowAppImports(): string[] {
+    // only apps (not addons) are allowed to set this
+    if (!this.isAddon) {
+      return this.autoImportOptions?.allowAppImports ?? [];
+    }
+
+    return [];
   }
 
   cleanBabelConfig(): TransformOptions {
@@ -515,28 +558,50 @@ export default class Package {
     let templateCompilerPath: string = (emberSource as any).absolutePaths
       .templateCompiler;
 
+    const babelPluginPrecompile = ensureModuleApiPolyfill
+      ? [
+          require.resolve('babel-plugin-htmlbars-inline-precompile'),
+          {
+            ensureModuleApiPolyfill,
+            templateCompilerPath,
+            modules: {
+              'ember-cli-htmlbars': 'hbs',
+              '@ember/template-compilation': {
+                export: 'precompileTemplate',
+                disableTemplateLiteral: true,
+                shouldParseScope: true,
+                isProduction: process.env.EMBER_ENV === 'production',
+              },
+            },
+          },
+        ]
+      : [
+          require.resolve('babel-plugin-ember-template-compilation'),
+          {
+            // As above, we present the AST transforms in reverse order
+            // transforms: [...pluginInfo.plugins].reverse(),
+            compilerPath: require.resolve(templateCompilerPath),
+            enableLegacyModules: [
+              'ember-cli-htmlbars',
+              'ember-cli-htmlbars-inline-precompile',
+              'htmlbars-inline-precompile',
+            ],
+          },
+          'ember-cli-htmlbars:inline-precompile',
+        ];
+
     let plugins = [
       [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
+      [require.resolve('@babel/plugin-transform-class-static-block')],
       [
         require.resolve('@babel/plugin-proposal-class-properties'),
         { loose: false },
       ],
       [
-        require.resolve('babel-plugin-htmlbars-inline-precompile'),
-        {
-          ensureModuleApiPolyfill,
-          templateCompilerPath,
-          modules: {
-            'ember-cli-htmlbars': 'hbs',
-            '@ember/template-compilation': {
-              export: 'precompileTemplate',
-              disableTemplateLiteral: true,
-              shouldParseScope: true,
-              isProduction: process.env.EMBER_ENV === 'production',
-            },
-          },
-        },
+        require.resolve('@babel/plugin-proposal-private-methods'),
+        { loose: false },
       ],
+      babelPluginPrecompile,
       ...macrosConfig.babelPluginConfig(),
     ];
 
@@ -544,6 +609,16 @@ export default class Package {
       plugins.push([
         require.resolve('babel-plugin-ember-modules-api-polyfill'),
       ]);
+    }
+
+    // this is to facilitate testing external dependencies against our cleanBabelConfig.
+    // We only want to do this in our own testing as it checks for the name of all string
+    // identifiers and is only ever going to be necessary in our tests.
+    // previously we tested that a `let` got transpiled to a var, but since the IE11 target
+    // was removed that test wasn't checking the right thing. This was the simplest way that
+    // we could think to test that would be future-proof
+    if (process.env.USE_EAI_BABEL_WATERMARK) {
+      plugins.push([require.resolve('./watermark-plugin')]);
     }
 
     return {
@@ -582,7 +657,7 @@ export default class Package {
     if (this.isAddon) {
       throw new Error(`Only the app can determine the browserslist`);
     }
-    // cast here is safe because we just checked isAddon is false
+
     let parent = this._parent as Project;
     return (parent.targets as { browsers: string[] }).browsers.join(',');
   }
@@ -622,4 +697,23 @@ function ensureTrailingSlash(url: string): string {
     url = url + '/';
   }
   return url;
+}
+
+function isEAIBabelPlugin(item: PluginItem) {
+  let pluginPath: string | undefined;
+  if (typeof item === 'string') {
+    pluginPath = item;
+  } else if (
+    Array.isArray(item) &&
+    item.length > 0 &&
+    typeof item[0] === 'string'
+  ) {
+    pluginPath = item[0];
+  }
+
+  if (pluginPath) {
+    return /ember-auto-import[\\/]babel-plugin/.test(pluginPath);
+  }
+
+  return (item as any).baseDir?.() === __dirname;
 }

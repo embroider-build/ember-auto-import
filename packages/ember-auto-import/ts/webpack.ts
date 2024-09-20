@@ -5,76 +5,60 @@ import type {
   Stats,
   RuleSetUseItem,
   WebpackPluginInstance,
+  Module,
 } from 'webpack';
-import { join, dirname } from 'path';
+import { join, dirname, resolve, relative, posix, isAbsolute } from 'path';
+import { createHash } from 'crypto';
 import { mergeWith, flatten, zip } from 'lodash';
-import { writeFileSync, realpathSync } from 'fs';
-import { compile, registerHelper } from 'handlebars';
+import { writeFileSync, realpathSync, readFileSync } from 'fs';
+import Handlebars from 'handlebars';
 import jsStringEscape from 'js-string-escape';
 import { BundleDependencies, ResolvedTemplateImport } from './splitter';
 import { BuildResult, Bundler, BundlerOptions } from './bundler';
 import type { InputNode } from 'broccoli-node-api';
 import Plugin from 'broccoli-plugin';
-import { babelFilter, packageName } from '@embroider/shared-internals';
+import { babelFilter, packageName, Package } from '@embroider/shared-internals';
 import { Options } from './package';
 import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
 import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import semver from 'semver';
+import minimatch from 'minimatch';
+import { TransformOptions } from '@babel/core';
+import { stripQuery } from './util';
+
+const EXTENSIONS = ['.js', '.ts', '.json'];
 
 const debug = makeDebug('ember-auto-import:webpack');
 
-/**
- * Passed to and configuable with autoImport.earlyBootset
- * example:
- * ```js
- * // ember-cli-build.js
- * // ...
- * autoImport: {
- *   earlyBootSet: (defaultModules) => {
- *     return [
- *       ...defaultModules,
- *       'my-package/my-module,
- *     ];
- *   }
- * }
- * ```
- *
- * Anything listed in the return value from this function that is from a v2 addon will be removed.
- * (Allowing each of these packages from the default set to be incrementally converted to v2 addons
- * without the need for this code to be updated)
- *
- */
-const DEFAULT_EARLY_BOOT_SET = Object.freeze([
-  '@glimmer/tracking',
-  '@glimmer/component',
-  '@ember/service',
-  '@ember/controller',
-  '@ember/routing/route',
-  '@ember/component',
-]);
-
-/**
- * @glimmer/tracking + @glimmer/component
- * are separate addons, yet included in ember-source (for now),
- * but we will be required to use the real glimmer packages before
- * ember-source is converted to v2 (else we implement more hacks at resolver time!)
- */
-const BOOT_SET_FROM_EMBER_SOURCE = Object.freeze([
-  '@ember/service',
-  '@ember/controller',
-  '@ember/routing/route',
-  '@ember/component',
-]);
-
-registerHelper('js-string-escape', jsStringEscape);
-registerHelper('join', function (list, connector) {
+Handlebars.registerHelper('js-string-escape', jsStringEscape);
+Handlebars.registerHelper('join', function (list, connector) {
   return list.join(connector);
 });
 
-const entryTemplate = compile(
+const moduleIdMap = new Map<string, string>();
+
+function moduleToId(moduleSpecifier: string) {
+  let id = moduleSpecifier;
+
+  // if the module contains characters that need to be escaped, then map this to a hash instead, so we can easily replace this later
+  if (moduleSpecifier.includes('"') || moduleSpecifier.includes("'")) {
+    id = createHash('md5').update('some_string').digest('hex');
+
+    moduleIdMap.set(id, moduleSpecifier);
+  }
+
+  return id;
+}
+
+function idToModule(id: string) {
+  return moduleIdMap.get(id) ?? id;
+}
+
+Handlebars.registerHelper('module-to-id', moduleToId);
+
+const entryTemplate = Handlebars.compile(
   `
 module.exports = (function(){
   var d = _eai_d;
@@ -90,9 +74,12 @@ module.exports = (function(){
     {{! this is only used for synchronous importSync() using a template string }}
     return r('_eai_sync_' + specifier)(Array.prototype.slice.call(arguments, 1))
   };
-  d('__v1-addons__early-boot-set__', [{{{v1EmberDeps}}}], function() {});
+  {{!- es compatibility. Where we're using "require", webpack doesn't necessarily know to apply its own ES compatibility stuff -}}
+  function esc(m) {
+    return m && m.__esModule ? m : Object.assign({ default: m }, m);
+  }
   {{#each staticImports as |module|}}
-    d('{{js-string-escape module.specifier}}', ['__v1-addons__early-boot-set__'], function() { return require('{{js-string-escape module.specifier}}'); });
+    d('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.specifier}}'), function() { return esc(require('{{js-string-escape module.specifier}}')); });
   {{/each}}
   {{#each dynamicImports as |module|}}
     d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.specifier}}'); });
@@ -100,7 +87,7 @@ module.exports = (function(){
   {{#each staticTemplateImports as |module|}}
     d('_eai_sync_{{js-string-escape module.key}}', [], function() {
       return function({{module.args}}) {
-        return require({{{module.template}}});
+        return esc(require({{{module.template}}}));
       }
     });
   {{/each}}
@@ -111,6 +98,9 @@ module.exports = (function(){
       }
     });
   {{/each}}
+  {{#if needsApp}}
+    require('./app.cjs');
+  {{/if}}
 })();
 `,
   { noEscape: true }
@@ -120,7 +110,7 @@ module.exports = (function(){
   staticTemplateImports: { key: string; args: string; template: string }[];
   dynamicTemplateImports: { key: string; args: string; template: string }[];
   publicAssetURL: string | undefined;
-  v1EmberDeps: string;
+  needsApp: boolean;
 }) => string;
 
 // this goes in a file by itself so we can tell webpack not to parse it. That
@@ -199,10 +189,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
       // this controls webpack's own runtime code generation. You still need
       // preset-env to preprocess the libraries themselves (which is already
       // part of this.opts.babelConfig)
-      target: `browserslist:${this.opts.browserslist}`,
+      target: `browserslist:${this.opts.rootPackage.browserslist()}`,
       output: {
         path: join(this.outputPath, 'assets'),
-        publicPath: this.opts.publicAssetURL,
+        publicPath: this.opts.rootPackage.publicAssetURL(),
         filename: `chunk.[id].[chunkhash].js`,
         chunkFilename: `chunk.[id].[chunkhash].js`,
         libraryTarget: 'var',
@@ -224,10 +214,15 @@ export default class WebpackBundler extends Plugin implements Bundler {
         },
       },
       resolve: {
-        extensions: ['.js', '.ts', '.json'],
+        extensions: EXTENSIONS,
         mainFields: ['browser', 'module', 'main'],
         alias: Object.assign(
-          {},
+          {
+            // this is because of the allowAppImports feature needs to be able to import things
+            // like app-name/lib/something from within webpack handled code but that needs to be
+            // able to resolve to app-root/app/lib/something.
+            [this.opts.rootPackage.name]: `${this.opts.rootPackage.root}/app`,
+          },
           ...removeUndefined([...this.opts.packages].map((pkg) => pkg.aliases))
         ),
       },
@@ -235,7 +230,16 @@ export default class WebpackBundler extends Plugin implements Bundler {
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.cjs'),
         rules: [
-          this.babelRule(stagingDir),
+          this.babelRule(
+            stagingDir,
+            (filename) => !this.fileIsInApp(filename),
+            this.opts.rootPackage.cleanBabelConfig()
+          ),
+          this.babelRule(
+            stagingDir,
+            (filename) => this.fileIsInApp(filename),
+            this.opts.rootPackage.babelOptions
+          ),
           {
             test: /\.css$/i,
             use: [
@@ -269,7 +273,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
     loader: RuleSetUseItem;
     plugin: WebpackPluginInstance | undefined;
   } {
-    if (this.opts.environment === 'production' || this.opts.hasFastboot) {
+    if (
+      this.opts.environment === 'production' ||
+      this.opts.rootPackage.isFastBootEnabled
+    ) {
       return {
         loader: MiniCssExtractPlugin.loader,
         plugin: new MiniCssExtractPlugin({
@@ -302,34 +309,58 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return output;
   }
 
-  private babelRule(stagingDir: string): RuleSetRule {
-    let shouldTranspile = babelFilter(this.skipBabel(), this.opts.appRoot);
+  private fileIsInApp(filename: string) {
+    let packageCache = PackageCache.shared(
+      'ember-auto-import',
+      this.opts.rootPackage.root
+    );
+
+    const pkg = packageCache.ownerOfFile(filename);
+
+    return pkg?.root === this.opts.rootPackage.root;
+  }
+
+  private babelRule(
+    stagingDir: string,
+    filter: (filename: string) => boolean,
+    babelConfig: TransformOptions
+  ): RuleSetRule {
+    let shouldTranspile = babelFilter(
+      this.skipBabel(),
+      this.opts.rootPackage.root
+    );
 
     return {
-      test(filename: string) {
+      test: (filename: string) => {
         // We don't apply babel to our own stagingDir (it contains only our own
         // entrypoints that we wrote, and it can use `import()`, which we want
         // to leave directly for webpack).
         //
         // And we otherwise defer to the `skipBabel` setting as implemented by
         // `@embroider/shared-internals`.
-        return dirname(filename) !== stagingDir && shouldTranspile(filename);
+        return (
+          dirname(filename) !== stagingDir &&
+          shouldTranspile(filename) &&
+          filter(filename)
+        );
       },
       use: {
         loader: 'babel-loader-8',
-        options: this.opts.babelConfig,
+        options: babelConfig,
       },
     };
   }
+
+  private externalizedByUs = new Set<string>();
 
   @Memoize()
   private get externalsHandler(): Configuration['externals'] {
     let packageCache = PackageCache.shared(
       'ember-auto-import',
-      this.opts.appRoot
+      this.opts.rootPackage.root
     );
-    return function (params, callback) {
-      let { context, request } = params;
+    return (params, callback) => {
+      let { context, request, contextInfo } = params;
       if (!context || !request) {
         return callback();
       }
@@ -337,18 +368,62 @@ export default class WebpackBundler extends Plugin implements Bundler {
       if (request.startsWith('!')) {
         return callback();
       }
-      let name = packageName(request);
-      if (!name) {
-        // we're only interested in handling inter-package resolutions
-        return callback();
-      }
+
       let pkg = packageCache.ownerOfFile(context);
-      if (!pkg?.isV2Addon()) {
-        // we're only interested in imports that appear inside v2 addons
+      if (!pkg) {
+        // we're not inside any identifiable NPM package
         return callback();
       }
 
-      if (pkg.meta.externals?.includes(name)) {
+      let name = packageName(request);
+      if (!name) {
+        if (!isAbsolute(request) && pkg.root === this.opts.rootPackage.root) {
+          let appRelativeContext = relative(
+            resolve(this.opts.rootPackage.root, 'app'),
+            context
+          );
+
+          name = this.opts.rootPackage.name;
+          let candidateName = posix.join(name, appRelativeContext, request);
+          if (candidateName.startsWith(name)) {
+            request = candidateName;
+          } else {
+            // the relative request does not target the traditional "app" dir
+            return callback();
+          }
+        } else {
+          // we're only interested in handling inter-package resolutions
+          return callback();
+        }
+      }
+
+      // Handling full-name imports that point at the app itself e.g. app-name/lib/thingy
+      if (name === this.opts.rootPackage.name) {
+        if (
+          this.importMatchesAppImports(
+            stripQuery(request.slice(name.length + 1))
+          )
+        ) {
+          // webpack should handle this because it's another file in the app that matches allowAppImports
+          return callback();
+        } else {
+          // use ember's module because this is part of the app that doesn't match allowAppImports
+          this.externalizedByUs.add(request);
+          return callback(undefined, 'commonjs ' + request);
+        }
+      }
+
+      // if we're not in a v2 addon and the file that is doing the import doesn't match one of the allowAppImports patterns
+      // then we don't implement the "fallback behaviour" below i.e. this won't be handled by ember-auto-import
+      if (
+        !pkg.isV2Addon() &&
+        !this.matchesAppImports(pkg, contextInfo?.issuer)
+      ) {
+        return callback();
+      }
+
+      if (pkg.isV2Addon() && pkg.meta.externals?.includes(name)) {
+        this.externalizedByUs.add(request);
         return callback(undefined, 'commonjs ' + request);
       }
 
@@ -362,16 +437,59 @@ export default class WebpackBundler extends Plugin implements Bundler {
         } else {
           // the package exists but it is a v1 ember addon, so it's not
           // resolvable at build time, so we externalize it.
+          this.externalizedByUs.add(request);
           return callback(undefined, 'commonjs ' + request);
         }
       } catch (err) {
-        if (err.code !== 'MODULE_NOT_FOUND') {
+        if ((err as NodeJS.ErrnoException).code !== 'MODULE_NOT_FOUND') {
           throw err;
         }
         // real package doesn't exist, so externalize it
+        this.externalizedByUs.add(request);
         return callback(undefined, 'commonjs ' + request);
       }
     };
+  }
+
+  *withResolvableExtensions(
+    importSpecifier: string
+  ): Generator<string, void, void> {
+    if (importSpecifier.match(/\.\w+$/)) {
+      yield importSpecifier;
+    } else {
+      for (let ext of EXTENSIONS) {
+        yield `${importSpecifier}${ext}`;
+      }
+    }
+  }
+
+  importMatchesAppImports(relativeImportSpecifier: string): boolean {
+    for (let candidate of this.withResolvableExtensions(
+      relativeImportSpecifier
+    )) {
+      if (
+        this.opts.rootPackage.allowAppImports.some((pattern) =>
+          minimatch(candidate, pattern)
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  matchesAppImports(pkg: Package, requestingFile: string | undefined): boolean {
+    if (!requestingFile) {
+      return false;
+    }
+
+    if (pkg.root !== this.opts.rootPackage.root) {
+      return false;
+    }
+
+    return this.opts.rootPackage.allowAppImports.some((pattern) =>
+      minimatch(relative(join(pkg.root, 'app'), requestingFile), pattern)
+    );
   }
 
   async build(): Promise<void> {
@@ -384,6 +502,75 @@ export default class WebpackBundler extends Plugin implements Bundler {
     this.linkDeps(bundleDeps);
     let stats = await this.runWebpack();
     this.lastBuildResult = this.summarizeStats(stats, bundleDeps);
+    this.addDiscoveredExternals(this.lastBuildResult);
+  }
+
+  private addDiscoveredExternals(build: BuildResult) {
+    for (let assetFiles of build.entrypoints.values()) {
+      for (let assetFile of assetFiles) {
+        let inputSrc = readFileSync(
+          resolve(this.outputPath, assetFile),
+          'utf8'
+        );
+        let outputSrc = inputSrc.replace(
+          /EAI_DISCOVERED_EXTERNALS\(['"]([^'"]+)['"]\)/g,
+          (_substr: string, matched: string) => {
+            let deps = build
+              .externalDepsFor(idToModule(matched))
+              .filter((dep) => this.externalizedByUs.has(dep));
+            return '[' + deps.map((d) => `'${d}'`).join(',') + ']';
+          }
+        );
+        writeFileSync(resolve(this.outputPath, assetFile), outputSrc, 'utf8');
+      }
+    }
+  }
+
+  private externalDepsSearcher(
+    stats: Required<Stats>
+  ): (request: string) => string[] {
+    let externals = new Map<Module, Set<string>>();
+
+    function gatherExternals(
+      module: Module,
+      output = new Set<string>()
+    ): Set<string> {
+      if (externals.has(module)) {
+        for (let ext of externals.get(module)!) {
+          output.add(ext);
+        }
+      } else {
+        let ownExternals = new Set<string>();
+        externals.set(module, ownExternals);
+        for (let dep of module.dependencies) {
+          let nextModule = stats.compilation.moduleGraph.getModule(dep);
+          if (nextModule) {
+            if ((nextModule as any).externalType) {
+              ownExternals.add((nextModule as any).request);
+            } else {
+              gatherExternals(nextModule, ownExternals);
+            }
+          }
+        }
+        for (let o of ownExternals) {
+          output.add(o);
+        }
+      }
+      return output;
+    }
+
+    return (request: string): string[] => {
+      for (let module of stats.compilation.modules) {
+        for (let dep of module.dependencies) {
+          if ((dep as any).request === request) {
+            return [
+              ...gatherExternals(stats.compilation.moduleGraph.getModule(dep)!),
+            ];
+          }
+        }
+      }
+      return [];
+    };
   }
 
   private summarizeStats(
@@ -405,6 +592,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
     let output: BuildResult = {
       entrypoints: new Map(),
       lazyAssets: [] as string[],
+      externalDepsFor: this.externalDepsSearcher(_stats),
     };
     let nonLazyAssets: Set<string> = new Set();
     for (let id of Object.keys(entrypoints!)) {
@@ -436,103 +624,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return output;
   }
 
-  private getEarlyBootSet() {
-    let result = this.opts.earlyBootSet
-      ? this.opts.earlyBootSet([...DEFAULT_EARLY_BOOT_SET])
-      : [];
-
-    /**
-     * Prior to ember-source 3.27, the modules were precompiled into a variant of requirejs/AMD.
-     * As such, the early boot set will not support earlier than 3.27.
-     */
-    let host = this.opts.rootPackage;
-    let emberSource = host.requestedRange('ember-source');
-    let emberSourceVersion = semver.coerce(emberSource);
-
-    if (emberSourceVersion && semver.lt(emberSourceVersion, '3.27.0')) {
-      if (this.opts.earlyBootSet) {
-        throw new Error(
-          'autoImport.earlyBootSet is not supported for ember-source <= 3.27.0'
-        );
-      }
-
-      result = [];
-    }
-
-    if (!Array.isArray(result)) {
-      throw new Error(
-        'autoImport.earlyBootSet was used, but did not return an array. An array of strings is required'
-      );
-    }
-
-    // Reminder: [/* empty array */].every(anything) is true
-    if (!result.every((entry) => typeof entry === 'string')) {
-      throw new Error(
-        'autoImport.earlyBootSet was used, but the returned array did contained data other than strings. Every element in the return array must be a string representing a module'
-      );
-    }
-
-    /**
-     * TODO: iterate over these and check their dependencies if any depend on a v2 addon
-     *       - when this situation occurs, check that v2 addon's dependencies if any of those are v1 addons,
-     *         - if so, log a warning, about potentially needing to add modules from that v1 addon to the early boot set
-     */
-    let v2Addons = this.opts.v2Addons.keys();
-    let isEmberSourceV2 = this.opts.v2Addons.has('ember-source');
-
-    function depNameForPath(modulePath: string) {
-      if (modulePath.startsWith('@')) {
-        let [scope, name] = modulePath.split('/');
-
-        return `${scope}/${name}`;
-      }
-
-      return modulePath.split('/')[0];
-    }
-
-    function isFromEmberSource(modulePath: string) {
-      return BOOT_SET_FROM_EMBER_SOURCE.some((fromEmber) =>
-        modulePath.startsWith(fromEmber)
-      );
-    }
-
-    result = result.filter((modulePath) => {
-      if (isEmberSourceV2 && isFromEmberSource(modulePath)) {
-        return false;
-      }
-
-      let depName = depNameForPath(modulePath);
-
-      /**
-       * If a dependency from the earlyBootSet is not actually included in the project,
-       * don't include in the earlyBootSet emitted content.
-       */
-      if (!host.hasDependency(depName) && !isFromEmberSource(modulePath)) {
-        return false;
-      }
-
-      for (let v2Addon of v2Addons) {
-        // Omit modulePaths from v2 addons
-        if (modulePath.startsWith(v2Addon)) {
-          if (!DEFAULT_EARLY_BOOT_SET.includes(v2Addon)) {
-            console.warn(
-              `\`${modulePath}\` was included in the \`autoImport.earlyBootSet\` list, but belongs to a v2 addon. You can remove this entry from the earlyBootSet`
-            );
-          }
-
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    return result;
-  }
-
   private writeEntryFile(name: string, deps: BundleDependencies) {
-    let v1EmberDeps = this.getEarlyBootSet();
-
     writeFileSync(
       join(this.stagingDir, `${name}.cjs`),
       entryTemplate({
@@ -542,8 +634,8 @@ export default class WebpackBundler extends Plugin implements Bundler {
           deps.dynamicTemplateImports.map(mapTemplateImports),
         staticTemplateImports:
           deps.staticTemplateImports.map(mapTemplateImports),
-        publicAssetURL: this.opts.publicAssetURL,
-        v1EmberDeps: v1EmberDeps.map((name) => `'${name}'`).join(','),
+        publicAssetURL: this.opts.rootPackage.publicAssetURL(),
+        needsApp: name === 'tests',
       })
     );
   }
