@@ -3,7 +3,7 @@ import { Bundler, debugBundler } from './bundler';
 import Analyzer from './analyzer';
 import type { TreeType } from './analyzer';
 import Package from './package';
-import { buildDebugCallback } from 'broccoli-debug';
+import BroccoliDebug from 'broccoli-debug';
 import BundleConfig from './bundle-config';
 import type { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
@@ -28,7 +28,7 @@ import path from 'path';
 import funnel from 'broccoli-funnel';
 import makeDebug from 'debug';
 
-const debugTree = buildDebugCallback('ember-auto-import');
+const debugTree = BroccoliDebug.buildDebugCallback('ember-auto-import');
 const debugWatch = makeDebug('ember-auto-import:watch');
 
 // This interface must be stable across all versions of ember-auto-import that
