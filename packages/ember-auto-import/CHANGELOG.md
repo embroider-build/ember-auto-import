@@ -1,5 +1,16 @@
 # Changelog
 
+## Release (2024-09-20)
+
+ember-auto-import 2.8.1 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`
+  * [#637](https://github.com/embroider-build/ember-auto-import/pull/637) Fixing broccoli-debug ([@ef4](https://github.com/ef4))
+
+#### Committers: 1
+- Edward Faulkner ([@ef4](https://github.com/ef4))
+
 ## Release (2024-09-16)
 
 ember-auto-import 2.8.0 (minor)
