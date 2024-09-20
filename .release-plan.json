@@ -1,21 +1,17 @@
 {
   "solution": {
     "ember-auto-import": {
-      "impact": "minor",
-      "oldVersion": "2.7.4",
-      "newVersion": "2.8.0",
+      "impact": "patch",
+      "oldVersion": "2.8.0",
+      "newVersion": "2.8.1",
       "constraints": [
         {
-          "impact": "minor",
-          "reason": "Appears in changelog section :rocket: Enhancement"
-        },
-        {
           "impact": "patch",
-          "reason": "Appears in changelog section :house: Internal"
+          "reason": "Appears in changelog section :bug: Bug Fix"
         }
       ],
       "pkgJSONPath": "./packages/ember-auto-import/package.json"
     }
   },
-  "description": "## Release (2024-09-16)\n\nember-auto-import 2.8.0 (minor)\n\n#### :rocket: Enhancement\n* `ember-auto-import`\n  * [#623](https://github.com/embroider-build/ember-auto-import/pull/623) Optimize watched directories ([@simonihmig](https://github.com/simonihmig))\n\n#### :house: Internal\n* `ember-auto-import`\n  * [#621](https://github.com/embroider-build/ember-auto-import/pull/621) fix the repo link in the published package ([@mansona](https://github.com/mansona))\n* Other\n  * [#636](https://github.com/embroider-build/ember-auto-import/pull/636) update release-plan CI jobs ([@mansona](https://github.com/mansona))\n* `ember-auto-import`, `@ef4/test-scenarios`\n  * [#634](https://github.com/embroider-build/ember-auto-import/pull/634) Update scenario-tester ([@simonihmig](https://github.com/simonihmig))\n  * [#630](https://github.com/embroider-build/ember-auto-import/pull/630) Update TypeScript to latest ([@simonihmig](https://github.com/simonihmig))\n* `@ef4/addon-template`, `@ef4/app-template`, `@ef4/test-scenarios`\n  * [#635](https://github.com/embroider-build/ember-auto-import/pull/635) Fix CI for new Ember v6 canary and volta v2 releases ([@simonihmig](https://github.com/simonihmig))\n\n#### Committers: 2\n- Chris Manson ([@mansona](https://github.com/mansona))\n- Simon Ihmig ([@simonihmig](https://github.com/simonihmig))\n"
+  "description": "## Release (2024-09-20)\n\nember-auto-import 2.8.1 (patch)\n\n#### :bug: Bug Fix\n* `ember-auto-import`\n  * [#637](https://github.com/embroider-build/ember-auto-import/pull/637) Fixing broccoli-debug ([@ef4](https://github.com/ef4))\n\n#### Committers: 1\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n"
 }
