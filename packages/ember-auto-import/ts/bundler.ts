@@ -3,10 +3,10 @@ import type Splitter from './splitter';
 import type Package from './package';
 import type BundleConfig from './bundle-config';
 import type { BundleName } from './bundle-config';
-import { buildDebugCallback } from 'broccoli-debug';
+import BroccoliDebug from 'broccoli-debug';
 import type webpack from 'webpack';
 
-const debugTree = buildDebugCallback('ember-auto-import');
+const debugTree = BroccoliDebug.buildDebugCallback('ember-auto-import');
 
 export interface BundlerOptions {
   consoleWrite: (msg: string) => void;
