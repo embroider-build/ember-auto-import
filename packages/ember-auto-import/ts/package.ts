@@ -326,9 +326,27 @@ export default class Package {
       // relative or absolute path, rather than a package name. If the
       // originally authored import was an absolute or relative path, it would
       // have hit our { type: 'local' } condition before we ran aliasFor.
-      //
-      // At the moment, we don't try to handle this case, but we could in the
-      // future.
+
+      packageName = getPackageName(importedPath);
+
+      if (packageName) {
+        let packageRoot: string | undefined;
+        let packagePath = resolvePackagePath(packageName, this.root);
+
+        if (packagePath) {
+          packageRoot = dirname(packagePath);
+        }
+
+        if (packageRoot) {
+          return {
+            type: 'package',
+            path,
+            packageName,
+            packageRoot,
+          };
+        }
+      }
+
       return {
         type: 'local',
         local: path,
