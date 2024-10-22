@@ -2,7 +2,7 @@ import Splitter from './splitter';
 import { Bundler, debugBundler } from './bundler';
 import Analyzer from './analyzer';
 import type { TreeType } from './analyzer';
-import Package from './package';
+import Package, { V2AddonResolver } from './package';
 import BroccoliDebug from 'broccoli-debug';
 import BundleConfig from './bundle-config';
 import type { Node } from 'broccoli-node-api';
@@ -12,6 +12,7 @@ import {
   AppInstance,
   findTopmostAddon,
   isDeepAddonInstance,
+  PackageCache,
 } from '@embroider/shared-internals';
 import WebpackBundler from './webpack';
 import { Memoize } from 'typescript-memoize';
@@ -49,6 +50,7 @@ export interface AutoImportSharedAPI {
 
 export default class AutoImport implements AutoImportSharedAPI {
   private packages: Set<Package> = new Set();
+  private packageCache: PackageCache;
   private env: 'development' | 'test' | 'production';
   private consoleWrite: (msg: string) => void;
   private analyzers: Map<Analyzer, Package> = new Map();
@@ -67,7 +69,13 @@ export default class AutoImport implements AutoImportSharedAPI {
 
   constructor(addonInstance: AddonInstance) {
     let topmostAddon = findTopmostAddon(addonInstance);
-    this.packages.add(Package.lookupParentOf(topmostAddon));
+    this.packageCache = PackageCache.shared(
+      'ember-auto-import',
+      topmostAddon.project.root
+    );
+    this.packages.add(
+      Package.lookupParentOf(topmostAddon, this.v2AddonResolver)
+    );
     let host = topmostAddon.app;
 
     this.installAppFilter(host);
@@ -108,7 +116,7 @@ export default class AutoImport implements AutoImportSharedAPI {
     treeType?: TreeType,
     supportsFastAnalyzer?: true
   ) {
-    let pack = Package.lookupParentOf(addon);
+    let pack = Package.lookupParentOf(addon, this.v2AddonResolver);
     this.packages.add(pack);
     let analyzer = new Analyzer(
       debugTree(tree, `preprocessor:input-${this.analyzers.size}`),
@@ -124,17 +132,55 @@ export default class AutoImport implements AutoImportSharedAPI {
     this.v2Addons.set(packageName, packageRoot);
   }
 
-  private makeBundler(allAppTree: Node): Bundler {
-    // this is a concession to compatibility with ember-cli's treeForApp
-    // merging. Addons are allowed to inject modules into the app, and it's
-    // extremely common that those modules want to import from the addons
-    // themselves, even though this jumps arbitrarily many levels in the
-    // dependency graph.
-    //
-    // Since we handle v2 addons, we need to make sure all v2 addons function as
-    // "dependencies" of the app even though they're not really.
-    this.rootPackage.magicDeps = this.v2Addons;
+  get v2AddonResolver(): V2AddonResolver {
+    return {
+      hasV2Addon: (name: string): boolean => {
+        return this.v2Addons.has(name);
+      },
 
+      v2AddonRoot: (name: string): string | undefined => {
+        return this.v2Addons.get(name);
+      },
+
+      handleRenaming: (name: string): string => {
+        let hit = this.renamedModules().get(name);
+        if (hit) {
+          return hit;
+        }
+        hit = this.renamedModules().get(name + '.js');
+        if (hit) {
+          return hit;
+        }
+        hit = this.renamedModules().get(name + '/index.js');
+        if (hit) {
+          return hit;
+        }
+        return name;
+      },
+    };
+  }
+
+  private _renamedModules: Map<string, string> | undefined;
+
+  private renamedModules(): Map<string, string> {
+    if (!this._renamedModules) {
+      this._renamedModules = new Map();
+      for (let packageRoot of this.v2Addons.values()) {
+        let pkg = this.packageCache.get(packageRoot);
+        if (pkg.isV2Addon()) {
+          let renamedModules = pkg.meta['renamed-modules'];
+          if (renamedModules) {
+            for (let [from, to] of Object.entries(renamedModules)) {
+              this._renamedModules.set(from, to);
+            }
+          }
+        }
+      }
+    }
+    return this._renamedModules;
+  }
+
+  private makeBundler(allAppTree: Node): Bundler {
     // The Splitter takes the set of imports from the Analyzer and
     // decides which ones to include in which bundles
     let splitter = new Splitter({
@@ -166,7 +212,6 @@ export default class AutoImport implements AutoImportSharedAPI {
       consoleWrite: this.consoleWrite,
       bundles: this.bundles,
       webpack,
-      v2Addons: this.v2Addons,
       rootPackage: this.rootPackage,
     });
   }

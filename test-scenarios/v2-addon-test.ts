@@ -56,6 +56,11 @@ function buildV2Addon() {
           );
         `,
       },
+      'special-module-dest.js': `
+        export default function() {
+          return "from a renamed module"
+        }
+      `,
     },
   });
   addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
@@ -76,6 +81,9 @@ function buildV2Addon() {
     main: './addon-main.js',
     'app-js': {
       './components/hello-world.js': './app/components/hello-world.js',
+    },
+    'renamed-modules': {
+      'special-module/index.js': 'my-v2-addon/special-module-dest.js',
     },
   };
   return addon;
@@ -370,6 +378,16 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
               assert.deepEqual(macroExample(), 'hello from the app');
             });
           });
+        `,
+        'renamed-modules-test.js': `
+          import { module, test } from 'qunit';
+          import special from 'special-module';
+
+          module('Unit | v2 addon renamed-modules', function () {
+            test('can import from v2 addon with renamed-modules', function (assert) {
+              assert.equal(special(), 'from a renamed module');
+            });
+          })
         `,
       },
     },

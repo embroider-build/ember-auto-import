@@ -15,7 +15,6 @@ export interface BundlerOptions {
   packages: Set<Package>;
   bundles: BundleConfig;
   webpack: typeof webpack;
-  v2Addons: Map<string, string>;
   rootPackage: Package;
 }
 

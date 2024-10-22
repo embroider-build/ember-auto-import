@@ -79,10 +79,10 @@ module.exports = (function(){
     return m && m.__esModule ? m : Object.assign({ default: m }, m);
   }
   {{#each staticImports as |module|}}
-    d('{{js-string-escape module.specifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.specifier}}'), function() { return esc(require('{{js-string-escape module.specifier}}')); });
+    d('{{js-string-escape module.requestedSpecifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.requestedSpecifier}}'), function() { return esc(require('{{js-string-escape module.resolvedSpecifier}}')); });
   {{/each}}
   {{#each dynamicImports as |module|}}
-    d('_eai_dyn_{{js-string-escape module.specifier}}', [], function() { return import('{{js-string-escape module.specifier}}'); });
+    d('_eai_dyn_{{js-string-escape module.requestedSpecifier}}', [], function() { return import('{{js-string-escape module.resolvedSpecifier}}'); });
   {{/each}}
   {{#each staticTemplateImports as |module|}}
     d('_eai_sync_{{js-string-escape module.key}}', [], function() {
@@ -105,8 +105,8 @@ module.exports = (function(){
 `,
   { noEscape: true }
 ) as (args: {
-  staticImports: { specifier: string }[];
-  dynamicImports: { specifier: string }[];
+  staticImports: { requestedSpecifier: string; resolvedSpecifier: string }[];
+  dynamicImports: { requestedSpecifier: string; resolvedSpecifier: string }[];
   staticTemplateImports: { key: string; args: string; template: string }[];
   dynamicTemplateImports: { key: string; args: string; template: string }[];
   publicAssetURL: string | undefined;
@@ -216,15 +216,12 @@ export default class WebpackBundler extends Plugin implements Bundler {
       resolve: {
         extensions: EXTENSIONS,
         mainFields: ['browser', 'module', 'main'],
-        alias: Object.assign(
-          {
-            // this is because of the allowAppImports feature needs to be able to import things
-            // like app-name/lib/something from within webpack handled code but that needs to be
-            // able to resolve to app-root/app/lib/something.
-            [this.opts.rootPackage.name]: `${this.opts.rootPackage.root}/app`,
-          },
-          ...removeUndefined([...this.opts.packages].map((pkg) => pkg.aliases))
-        ),
+        alias: Object.assign({
+          // this is because of the allowAppImports feature needs to be able to import things
+          // like app-name/lib/something from within webpack handled code but that needs to be
+          // able to resolve to app-root/app/lib/something.
+          [this.opts.rootPackage.name]: `${this.opts.rootPackage.root}/app`,
+        }),
       },
       plugins: removeUndefined([stylePlugin]),
       module: {
