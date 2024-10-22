@@ -1,17 +1,17 @@
 {
   "solution": {
     "ember-auto-import": {
-      "impact": "patch",
-      "oldVersion": "2.8.0",
-      "newVersion": "2.8.1",
+      "impact": "minor",
+      "oldVersion": "2.8.1",
+      "newVersion": "2.9.0",
       "constraints": [
         {
-          "impact": "patch",
-          "reason": "Appears in changelog section :bug: Bug Fix"
+          "impact": "minor",
+          "reason": "Appears in changelog section :rocket: Enhancement"
         }
       ],
       "pkgJSONPath": "./packages/ember-auto-import/package.json"
     }
   },
-  "description": "## Release (2024-09-20)\n\nember-auto-import 2.8.1 (patch)\n\n#### :bug: Bug Fix\n* `ember-auto-import`\n  * [#637](https://github.com/embroider-build/ember-auto-import/pull/637) Fixing broccoli-debug ([@ef4](https://github.com/ef4))\n\n#### Committers: 1\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n"
+  "description": "## Release (2024-10-22)\n\nember-auto-import 2.9.0 (minor)\n\n#### :rocket: Enhancement\n* `ember-auto-import`, `@ef4/test-scenarios`\n  * [#642](https://github.com/embroider-build/ember-auto-import/pull/642) Renamed modules support ([@ef4](https://github.com/ef4))\n\n#### Committers: 1\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n"
 }

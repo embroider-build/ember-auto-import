@@ -1,5 +1,16 @@
 # Changelog
 
+## Release (2024-10-22)
+
+ember-auto-import 2.9.0 (minor)
+
+#### :rocket: Enhancement
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#642](https://github.com/embroider-build/ember-auto-import/pull/642) Renamed modules support ([@ef4](https://github.com/ef4))
+
+#### Committers: 1
+- Edward Faulkner ([@ef4](https://github.com/ef4))
+
 ## Release (2024-09-20)
 
 ember-auto-import 2.8.1 (patch)
