@@ -69,7 +69,17 @@ Qmodule('splitter', function (hooks) {
     await project.write();
 
     setup = function (options: Options = {}) {
-      pack = new Package(stubAddonInstance(project.baseDir, options));
+      pack = new Package(stubAddonInstance(project.baseDir, options), {
+        handleRenaming(name) {
+          return name;
+        },
+        hasV2Addon() {
+          return false;
+        },
+        v2AddonRoot() {
+          return undefined;
+        },
+      });
       let transpiled = broccoliBabel(new UnwatchedDir(project.baseDir), {
         plugins: [
           require.resolve('../../js/analyzer-plugin'),
@@ -222,7 +232,10 @@ Qmodule('splitter', function (hooks) {
         assert.deepEqual(deps.get('app')?.dynamicTemplateImports, []);
         let dynamicImports = deps.get('app')?.dynamicImports;
         assert.equal(dynamicImports?.length, 1);
-        assert.equal(dynamicImports?.[0].specifier, example[1].specifier);
+        assert.equal(
+          dynamicImports?.[0].requestedSpecifier,
+          example[1].specifier
+        );
         assert.equal(dynamicImports?.[0].packageName, example[1].packageName);
         assert.equal(
           dynamicImports?.[0].packageRoot,
@@ -268,7 +281,10 @@ Qmodule('splitter', function (hooks) {
         assert.deepEqual(deps.get('app')?.staticTemplateImports, []);
         let staticImports = deps.get('app')?.staticImports;
         assert.equal(staticImports?.length, 1);
-        assert.equal(staticImports?.[0].specifier, example[1].specifier);
+        assert.equal(
+          staticImports?.[0].requestedSpecifier,
+          example[1].specifier
+        );
         assert.equal(staticImports?.[0].packageName, example[1].packageName);
         assert.equal(
           staticImports?.[0].packageRoot,
@@ -370,7 +386,8 @@ Qmodule('splitter', function (hooks) {
       deps.get('app')?.staticImports.map((i) => ({
         packageName: i.packageName,
         packageRoot: i.packageRoot,
-        specifier: i.specifier,
+        requestedSpecifier: i.requestedSpecifier,
+        resolvedSpecifier: i.resolvedSpecifier,
       })),
       [
         {
@@ -380,7 +397,8 @@ Qmodule('splitter', function (hooks) {
             'node_modules',
             'aliasing-example'
           ),
-          specifier: 'my-aliased-package',
+          requestedSpecifier: 'my-aliased-package',
+          resolvedSpecifier: 'aliasing-example/dist/index.js',
         },
       ]
     );
@@ -401,7 +419,8 @@ Qmodule('splitter', function (hooks) {
       deps.get('app')?.staticImports.map((i) => ({
         packageName: i.packageName,
         packageRoot: i.packageRoot,
-        specifier: i.specifier,
+        requestedSpecifier: i.requestedSpecifier,
+        resolvedSpecifier: i.resolvedSpecifier,
       })),
       [
         {
@@ -411,7 +430,8 @@ Qmodule('splitter', function (hooks) {
             'node_modules',
             'aliasing-example'
           ),
-          specifier: 'my-aliased-package/inside',
+          requestedSpecifier: 'my-aliased-package/inside',
+          resolvedSpecifier: 'aliasing-example/dist/inside',
         },
       ]
     );
@@ -432,7 +452,8 @@ Qmodule('splitter', function (hooks) {
       deps.get('app')?.staticImports.map((i) => ({
         packageName: i.packageName,
         packageRoot: i.packageRoot,
-        specifier: i.specifier,
+        requestedSpecifier: i.requestedSpecifier,
+        resolvedSpecifier: i.resolvedSpecifier,
       })),
       [
         {
@@ -442,7 +463,8 @@ Qmodule('splitter', function (hooks) {
             'node_modules',
             'aliasing-example'
           ),
-          specifier: 'aliasing-example',
+          requestedSpecifier: 'aliasing-example',
+          resolvedSpecifier: 'aliasing-example/dist',
         },
       ]
     );
@@ -462,7 +484,7 @@ Qmodule('splitter', function (hooks) {
 
     assert.deepEqual(
       deps.get('app')?.staticImports.map((i) => ({
-        specifier: i.specifier,
+        specifier: i.requestedSpecifier,
       })),
       [
         {
@@ -490,7 +512,7 @@ Qmodule('splitter', function (hooks) {
       let deps = await splitter.deps();
       assert.deepEqual(
         deps.get('app')?.staticImports.map((i) => ({
-          specifier: i.specifier,
+          specifier: i.requestedSpecifier,
         })),
         [
           {

@@ -46,9 +46,9 @@ export interface Options {
 
 export interface DepResolution {
   type: 'package';
-  path: string;
   packageName: string;
   packageRoot: string;
+  resolvedSpecifier: string;
 }
 
 interface LocalResolution {
@@ -71,6 +71,12 @@ type Resolution =
   | URLResolution
   | ImpreciseResolution;
 
+export type V2AddonResolver = {
+  hasV2Addon(name: string): boolean;
+  v2AddonRoot(name: string): string | undefined;
+  handleRenaming(name: string): string;
+};
+
 export default class Package {
   public name: string;
   public root: string;
@@ -87,12 +93,16 @@ export default class Package {
   private pkgGeneration: number;
   private pkgCache: any;
   private macrosConfig: MacrosConfig | undefined;
+  private extraResolve: V2AddonResolver;
 
-  static lookupParentOf(child: AddonInstance): Package {
+  static lookupParentOf(
+    child: AddonInstance,
+    extraResolve: V2AddonResolver
+  ): Package {
     if (!parentCache.has(child)) {
       let pkg = packageCache.get(child.parent);
       if (!pkg) {
-        pkg = new this(child);
+        pkg = new this(child, extraResolve);
         packageCache.set(child.parent, pkg);
       }
       parentCache.set(child, pkg);
@@ -100,8 +110,9 @@ export default class Package {
     return parentCache.get(child)!;
   }
 
-  constructor(child: AddonInstance) {
+  constructor(child: AddonInstance, extraResolve: V2AddonResolver) {
     this.name = child.parent.pkg.name;
+    this.extraResolve = extraResolve;
 
     if (isDeepAddonInstance(child)) {
       this.root = this.pkgRoot = child.parent.root;
@@ -233,19 +244,13 @@ export default class Package {
     return `${this.name}/${this.isAddon ? 'addon' : 'app'}`;
   }
 
-  // extra dependencies that must be treated as if they were really dependencies
-  // of this package. sigh.
-  //
-  // maps from packageName to packageRoot
-  magicDeps: Map<string, string> | undefined;
-
   hasDependency(name: string): boolean {
     let { pkg } = this;
     return Boolean(
       pkg.dependencies?.[name] ||
         pkg.devDependencies?.[name] ||
         pkg.peerDependencies?.[name] ||
-        this.magicDeps?.get(name)
+        this.extraResolve.hasV2Addon(name)
     );
   }
 
@@ -269,7 +274,7 @@ export default class Package {
     return Boolean(
       pkg.dependencies?.[name] ||
         pkg.peerDependencies?.[name] ||
-        this.magicDeps?.has(name)
+        this.extraResolve.hasV2Addon(name)
     );
   }
 
@@ -319,7 +324,7 @@ export default class Package {
         break;
     }
 
-    let path = this.aliasFor(importedPath);
+    let path = this.extraResolve.handleRenaming(this.aliasFor(importedPath));
     let packageName = getPackageName(path);
     if (!packageName) {
       // this can only happen if the user supplied an alias that points at a
@@ -344,9 +349,9 @@ export default class Package {
       ) {
         return {
           type: 'package',
-          path: localPath,
           packageName: this.name,
           packageRoot: join(this.root, 'app'),
+          resolvedSpecifier: path,
         };
       }
     }
@@ -368,7 +373,7 @@ export default class Package {
     }
 
     if (!packageRoot) {
-      packageRoot = this.magicDeps?.get(packageName);
+      packageRoot = this.extraResolve.v2AddonRoot(packageName);
     }
 
     if (packageRoot == null) {
@@ -384,9 +389,9 @@ export default class Package {
     this.assertAllowedDependency(packageName, fromPath);
     return {
       type: 'package',
-      path,
       packageName,
       packageRoot,
+      resolvedSpecifier: path,
     };
   }
 

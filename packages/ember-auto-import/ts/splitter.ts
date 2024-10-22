@@ -10,7 +10,8 @@ import { satisfies } from 'semver';
 const debug = makeDebug('ember-auto-import:splitter');
 
 export interface ResolvedImport {
-  specifier: string;
+  requestedSpecifier: string;
+  resolvedSpecifier: string;
   packageName: string;
   packageRoot: string;
   importedBy: LiteralImport[];
@@ -115,7 +116,8 @@ export default class Splitter {
       seenAlready.importedBy.push(imp);
     } else {
       targets.set(imp.specifier, {
-        specifier: imp.specifier,
+        requestedSpecifier: imp.specifier,
+        resolvedSpecifier: target.resolvedSpecifier,
         packageName: target.packageName,
         packageRoot: target.packageRoot,
         importedBy: [imp],
@@ -284,9 +286,11 @@ export default class Splitter {
   }
 
   private sortBundle(bundle: BundleDependencies) {
-    bundle.staticImports.sort((a, b) => a.specifier.localeCompare(b.specifier));
+    bundle.staticImports.sort((a, b) =>
+      a.requestedSpecifier.localeCompare(b.requestedSpecifier)
+    );
     bundle.dynamicImports.sort((a, b) =>
-      a.specifier.localeCompare(b.specifier)
+      a.requestedSpecifier.localeCompare(b.requestedSpecifier)
     );
     bundle.dynamicTemplateImports.sort((a, b) =>
       a.cookedQuasis[0].localeCompare(b.cookedQuasis[0])
@@ -329,7 +333,8 @@ class LazyPrintDeps {
 
   private describeResolvedImport(imp: ResolvedImport) {
     return {
-      specifier: imp.specifier,
+      requestedSpecifier: imp.requestedSpecifier,
+      resolvedSpecifier: imp.resolvedSpecifier,
       packageRoot: imp.packageRoot,
       importedBy: imp.importedBy.map(this.describeImport.bind(this)),
     };
