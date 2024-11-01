@@ -9,6 +9,7 @@ import type { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
 import {
   AddonInstance,
+  AddonMeta,
   AppInstance,
   findTopmostAddon,
   isDeepAddonInstance,
@@ -45,7 +46,18 @@ export interface AutoImportSharedAPI {
   ): Node;
   included(addonInstance: AddonInstance): void;
   addTo(tree: Node): Node;
-  registerV2Addon(packageName: string, packageRoot: string): void;
+  registerV2Addon(
+    packageName: string,
+    packageRoot: string,
+    compatOptions?: CompatOptions
+  ): void;
+}
+
+// This interface must be stable across all versions of ember-auto-import that
+// speak the same leader-election protocol. So don't change this unless you know
+// what you're doing.
+export interface CompatOptions {
+  customizeMeta?: (meta: AddonMeta) => AddonMeta;
 }
 
 export default class AutoImport implements AutoImportSharedAPI {
@@ -57,7 +69,10 @@ export default class AutoImport implements AutoImportSharedAPI {
   private bundles: BundleConfig;
 
   // maps packageName to packageRoot
-  private v2Addons = new Map<string, string>();
+  private v2Addons = new Map<
+    string,
+    { root: string; options: CompatOptions }
+  >();
 
   static register(addon: AddonInstance) {
     LeaderChooser.for(addon).register(addon, () => new AutoImport(addon));
@@ -128,8 +143,12 @@ export default class AutoImport implements AutoImportSharedAPI {
     return analyzer;
   }
 
-  registerV2Addon(packageName: string, packageRoot: string): void {
-    this.v2Addons.set(packageName, packageRoot);
+  registerV2Addon(
+    packageName: string,
+    packageRoot: string,
+    options: CompatOptions = {}
+  ): void {
+    this.v2Addons.set(packageName, { root: packageRoot, options });
   }
 
   get v2AddonResolver(): V2AddonResolver {
@@ -139,7 +158,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       },
 
       v2AddonRoot: (name: string): string | undefined => {
-        return this.v2Addons.get(name);
+        return this.v2Addons.get(name)?.root;
       },
 
       handleRenaming: (name: string): string => {
@@ -165,10 +184,16 @@ export default class AutoImport implements AutoImportSharedAPI {
   private renamedModules(): Map<string, string> {
     if (!this._renamedModules) {
       this._renamedModules = new Map();
-      for (let packageRoot of this.v2Addons.values()) {
-        let pkg = this.packageCache.get(packageRoot);
+      for (let { root, options } of this.v2Addons.values()) {
+        let pkg = this.packageCache.get(root);
         if (pkg.isV2Addon()) {
-          let renamedModules = pkg.meta['renamed-modules'];
+          let meta = pkg.meta;
+          if (options.customizeMeta) {
+            // json here is just a super simple clone so the hook can't mutate
+            // our cache unintentionally
+            meta = options.customizeMeta(JSON.parse(JSON.stringify(meta)));
+          }
+          let renamedModules = meta['renamed-modules'];
           if (renamedModules) {
             for (let [from, to] of Object.entries(renamedModules)) {
               this._renamedModules.set(from, to);
