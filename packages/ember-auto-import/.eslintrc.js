@@ -27,7 +27,10 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/ban-ts-comment': 'off',
-    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+
+    // there's a bug in this rule that treats decorators as unused. We can
+    // probably turn this back on after doing the next eslint major.
+    '@typescript-eslint/no-unused-vars': ['off'],
   },
   overrides: [
     // node files
