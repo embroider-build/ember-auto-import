@@ -10,7 +10,19 @@ function buildV2Addon() {
     files: {
       'addon-main.js': `
         const { addonV1Shim } = require('@embroider/addon-shim');
-        module.exports = addonV1Shim(__dirname);
+        module.exports = addonV1Shim(__dirname, {
+          autoImportCompat: {
+            customizeMeta(meta) {
+              return {
+                 ...meta,
+                 'renamed-modules': {
+                    ...(meta['renamed-modules'] ?? {}),
+                    'customization-target/index.js': 'my-v2-addon/the-customized-target.js'
+                 }
+              }
+            }
+          }
+        });
       `,
       'index.js': `
         import plainDep from 'plain-dep';
@@ -58,7 +70,12 @@ function buildV2Addon() {
       },
       'special-module-dest.js': `
         export default function() {
-          return "from a renamed module"
+          return "from a renamed module";
+        }
+      `,
+      'the-customized-target.js': `
+        export default function() {
+          return "from customized target";
         }
       `,
     },
@@ -84,6 +101,7 @@ function buildV2Addon() {
     },
     'renamed-modules': {
       'special-module/index.js': 'my-v2-addon/special-module-dest.js',
+      'customization-target/index.js': 'my-v2-addon/this-does-not-exist.js',
     },
   };
   return addon;
@@ -382,10 +400,14 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
         'renamed-modules-test.js': `
           import { module, test } from 'qunit';
           import special from 'special-module';
+          import customized from 'customization-target';
 
           module('Unit | v2 addon renamed-modules', function () {
             test('can import from v2 addon with renamed-modules', function (assert) {
               assert.equal(special(), 'from a renamed module');
+            });
+            test('addon was able to customize its renamed-modules metadata', function(assert) {
+              assert.equal(customized(), 'from customized target');
             });
           })
         `,
