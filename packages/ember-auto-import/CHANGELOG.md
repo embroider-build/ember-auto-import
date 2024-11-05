@@ -1,5 +1,16 @@
 # Changelog
 
+## Release (2024-11-01)
+
+ember-auto-import 2.10.0 (minor)
+
+#### :rocket: Enhancement
+* `ember-auto-import`, `@ef4/v2-addon-template`, `@ef4/test-scenarios`
+  * [#645](https://github.com/embroider-build/ember-auto-import/pull/645) Support customizeMeta for v2 addons in classic builds ([@ef4](https://github.com/ef4))
+
+#### Committers: 1
+- Edward Faulkner ([@ef4](https://github.com/ef4))
+
 ## Release (2024-10-22)
 
 ember-auto-import 2.9.0 (minor)

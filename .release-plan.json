@@ -2,8 +2,8 @@
   "solution": {
     "ember-auto-import": {
       "impact": "minor",
-      "oldVersion": "2.8.1",
-      "newVersion": "2.9.0",
+      "oldVersion": "2.9.0",
+      "newVersion": "2.10.0",
       "constraints": [
         {
           "impact": "minor",
@@ -13,5 +13,5 @@
       "pkgJSONPath": "./packages/ember-auto-import/package.json"
     }
   },
-  "description": "## Release (2024-10-22)\n\nember-auto-import 2.9.0 (minor)\n\n#### :rocket: Enhancement\n* `ember-auto-import`, `@ef4/test-scenarios`\n  * [#642](https://github.com/embroider-build/ember-auto-import/pull/642) Renamed modules support ([@ef4](https://github.com/ef4))\n\n#### Committers: 1\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n"
+  "description": "## Release (2024-11-01)\n\nember-auto-import 2.10.0 (minor)\n\n#### :rocket: Enhancement\n* `ember-auto-import`, `@ef4/v2-addon-template`, `@ef4/test-scenarios`\n  * [#645](https://github.com/embroider-build/ember-auto-import/pull/645) Support customizeMeta for v2 addons in classic builds ([@ef4](https://github.com/ef4))\n\n#### Committers: 1\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n"
 }
