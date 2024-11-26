@@ -1,0 +1,7 @@
+# Unlabeled Changes
+
+* `ember-auto-import`
+  * [#647](https://github.com/embroider-build/ember-auto-import/pull/647) Update .npmignore ([@SergeAstapov](https://github.com/SergeAstapov))
+
+
+*Cannot plan release until the above changes are labeled*.
