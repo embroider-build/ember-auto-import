@@ -14,6 +14,7 @@ addonScenarios
             import Component from '@ember/component';
             import layout from '../templates/components/from-sample-addon';
             import { capitalize } from 'lodash-es';
+            import '@ember/string';
             import { computed } from '@ember/object';
 
             export default Component.extend({
