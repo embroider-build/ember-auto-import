@@ -22,12 +22,13 @@ function makeAddon() {
         'from-sample-addon.js': `
         import Component from '@ember/component';
         import { computed } from '@ember/object';
+        import { capitalize } from '@ember/string';
         import layout from '../templates/components/from-sample-addon';
         import { makeMessage } from 'some-lib';
         export default Component.extend({
           layout,
           message: computed(function() {
-            return makeMessage();
+            return capitalize(makeMessage());
           })
         });
       `,
@@ -128,6 +129,7 @@ appScenarios
     // top-level auto-import is mandatory
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.linkDependency('webpack', { baseDir: __dirname });
+    project.linkDependency('@ember/string-', { baseDir: __dirname, resolveName: '@ember/string-v4' });
 
     merge(project.files, {
       app: {
