@@ -212,6 +212,7 @@ addonScenarios
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.linkDependency('webpack', { baseDir: __dirname });
     project.linkDependency('lodash-es', { baseDir: __dirname });
+    project.linkDependency('@ember/string-', { baseDir: __dirname, resolveName: '@ember/string-v4' });
   })
   .forEachScenario(scenario => {
     Qmodule(scenario.name, function (hooks) {
