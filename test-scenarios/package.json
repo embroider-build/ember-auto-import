@@ -21,6 +21,7 @@
     "@ef4/app-template": "*",
     "@embroider/macros": "npm:@embroider/macros@latest",
     "@embroider/addon-shim": "npm:@embroider/addon-shim@latest",
+    "@ember/string-v4": "npm:@ember/string@^4.0.0",
     "@types/fs-extra": "^5.0.4",
     "ember-auto-import": "file:../packages/ember-auto-import",
     "fs-extra": "^6.0.1",
