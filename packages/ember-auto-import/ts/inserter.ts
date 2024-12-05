@@ -33,7 +33,7 @@ export class Inserter extends Plugin {
     private config: BundleConfig,
     private options: InserterOptions
   ) {
-    super([allApp], {
+    super([allApp, bundler], {
       annotation: 'ember-auto-import-inserter',
       persistentOutput: true,
     });
