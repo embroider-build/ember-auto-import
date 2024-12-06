@@ -124,10 +124,10 @@ function customVendorTest(project: Project, vendorPath: string) {
 }
 
 appScenarios
-  // ember-cli 2.18 has bugs that don't let it actually work with customized
-  // vendor paths. When we bump the lts scenario to something newer we can
-  // drop this check.
-  .skip('lts')
+  // ember-cli 6 has removed custom `outputPaths`
+  .skip('canary')
+  .skip('beta')
+  .skip('release')
   .expand({
     'customized-vendor-nested': project => customVendorTest(project, '/js/vendor.js'),
     'customized-vendor-top': project => customVendorTest(project, '/top-level-vendor.js'),
