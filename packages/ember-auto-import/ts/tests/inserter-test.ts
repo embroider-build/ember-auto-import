@@ -14,7 +14,21 @@ import { join } from 'path';
 import { Inserter } from '../inserter';
 import BundleConfig from '../bundle-config';
 import { BuildResult, Bundler } from '../bundler';
+import Plugin from 'broccoli-plugin';
+
 const { module: Qmodule, test } = QUnit;
+
+class NoopPlugin extends Plugin {
+  build(): Promise<void> | void {
+    // noop
+  }
+}
+
+function asInputNode(obj: any) {
+  const plugin = new NoopPlugin([]);
+  Object.assign(plugin, obj);
+  return plugin as Bundler;
+}
 
 Qmodule('inserter', function (hooks) {
   let builder: Builder;
@@ -28,7 +42,7 @@ Qmodule('inserter', function (hooks) {
   async function build() {
     let inserter = new Inserter(
       new UnwatchedDir(upstream),
-      { buildResult } as Bundler,
+      asInputNode({ buildResult }),
       bundleConfig,
       {
         publicAssetURL,
