@@ -219,9 +219,32 @@ function buildV2AddonWithMacros() {
       `,
       dist: {
         'index.js': `
-          import { getOwnConfig } from '@embroider/macros';
+          import { DEBUG } from '@glimmer/env';
+          import { assert } from '@ember/debug';
+          import { getOwnConfig, macroCondition } from '@embroider/macros';
+
           export function macroExample() {
             return getOwnConfig().message;
+          }
+
+          export function isDebug() { return DEBUG; }
+          export function staticMacro() {
+            if (macroCondition(true)) {
+              return true;
+            }
+            return false;
+          }
+          export function glimmerEnvMacro() {
+            if (macroCondition(DEBUG)) {
+              return true;
+            }
+            return false;
+          }
+          export function configMacro() {
+            if (macroCondition(getOwnConfig().isTrue)) {
+              return true;
+            }
+            return false;
           }
         `,
       },
@@ -261,6 +284,7 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
             setConfig: {
               'macro-using-addon': {
                 message: 'hello from the app',
+                isTrue: true,
               }
             }
           }
