@@ -16,34 +16,8 @@ module.exports = {
     AutoImport.register(this);
   },
 
-  __host: null,
-  eldestGrandparent() {
-    if (this.__host !== null) return this.__host;
-
-    let parent = this.parent;
-    while (parent) {
-      if (!parent.parent) break;
-      parent = parent.parent;
-    }
-    this.__host = parent;
-    return this.__host;
-  },
-
-  __isEnabled: null,
   isEnabled() {
-    if (this.__isEnabled !== null) return this.__isEnabled;
-
-    let host = this.eldestGrandparent();
-    let deps = new Set([
-      ...Object.keys(host.pkg.dependencies || {}),
-      ...Object.keys(host.pkg.devDependencies || {}),
-    ]);
-
-    let isViteProject = deps.has('@embroider/vite') && deps.has('vite');
-
-    this.__isEnabled = !isViteProject;
-
-    return this.__isEnabled;
+    return process.env.EMBROIDER_PREBUILD !== 'true';
   },
 
   setupPreprocessorRegistry(type: string, registry: any) {
