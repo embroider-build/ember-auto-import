@@ -1,3 +1,4 @@
+.DS_Store
 packages/*/node_modules
 packages/*/tmp
 packages/*/dist
