@@ -238,6 +238,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       bundles: this.bundles,
       webpack,
       rootPackage: this.rootPackage,
+      entrypointInjectables: this.rootPackage.entrypointInjectables,
     });
   }
 
