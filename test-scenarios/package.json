@@ -32,7 +32,7 @@
     "ember-cli-lts": "npm:ember-cli@~3.4.0",
     "ember-cli-latest": "npm:ember-cli@latest",
     "ember-cli-beta": "npm:ember-cli@beta",
-    "ember-cli": "git+https://github.com/ember-cli/ember-cli#master",
+    "ember-cli": "npm:ember-cli@alpha",
     "ember-cli-fastboot": "npm:ember-cli-fastboot@^4.1.0",
     "ember-cli-typescript-2": "npm:ember-cli-typescript@^2.0.0-beta.3",
     "ember-cli-typescript-3": "npm:ember-cli-typescript@^3.0.0",
