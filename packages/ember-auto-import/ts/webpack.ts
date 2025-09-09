@@ -262,7 +262,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
       ...[...this.opts.packages].map((pkg) => pkg.webpackConfig)
     );
     debug('webpackConfig %j', config);
-    this.state = { webpack: this.opts.webpack(config), stagingDir };
+    this.state = { webpack: this.opts.webpack(config)!, stagingDir };
     return this.state;
   }
 
