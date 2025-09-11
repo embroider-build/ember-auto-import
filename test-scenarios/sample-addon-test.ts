@@ -220,7 +220,7 @@ addonScenarios
         app = await scenario.prepare();
       });
       test('yarn test', async function (assert) {
-        let result = await app.execute('volta run npm run test');
+        let result = await app.execute('pnpm  run test');
         assert.equal(result.exitCode, 0, result.output);
       });
     });

@@ -28,8 +28,5 @@
     "patch-package": "^6.5.1",
     "prettier": "^2.2.1",
     "release-plan": "^0.9.0"
-  },
-  "volta": {
-    "node": "16.20.1"
   }
 }

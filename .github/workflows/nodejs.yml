@@ -16,16 +16,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v1
-      - uses: volta-cli/action@v4
-        with:
-          node-version: '16'
-      - uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-      - run: npm install
+      - uses: ./.github/actions/setup
       - name: eslint
         run: for name in `ls packages/*/.eslintrc.js`; do dirname $name; done  | xargs npx eslint --
       - id: set-matrix
@@ -43,16 +34,9 @@ jobs:
       matrix: ${{fromJson(needs.discover_matrix.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v1
-      - uses: volta-cli/action@v4
+      - uses: ./.github/actions/setup
         with:
-          node-version: '16'
-      - uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-      - run: npm install --no-package-lock
+          use_lockfile: false
       - name: test
         run: ${{ matrix.command }}
         working-directory: test-scenarios
@@ -62,16 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: volta-cli/action@v4
-        with:
-          node-version: '16'
-      - uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-      - run: npm install
+      - uses: ./.github/actions/setup
       - name: test
         run: npm run test:node
         working-directory: packages/ember-auto-import

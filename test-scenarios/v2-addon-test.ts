@@ -427,7 +427,7 @@ scenarios.forEachScenario(scenario => {
       app = await scenario.prepare();
     });
     test('yarn test', async function (assert) {
-      let result = await app.execute('volta run npm run test');
+      let result = await app.execute('pnpm  run test');
       assert.equal(result.exitCode, 0, result.output);
     });
   });
@@ -494,7 +494,7 @@ Scenarios.fromProject(baseApp)
         app = await scenario.prepare();
       });
       test('ensure error', async function (assert) {
-        let result = await app.execute('volta run npm run build');
+        let result = await app.execute('pnpm  run build');
         assert.notEqual(result.exitCode, 0, result.output);
         assert.ok(
           /my-v1-addon needs to depend on ember-auto-import in order to use my-v2-addon/.test(result.stderr),
@@ -568,7 +568,7 @@ Scenarios.fromProject(baseApp)
         app = await scenario.prepare();
       });
       test('ensure success', async function (assert) {
-        let result = await app.execute('volta run npm run test');
+        let result = await app.execute('pnpm  run test');
         assert.strictEqual(result.exitCode, 0, result.output);
       });
     });

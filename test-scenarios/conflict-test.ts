@@ -44,7 +44,7 @@ appScenarios
         app = await scenario.prepare();
       });
       test('ensure build error', async function (assert) {
-        let result = await app.execute('volta run npm run build');
+        let result = await app.execute('pnpm  run build');
         assert.notEqual(result.exitCode, 0, result.output);
         assert.ok(
           /@ef4\/app-template needs inner-lib satisfying \^1.0.0, but we have version 2.3.4 because of @ef4\/addon-template/.test(

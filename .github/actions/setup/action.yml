@@ -1,0 +1,28 @@
+name: Setup node and pnpm
+description: Setup node and install dependencies using pnpm
+inputs:
+  use_lockfile:
+    description: 'Whether to use the lockfile vs latest floating dependencies'
+    required: false
+    default: 'true'
+  use_pinned_node:
+    description: 'Whether to use the node version defined in .npmrc'
+    required: false
+    default: 'false'
+runs:
+  using: 'composite'
+  steps:
+    - name: remove pinned node version
+      run: echo "auto-install-peers=false" > .npmrc
+      if: inputs.use_pinned_node == 'false'
+      shell: bash
+    - uses: pnpm/action-setup@v4
+      name: Install pnpm
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: pnpm
+        # This creates an .npmrc that reads the NODE_AUTH_TOKEN environment variable
+        registry-url: 'https://registry.npmjs.org'
+    - run: pnpm install ${{ fromJSON('{"false":"--no-lockfile", "true":"--frozen-lockfile"}')[inputs.use_lockfile] }}
+      shell: bash
