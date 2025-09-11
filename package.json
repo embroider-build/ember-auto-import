@@ -21,5 +21,10 @@
     "eslint-plugin-prettier": "^3.3.0",
     "prettier": "^2.2.1",
     "release-plan": "^0.9.0"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "fastboot": "patches/fastboot.patch"
+    }
   }
 }

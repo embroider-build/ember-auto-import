@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: false
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  fastboot:
+    hash: f399fe46775908a599a0998a41aa72bae16315c83fd93ee1a25317e75f0f3979
+    path: patches/fastboot.patch
+
 importers:
 
   .:
@@ -14695,7 +14700,7 @@ snapshots:
       ember-cli-preprocess-registry: 3.3.0
       ember-cli-version-checker: 5.1.2
       ember-source: 6.9.0-alpha.1(@glimmer/component@1.1.2(@babel/core@7.28.4))(rsvp@4.8.5)
-      fastboot: 4.1.5
+      fastboot: 4.1.5(patch_hash=f399fe46775908a599a0998a41aa72bae16315c83fd93ee1a25317e75f0f3979)
       fastboot-express-middleware: 4.1.2
       fastboot-transform: 0.1.3
       fs-extra: 10.1.0
@@ -16832,7 +16837,7 @@ snapshots:
   fastboot-express-middleware@4.1.2:
     dependencies:
       chalk: 4.1.2
-      fastboot: 4.1.2
+      fastboot: 4.1.2(patch_hash=f399fe46775908a599a0998a41aa72bae16315c83fd93ee1a25317e75f0f3979)
     transitivePeerDependencies:
       - bufferutil
       - canvas
@@ -16846,7 +16851,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  fastboot@4.1.2:
+  fastboot@4.1.2(patch_hash=f399fe46775908a599a0998a41aa72bae16315c83fd93ee1a25317e75f0f3979):
     dependencies:
       chalk: 4.1.2
       cookie: 0.4.2
@@ -16861,7 +16866,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  fastboot@4.1.5:
+  fastboot@4.1.5(patch_hash=f399fe46775908a599a0998a41aa72bae16315c83fd93ee1a25317e75f0f3979):
     dependencies:
       chalk: 4.1.2
       cookie: 0.4.2
