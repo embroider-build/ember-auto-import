@@ -30,7 +30,7 @@
     "lint:js:fix": "eslint . --fix",
     "start": "ember serve",
     "test:node": "qunit js/tests",
-    "xprepare": "tsc"
+    "prepare": "tsc"
   },
   "dependencies": {
     "@babel/core": "^7.16.7",
