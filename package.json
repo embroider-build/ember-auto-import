@@ -1,11 +1,6 @@
 {
   "private": true,
   "repository": "https://github.com/embroider-build/ember-auto-import",
-  "workspaces": [
-    "packages/*",
-    "test-scenarios",
-    "types/*"
-  ],
   "scripts": {
     "postinstall": "patch-package",
     "nom": "rm -rf node_modules packages/*/node_modules test-scenarios/node_modules types/*/node_modules",
