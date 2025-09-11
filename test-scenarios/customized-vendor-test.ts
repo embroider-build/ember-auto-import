@@ -125,9 +125,9 @@ function customVendorTest(project: Project, vendorPath: string) {
 
 appScenarios
   // ember-cli 2.18 has bugs that don't let it actually work with customized
-  // vendor paths. When we bump the lts scenario to something newer we can
-  // drop this check.
-  .skip('lts')
+  // vendor paths.
+  // releases after 6.0 dropped support for that feature.
+  .only('ember3')
   .expand({
     'customized-vendor-nested': project => customVendorTest(project, '/js/vendor.js'),
     'customized-vendor-top': project => customVendorTest(project, '/top-level-vendor.js'),
@@ -147,9 +147,9 @@ appScenarios
 
 appScenarios
   // ember-cli 2.18 has bugs that don't let it actually work with customized
-  // vendor paths. When we bump the lts scenario to something newer we can
-  // drop this check.
-  .skip('lts')
+  // vendor paths.
+  // releases after 6.0 dropped support for that feature.
+  .only('ember3')
   .map('customized-vendor-fastboot', project => {
     customVendorTest(project, '/js/vendor.js');
   })
