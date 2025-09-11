@@ -22,6 +22,8 @@
     "@embroider/macros": "npm:@embroider/macros@latest",
     "@embroider/addon-shim": "npm:@embroider/addon-shim@latest",
     "@types/fs-extra": "^5.0.4",
+    "@types/lodash": "^4.14.110",
+    "@types/resolve": "^0.0.8",
     "ember-auto-import": "workspace:*",
     "fs-extra": "^6.0.1",
     "leader-v1": "npm:ember-auto-import@1.7",

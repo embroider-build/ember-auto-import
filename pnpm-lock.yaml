@@ -510,6 +510,12 @@ importers:
       '@types/fs-extra':
         specifier: ^5.0.4
         version: 5.1.0
+      '@types/lodash':
+        specifier: ^4.14.110
+        version: 4.17.20
+      '@types/resolve':
+        specifier: ^0.0.8
+        version: 0.0.8
       ember-auto-import:
         specifier: workspace:*
         version: link:../packages/ember-auto-import
