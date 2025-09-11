@@ -24,6 +24,7 @@
     "@types/fs-extra": "^5.0.4",
     "@types/lodash": "^4.14.110",
     "@types/resolve": "^0.0.8",
+    "broccoli-funnel": "^3.0.8",
     "ember-auto-import": "workspace:*",
     "execa": "^5.0.0",
     "fs-extra": "^6.0.1",
