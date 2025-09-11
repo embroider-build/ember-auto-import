@@ -11,7 +11,7 @@ async function githubMatrix() {
       '--files',
       '*-test.ts',
       '--matrix',
-      'pnpm run test -- --filter %s',
+      'pnpm run test --filter %s',
     ],
     {
       preferLocal: true,
