@@ -135,6 +135,8 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   private lastBuildResult: BuildResult | undefined;
 
+  private outputCache = new Map<string, string>();
+
   constructor(priorTrees: InputNode[], private opts: BundlerOptions) {
     super(priorTrees, {
       persistentOutput: true,
@@ -509,6 +511,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
           resolve(this.outputPath, assetFile),
           'utf8'
         );
+
+        if (this.outputCache.get(assetFile) === inputSrc) { continue; }
+        this.outputCache.set(assetFile, inputSrc);
+        
         let outputSrc = inputSrc.replace(
           /EAI_DISCOVERED_EXTERNALS\(['"]([^'"]+)['"]\)/g,
           (_substr: string, matched: string) => {
