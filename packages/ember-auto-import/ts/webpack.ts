@@ -128,9 +128,9 @@ window._eai_d = define;
 export default class WebpackBundler extends Plugin implements Bundler {
   private state:
     | {
-      webpack: Compiler;
-      stagingDir: string;
-    }
+        webpack: Compiler;
+        stagingDir: string;
+      }
     | undefined;
 
   private lastBuildResult: BuildResult | undefined;
