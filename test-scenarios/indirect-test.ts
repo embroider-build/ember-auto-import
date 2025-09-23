@@ -185,8 +185,9 @@ function projectFiles() {
 }
 
 appScenarios
-  // canary skipped due to https://github.com/emberjs/ember.js/issues/20984
+  // skipped due to https://github.com/emberjs/ember.js/issues/20984
   .skip('canary')
+  .skip('beta')
   .map('indirect', project => {
     project.addDevDependency(makeAddon());
     project.linkDependency('ember-cli-fastboot', { baseDir: __dirname });
