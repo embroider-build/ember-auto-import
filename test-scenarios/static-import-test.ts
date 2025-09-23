@@ -392,7 +392,8 @@ function staticImportTest(project: Project) {
   });
 }
 
-let scenarios = appScenarios.map('static-import', project => {
+// canary skipped due to https://github.com/emberjs/ember.js/issues/20984
+let scenarios = appScenarios.skip('canary').map('static-import', project => {
   staticImportTest(project);
 });
 
