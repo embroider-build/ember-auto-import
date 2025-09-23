@@ -1,0 +1,11 @@
+diff --git a/src/fastboot-info.js b/src/fastboot-info.js
+index f330596368c5c70d480960ec0970f897992941ff..dfb5bfa017d589f78871a3882588f26647851281 100644
+--- a/src/fastboot-info.js
++++ b/src/fastboot-info.js
+@@ -37,6 +37,5 @@ module.exports = class FastBootInfo {
+    * service, ensuring it is available inside instance initializers.
+    */
+   register(instance) {
+-    instance.register('info:-fastboot', this, { instantiate: false });
+   }
+ };

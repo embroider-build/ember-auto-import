@@ -8,7 +8,6 @@ Our tests are driven through a system of layered scenarios in `./test-scenarios`
 
 ### Installation
 
-- Install [Volta](https://volta.sh/) to ensure you're using matching node and NPM version.
 - `git clone <repository-url>`
 - `cd ember-auto-import`
 - `npm install`

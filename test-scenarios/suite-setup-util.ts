@@ -2,7 +2,7 @@ import execa from 'execa';
 
 async function githubMatrix() {
   let { stdout } = await execa(
-    'npx',
+    'pnpm',
     [
       'scenario-tester',
       'list',
@@ -11,7 +11,7 @@ async function githubMatrix() {
       '--files',
       '*-test.ts',
       '--matrix',
-      'npm run test -- --filter %s',
+      'pnpm run test --filter %s',
     ],
     {
       preferLocal: true,

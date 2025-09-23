@@ -392,9 +392,13 @@ function staticImportTest(project: Project) {
   });
 }
 
-let scenarios = appScenarios.map('static-import', project => {
-  staticImportTest(project);
-});
+// skipped due to https://github.com/emberjs/ember.js/issues/20984
+let scenarios = appScenarios
+  .skip('canary')
+  .skip('beta')
+  .map('static-import', project => {
+    staticImportTest(project);
+  });
 
 scenarios.forEachScenario(scenario => {
   Qmodule(scenario.name, function (hooks) {
@@ -404,7 +408,7 @@ scenarios.forEachScenario(scenario => {
     });
 
     test('npm run test', async function (assert) {
-      let result = await app.execute('volta run npm run test');
+      let result = await app.execute('pnpm  run test');
       assert.equal(result.exitCode, 0, result.output);
     });
   });

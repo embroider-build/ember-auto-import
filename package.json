@@ -1,13 +1,7 @@
 {
   "private": true,
   "repository": "https://github.com/embroider-build/ember-auto-import",
-  "workspaces": [
-    "packages/*",
-    "test-scenarios",
-    "types/*"
-  ],
   "scripts": {
-    "postinstall": "patch-package",
     "nom": "rm -rf node_modules packages/*/node_modules test-scenarios/node_modules types/*/node_modules",
     "test": "cd test-scenarios && npm run test",
     "watch": "cd packages/ember-auto-import && npm run compile -- --watch"
@@ -25,14 +19,12 @@
     "eslint-plugin-ember": "^5.0.0",
     "eslint-plugin-node": "^6.0.1",
     "eslint-plugin-prettier": "^3.3.0",
-    "patch-package": "^6.5.1",
     "prettier": "^2.2.1",
     "release-plan": "^0.9.0"
   },
-  "volta": {
-    "node": "16.20.1"
-  },
-  "overrides": {
-    "glob@>=9.0.0": "^8.0.0"
+  "pnpm": {
+    "patchedDependencies": {
+      "fastboot": "patches/fastboot.patch"
+    }
   }
 }
