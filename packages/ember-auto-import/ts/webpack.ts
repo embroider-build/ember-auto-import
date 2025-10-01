@@ -526,7 +526,6 @@ export default class WebpackBundler extends Plugin implements Bundler {
           resolve(this.outputPath, assetFile),
           'utf8'
         );
-
         let outputSrc = inputSrc.replace(
           /EAI_DISCOVERED_EXTERNALS\(['"]([^'"]+)['"]\)/g,
           (_substr: string, matched: string) => {
