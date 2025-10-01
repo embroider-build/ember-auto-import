@@ -16,13 +16,17 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@ef4/addon-template": "*",
-    "@ef4/v2-addon-template": "*",
-    "@ef4/app-template": "*",
+    "@ef4/addon-template": "workspace:*",
+    "@ef4/v2-addon-template": "workspace:*",
+    "@ef4/app-template": "workspace:*",
     "@embroider/macros": "npm:@embroider/macros@latest",
     "@embroider/addon-shim": "npm:@embroider/addon-shim@latest",
     "@types/fs-extra": "^5.0.4",
-    "ember-auto-import": "file:../packages/ember-auto-import",
+    "@types/lodash": "^4.14.110",
+    "@types/resolve": "^0.0.8",
+    "broccoli-funnel": "^3.0.8",
+    "ember-auto-import": "workspace:*",
+    "execa": "^5.0.0",
     "fs-extra": "^6.0.1",
     "leader-v1": "npm:ember-auto-import@1.7",
     "leader-v2": "npm:ember-auto-import@1.11",
@@ -32,7 +36,7 @@
     "ember-cli-lts": "npm:ember-cli@~3.4.0",
     "ember-cli-latest": "npm:ember-cli@latest",
     "ember-cli-beta": "npm:ember-cli@beta",
-    "ember-cli": "git+https://github.com/ember-cli/ember-cli#master",
+    "ember-cli": "npm:ember-cli@alpha",
     "ember-cli-fastboot": "npm:ember-cli-fastboot@^4.1.0",
     "ember-cli-typescript-2": "npm:ember-cli-typescript@^2.0.0-beta.3",
     "ember-cli-typescript-3": "npm:ember-cli-typescript@^3.0.0",
@@ -50,8 +54,5 @@
     "moment": "^2.22.1",
     "typescript-4": "npm:typescript@^4.1.2",
     "webpack": "^5.31.0"
-  },
-  "volta": {
-    "node": "16.20.1"
   }
 }

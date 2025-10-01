@@ -1,5 +1,23 @@
 # Changelog
 
+## Release (2025-09-23)
+
+ember-auto-import 2.10.1 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#662](https://github.com/embroider-build/ember-auto-import/pull/662) Don't allow v2 addons to accidentally resolve non-deps ([@ef4](https://github.com/ef4))
+
+#### :house: Internal
+* `@ef4/addon-template`, `@ef4/app-template`, `ember-auto-import`, `@ef4/test-scenarios`, `broccoli-funnel-types`
+  * [#663](https://github.com/embroider-build/ember-auto-import/pull/663) Fix ci ([@ef4](https://github.com/ef4))
+* `ember-auto-import`
+  * [#647](https://github.com/embroider-build/ember-auto-import/pull/647) Update .npmignore ([@SergeAstapov](https://github.com/SergeAstapov))
+
+#### Committers: 2
+- Edward Faulkner ([@ef4](https://github.com/ef4))
+- Sergey Astapov ([@SergeAstapov](https://github.com/SergeAstapov))
+
 ## Release (2024-11-01)
 
 ember-auto-import 2.10.0 (minor)

@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   check-plan:
-    name: "Check Release Plan"
+    name: 'Check Release Plan'
     runs-on: ubuntu-latest
     outputs:
       command: ${{ steps.check-release.outputs.command }}
@@ -52,12 +52,8 @@ jobs:
         with:
           fetch-depth: 0
           ref: 'main'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 16
-
-      - run: npm ci
-      - name: "Generate Explanation and Prep Changelogs"
+      - uses: ./.github/actions/setup
+      - name: 'Generate Explanation and Prep Changelogs'
         id: explanation
         run: |
           set +e
@@ -79,7 +75,7 @@ jobs:
       - uses: peter-evans/create-pull-request@v6
         with:
           commit-message: "Prepare Release using 'release-plan'"
-          labels: "internal"
+          labels: 'internal'
           branch: release-preview
           title: Prepare Release
           body: |

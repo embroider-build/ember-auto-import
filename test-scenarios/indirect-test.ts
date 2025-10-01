@@ -185,6 +185,9 @@ function projectFiles() {
 }
 
 appScenarios
+  // skipped due to https://github.com/emberjs/ember.js/issues/20984
+  .skip('canary')
+  .skip('beta')
   .map('indirect', project => {
     project.addDevDependency(makeAddon());
     project.linkDependency('ember-cli-fastboot', { baseDir: __dirname });
@@ -203,7 +206,7 @@ appScenarios
       });
 
       test('npm run test', async function (assert) {
-        let result = await app.execute('volta run npm run test');
+        let result = await app.execute('pnpm  run test');
         assert.equal(result.exitCode, 0, result.output);
       });
 
@@ -248,7 +251,7 @@ Scenarios.fromProject(baseApp)
       });
 
       test('npm run test', async function (assert) {
-        let result = await app.execute('volta run npm run test');
+        let result = await app.execute('pnpm  run test');
         assert.equal(result.exitCode, 0, result.output);
       });
     });

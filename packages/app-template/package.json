@@ -62,8 +62,5 @@
   },
   "ember": {
     "edition": "octane"
-  },
-  "volta": {
-    "node": "16.20.1"
   }
 }

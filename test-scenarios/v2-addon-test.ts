@@ -240,11 +240,48 @@ function buildV2AddonWithMacros() {
   return addon;
 }
 
+function buildV2AddonWithDevDep() {
+  let addon = new Project('with-dev-dep', {
+    files: {
+      'addon-main.js': `
+        const { addonV1Shim } = require('@embroider/addon-shim');
+        module.exports = addonV1Shim(__dirname);
+      `,
+      'index.js': `
+        import Object from '@ember/object';
+        export default function() {
+          return Object.create();
+        }
+      `,
+    },
+  });
+  addon.addDevDependency({ name: '@ember/object' }, project => {
+    project.mergeFiles({
+      'index.js': `
+        export default class {
+          static create() {
+            throw new Error("This was not supposed to be used");
+          }
+        }
+      `,
+    });
+  });
+  addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  addon.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.js',
+  };
+  return addon;
+}
+
 let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
   project.addDevDependency(buildV2Addon());
   project.addDevDependency(buildIntermediateV1Addon());
   project.addDevDependency(buildV2AddonWithExports('fourth-v2-addon'));
   project.addDevDependency(buildV2AddonWithMacros());
+  project.addDevDependency(buildV2AddonWithDevDep());
 
   // apps don't necessarily need a directly dependency on @embroider/macros just
   // because they have a v2 addon that contains some macros, but in this test
@@ -411,6 +448,15 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
             });
           })
         `,
+        'addon-dev-dep-test.js': `
+          import makeObject from 'with-dev-dep';
+          import { module, test } from 'qunit';
+          module('Unit | v2-addon with dev-dep', function () {
+            test('should not consume dev-dep from npm', function(assert) {
+               assert.ok(makeObject(), 'this will throw if we actually consume the dev dep from npm');
+            });
+          });
+        `,
       },
     },
   });
@@ -427,7 +473,7 @@ scenarios.forEachScenario(scenario => {
       app = await scenario.prepare();
     });
     test('yarn test', async function (assert) {
-      let result = await app.execute('volta run npm run test');
+      let result = await app.execute('pnpm  run test');
       assert.equal(result.exitCode, 0, result.output);
     });
   });
@@ -494,7 +540,7 @@ Scenarios.fromProject(baseApp)
         app = await scenario.prepare();
       });
       test('ensure error', async function (assert) {
-        let result = await app.execute('volta run npm run build');
+        let result = await app.execute('pnpm  run build');
         assert.notEqual(result.exitCode, 0, result.output);
         assert.ok(
           /my-v1-addon needs to depend on ember-auto-import in order to use my-v2-addon/.test(result.stderr),
@@ -568,7 +614,7 @@ Scenarios.fromProject(baseApp)
         app = await scenario.prepare();
       });
       test('ensure success', async function (assert) {
-        let result = await app.execute('volta run npm run test');
+        let result = await app.execute('pnpm  run test');
         assert.strictEqual(result.exitCode, 0, result.output);
       });
     });
