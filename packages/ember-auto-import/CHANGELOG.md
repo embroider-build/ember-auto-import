@@ -1,5 +1,16 @@
 # Changelog
 
+## Release (2025-10-03)
+
+ember-auto-import 2.11.0 (minor)
+
+#### :rocket: Enhancement
+* `ember-auto-import`
+  * [#664](https://github.com/embroider-build/ember-auto-import/pull/664) add caching layer for discovered external chunks ([@apellerano-pw](https://github.com/apellerano-pw))
+
+#### Committers: 1
+- Andrew Pellerano ([@apellerano-pw](https://github.com/apellerano-pw))
+
 ## Release (2025-09-23)
 
 ember-auto-import 2.10.1 (patch)
