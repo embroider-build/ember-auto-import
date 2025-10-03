@@ -135,6 +135,8 @@ export default class WebpackBundler extends Plugin implements Bundler {
 
   private lastBuildResult: BuildResult | undefined;
 
+  private writeCache = new Map<string, string>();
+
   constructor(priorTrees: InputNode[], private opts: BundlerOptions) {
     super(priorTrees, {
       persistentOutput: true,
@@ -510,6 +512,13 @@ export default class WebpackBundler extends Plugin implements Bundler {
     this.addDiscoveredExternals(this.lastBuildResult);
   }
 
+  private cachedWriteFileSync(absoluteFilename: string, content: string) {
+    if (this.writeCache.get(absoluteFilename) !== content) {
+      this.writeCache.set(absoluteFilename, content);
+      writeFileSync(absoluteFilename, content);
+    }
+  }
+
   private addDiscoveredExternals(build: BuildResult) {
     for (let assetFiles of build.entrypoints.values()) {
       for (let assetFile of assetFiles) {
@@ -526,7 +535,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
             return '[' + deps.map((d) => `'${d}'`).join(',') + ']';
           }
         );
-        writeFileSync(resolve(this.outputPath, assetFile), outputSrc, 'utf8');
+        this.cachedWriteFileSync(
+          resolve(this.outputPath, assetFile),
+          outputSrc
+        );
       }
     }
   }
@@ -630,7 +642,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private writeEntryFile(name: string, deps: BundleDependencies) {
-    writeFileSync(
+    this.cachedWriteFileSync(
       join(this.stagingDir, `${name}.cjs`),
       entryTemplate({
         staticImports: deps.staticImports,
@@ -646,7 +658,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
   }
 
   private writeLoaderFile() {
-    writeFileSync(join(this.stagingDir, `l.cjs`), loader);
+    this.cachedWriteFileSync(join(this.stagingDir, `l.cjs`), loader);
   }
 
   private linkDeps(bundleDeps: Map<string, BundleDependencies>) {
