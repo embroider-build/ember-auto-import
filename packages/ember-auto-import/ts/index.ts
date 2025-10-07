@@ -8,10 +8,23 @@ module.exports = {
 
   init(...args: any[]) {
     this._super.init.apply(this, args);
+
+    if (!this.isEnabled()) {
+      return;
+    }
+
     AutoImport.register(this);
   },
 
+  isEnabled() {
+    return process.env.EMBROIDER_PREBUILD !== 'true';
+  },
+
   setupPreprocessorRegistry(type: string, registry: any) {
+    if (!this.isEnabled()) {
+      return;
+    }
+
     // we register on our parent registry (so we will process code
     // from the app or addon that chose to include us) rather than our
     // own registry (which would cause us to process our own code)
@@ -46,22 +59,34 @@ module.exports = {
 
   included(...args: unknown[]) {
     this._super.included.apply(this, ...args);
+    if (!this.isEnabled()) {
+      return;
+    }
     AutoImport.lookup(this).included(this);
   },
 
   // this exists to be called by @embroider/addon-shim
   registerV2Addon(packageName: string, packageRoot: string) {
+    if (!this.isEnabled()) {
+      return;
+    }
     AutoImport.lookup(this).registerV2Addon(packageName, packageRoot);
   },
 
   // this exists to be called by @embroider/addon-shim
   leader() {
+    if (!this.isEnabled()) {
+      return;
+    }
     return AutoImport.lookup(this);
   },
 
   // this only runs on top-level addons, so we don't need our own
   // !isDeepAddonInstance check here.
   postprocessTree(which: string, tree: Node): Node {
+    if (!this.isEnabled()) {
+      return tree;
+    }
     if (which === 'all') {
       return AutoImport.lookup(this).addTo(tree);
     } else {
