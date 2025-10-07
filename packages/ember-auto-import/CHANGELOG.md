@@ -1,5 +1,16 @@
 # Changelog
 
+## Release (2025-10-07)
+
+ember-auto-import 2.11.1 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#667](https://github.com/embroider-build/ember-auto-import/pull/667) Fix missing @glimmer/component error ([@mansona](https://github.com/mansona))
+
+#### Committers: 1
+- Chris Manson ([@mansona](https://github.com/mansona))
+
 ## Release (2025-10-03)
 
 ember-auto-import 2.11.0 (minor)
