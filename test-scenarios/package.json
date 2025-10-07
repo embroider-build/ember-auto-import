@@ -48,6 +48,8 @@
     "ember-source-latest": "npm:ember-source@latest",
     "ember-test-helpers-lts": "npm:@ember/test-helpers@2.6.0",
     "ember-welcome-page5": "npm:ember-welcome-page@^5.0.0",
+    "ember-welcome-page8": "npm:ember-welcome-page@^8.0.0",
+    "glimmer-component-2": "npm:@glimmer/component@^2.0.0",
     "js-string-escape": "^1.0.1",
     "lodash": "^4.17.20",
     "lodash-es": "^4.17.10",
