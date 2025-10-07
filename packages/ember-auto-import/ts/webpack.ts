@@ -17,7 +17,12 @@ import { BundleDependencies, ResolvedTemplateImport } from './splitter';
 import { BuildResult, Bundler, BundlerOptions } from './bundler';
 import type { InputNode } from 'broccoli-node-api';
 import Plugin from 'broccoli-plugin';
-import { babelFilter, packageName, Package } from '@embroider/shared-internals';
+import {
+  babelFilter,
+  packageName,
+  Package,
+  emberVirtualPeerDeps,
+} from '@embroider/shared-internals';
 import { Options } from './package';
 import { PackageCache } from '@embroider/shared-internals';
 import { Memoize } from 'typescript-memoize';
@@ -426,7 +431,19 @@ export default class WebpackBundler extends Plugin implements Bundler {
           this.externalizedByUs.add(request);
           return callback(undefined, 'commonjs ' + request);
         }
+
         if (!pkg.hasDependency(name)) {
+          // v2 addons are allowed to resolve these special virtual peers from
+          // the app
+          if (
+            emberVirtualPeerDeps.has(name) &&
+            packageCache
+              .resolve(name, packageCache.get(packageCache.appRoot))
+              ?.isV2Addon()
+          ) {
+            return callback();
+          }
+
           // v2 addons are not allowed to "accidentally" resolve
           // non-dependencies at build time
           this.externalizedByUs.add(request);
