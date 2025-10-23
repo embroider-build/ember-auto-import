@@ -9,7 +9,7 @@ const { module: Qmodule, test } = QUnit;
 class FakeProject {
   constructor(
     public pkg: { name: string; devDependencies: Record<string, string> }
-  ) {}
+  ) { }
 
   fakeAddon(name: string, version = '1.0.0'): AddonInstance & FakeAddon {
     return new FakeAddon(
@@ -64,7 +64,7 @@ Qmodule('leader-chooser', function () {
       addonInstance,
       () => 'addon won' as unknown as AutoImport
     );
-    assert.equal(LeaderChooser.for(appInstance).leader, 'addon won');
+    assert.equal(LeaderChooser.for(appInstance).getLeader(), 'addon won');
   });
 
   test('compatible version registered second can win', function (assert) {
@@ -87,7 +87,7 @@ Qmodule('leader-chooser', function () {
       appInstance,
       () => 'app won' as unknown as AutoImport
     );
-    assert.equal(LeaderChooser.for(appInstance).leader, 'addon won');
+    assert.equal(LeaderChooser.for(appInstance).getLeader(), 'addon won');
   });
 
   test('1.x version in app is an error', function (assert) {
@@ -111,7 +111,7 @@ Qmodule('leader-chooser', function () {
       () => 'app won' as unknown as AutoImport
     );
     assert.throws(() => {
-      LeaderChooser.for(appInstance).leader;
+      LeaderChooser.for(appInstance).getLeader();
     }, /To use these addons, your app needs ember-auto-import >= 2: intermediate/);
   });
 
@@ -135,7 +135,7 @@ Qmodule('leader-chooser', function () {
       addonInstance,
       () => 'addon won' as unknown as AutoImport
     );
-    assert.equal(LeaderChooser.for(appInstance).leader, 'app won');
+    assert.equal(LeaderChooser.for(appInstance).getLeader(), 'app won');
   });
 
   test('newer non-compatible version does not win', function (assert) {
@@ -166,6 +166,6 @@ Qmodule('leader-chooser', function () {
       () => 'too new won' as unknown as AutoImport
     );
 
-    assert.equal(LeaderChooser.for(appInstance).leader, 'addon won');
+    assert.equal(LeaderChooser.for(appInstance).getLeader(), 'addon won');
   });
 });

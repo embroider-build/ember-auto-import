@@ -78,8 +78,8 @@ export default class AutoImport implements AutoImportSharedAPI {
     LeaderChooser.for(addon).register(addon, () => new AutoImport(addon));
   }
 
-  static lookup(addon: AddonInstance): AutoImportSharedAPI {
-    return LeaderChooser.for(addon).leader;
+  static lookup(addon: AddonInstance, throwOnAppCandidate: boolean): AutoImportSharedAPI {
+    return LeaderChooser.for(addon).getLeader(throwOnAppCandidate);
   }
 
   constructor(addonInstance: AddonInstance) {

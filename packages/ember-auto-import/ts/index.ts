@@ -39,31 +39,31 @@ module.exports = {
           treeType = options.treeType;
         }
 
-        return AutoImport.lookup(this).analyze(tree, this, treeType, true);
+        return AutoImport.lookup(this, true).analyze(tree, this, treeType, true);
       },
     });
   },
 
   included(...args: unknown[]) {
     this._super.included.apply(this, ...args);
-    AutoImport.lookup(this).included(this);
+    AutoImport.lookup(this, false).included(this);
   },
 
   // this exists to be called by @embroider/addon-shim
   registerV2Addon(packageName: string, packageRoot: string) {
-    AutoImport.lookup(this).registerV2Addon(packageName, packageRoot);
+    AutoImport.lookup(this, true).registerV2Addon(packageName, packageRoot);
   },
 
   // this exists to be called by @embroider/addon-shim
   leader() {
-    return AutoImport.lookup(this);
+    return AutoImport.lookup(this, true);
   },
 
   // this only runs on top-level addons, so we don't need our own
   // !isDeepAddonInstance check here.
   postprocessTree(which: string, tree: Node): Node {
     if (which === 'all') {
-      return AutoImport.lookup(this).addTo(tree);
+      return AutoImport.lookup(this, true).addTo(tree);
     } else {
       return tree;
     }
