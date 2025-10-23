@@ -9,7 +9,7 @@ const { module: Qmodule, test } = QUnit;
 class FakeProject {
   constructor(
     public pkg: { name: string; devDependencies: Record<string, string> }
-  ) { }
+  ) {}
 
   fakeAddon(name: string, version = '1.0.0'): AddonInstance & FakeAddon {
     return new FakeAddon(

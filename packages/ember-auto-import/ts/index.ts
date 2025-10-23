@@ -39,7 +39,12 @@ module.exports = {
           treeType = options.treeType;
         }
 
-        return AutoImport.lookup(this, true).analyze(tree, this, treeType, true);
+        return AutoImport.lookup(this, true).analyze(
+          tree,
+          this,
+          treeType,
+          true
+        );
       },
     });
   },
