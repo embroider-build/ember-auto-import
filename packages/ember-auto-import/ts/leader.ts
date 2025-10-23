@@ -125,9 +125,9 @@ export class LeaderChooser {
     }
   }
 
-  get leader(): AutoImport {
+  getLeader(throwOnAppCandidate = true): AutoImport {
     if (!this.locked) {
-      if (!this.appCandidate) {
+      if (!this.appCandidate && throwOnAppCandidate) {
         throw new Error(
           `To use these addons, your app needs ember-auto-import >= 2: ${this.addonCandidates
             .map((c) => c.parentName)
@@ -135,14 +135,24 @@ export class LeaderChooser {
             .join(', ')}`
         );
       }
-      let eligible = [this.appCandidate, ...this.addonCandidates].filter((c) =>
+      let candidates: {
+        create: () => AutoImport;
+        version: string;
+      }[] = [];
+
+      if (this.appCandidate) {
+        candidates.push(this.appCandidate);
+      }
+      candidates.push(...this.addonCandidates);
+
+      let eligible = candidates.filter((c) =>
         satisfies(c.version, this.appCandidate!.range, {
           includePrerelease: true,
         })
       );
-      if (eligible.length === 0) {
+      if (eligible.length === 0 && throwOnAppCandidate) {
         throw new Error(
-          `ember-auto-import was unable to find any copy of itself that satisfies the app's requested range of ${this.appCandidate.range}`
+          `ember-auto-import was unable to find any copy of itself that satisfies the app's requested range of ${this.appCandidate?.range}`
         );
       }
       let [candidate, ...rest] = eligible;
@@ -156,7 +166,7 @@ export class LeaderChooser {
         'elected %s from %s which satisfies %s',
         candidate.version,
         'parentName' in candidate ? candidate.parentName : 'the app',
-        this.appCandidate.range
+        this.appCandidate?.range
       );
       let v1 = g[protocolV1];
       if (v1?.isV1Placeholder) {
