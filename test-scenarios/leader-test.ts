@@ -1,7 +1,8 @@
 import { baseAddon, baseApp } from './scenarios';
-import { PreparedApp, Scenarios } from 'scenario-tester';
+import { PreparedApp, Project, Scenarios } from 'scenario-tester';
 import QUnit from 'qunit';
 import merge from 'lodash/merge';
+import { dirname } from 'path';
 const { module: Qmodule, test } = QUnit;
 
 Scenarios.fromProject(baseApp)
@@ -136,6 +137,28 @@ Scenarios.fromProject(baseApp)
           ),
           result.stderr
         );
+      });
+    });
+  });
+
+Scenarios.fromProject(() =>
+  Project.fromDir(dirname(require.resolve('v2-app-template/package.json')), { linkDevDeps: true })
+)
+  .map('embroider-vite', function (project) {
+    let a = baseAddon();
+    a.name = 'some-addon';
+    a.linkDependency('ember-auto-import', { baseDir: __dirname });
+    project.addDependency(a);
+  })
+  .forEachScenario(scenario => {
+    Qmodule(scenario.name, function (hooks) {
+      let app: PreparedApp;
+      hooks.before(async () => {
+        app = await scenario.prepare();
+      });
+      test('should not have build errors', async function (assert) {
+        let result = await app.execute('pnpm run build');
+        assert.equal(result.exitCode, 0, result.output);
       });
     });
   });
