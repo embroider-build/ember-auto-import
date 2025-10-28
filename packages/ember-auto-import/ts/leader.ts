@@ -7,6 +7,8 @@ import {
 } from '@embroider/shared-internals';
 import type { Node } from 'broccoli-node-api';
 import makeDebug from 'debug';
+import type { AutoImportSharedAPI } from './auto-import';
+import { NullLeader } from './null-leader';
 const debug = makeDebug('ember-auto-import:leader');
 
 /*
@@ -125,10 +127,10 @@ export class LeaderChooser {
     }
   }
 
-  get leader(): AutoImport {
+  get leader(): AutoImportSharedAPI {
     if (!this.locked) {
       if (!this.appCandidate) {
-        throw new Error(
+        return new NullLeader(
           `To use these addons, your app needs ember-auto-import >= 2: ${this.addonCandidates
             .map((c) => c.parentName)
             .sort()
