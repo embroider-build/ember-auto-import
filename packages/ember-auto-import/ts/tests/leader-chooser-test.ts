@@ -111,7 +111,8 @@ Qmodule('leader-chooser', function () {
       () => 'app won' as unknown as AutoImport
     );
     assert.throws(() => {
-      LeaderChooser.for(appInstance).leader;
+      // @ts-expect-error when there is not app instance we get returned an instance of NullLeader which throws as soon as we call analyze
+      LeaderChooser.for(appInstance).leader.analyze();
     }, /To use these addons, your app needs ember-auto-import >= 2: intermediate/);
   });
 
