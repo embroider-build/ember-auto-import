@@ -717,7 +717,7 @@ importers:
         specifier: npm:ember-source@alpha
         version: ember-source@6.9.0-alpha.6(@glimmer/component@2.0.0)(rsvp@4.8.5)
       ember-source-latest:
-        specifier: npm:ember-source@latest
+        specifier: npm:ember-source@~6.7.0
         version: ember-source@6.7.0(@glimmer/component@2.0.0)(rsvp@4.8.5)
       ember-source-lts:
         specifier: npm:ember-source@~3.4.0
