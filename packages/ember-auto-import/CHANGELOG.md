@@ -1,5 +1,16 @@
 # Changelog
 
+## Release (2025-11-07)
+
+ember-auto-import 2.11.2 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`, `v2-app-template`, `@ef4/test-scenarios`
+  * [#670](https://github.com/embroider-build/ember-auto-import/pull/670) make missing top-level EAI errors lazy to fix embroider 4.x ([@ef4](https://github.com/ef4))
+
+#### Committers: 1
+- Edward Faulkner ([@ef4](https://github.com/ef4))
+
 ## Release (2025-10-07)
 
 ember-auto-import 2.11.1 (patch)
