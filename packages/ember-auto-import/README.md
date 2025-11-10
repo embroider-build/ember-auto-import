@@ -408,6 +408,42 @@ This can be imported like:
 import 'eventsource/example/eventsource-polyfill.js';
 ```
 
+### I get a `Package path ./foo is not exported from package` error at runtime.
+
+Check the package.json `"exports"` config for the library you're trying to import. ember-auto-import only automatically includes files with the `"browser"` condition.
+
+```js
+// Example package.json from @googleworkspace/drive-picker-element
+"type": "module",
+"exports": {
+	".": {
+		"browser": "./dist/index.iife.min.js",
+		"types": "./dist/index.d.ts",
+		"import": "./dist/index.js"
+	},
+	"./drive-picker": {
+		"types": "./dist/drive-picker/index.d.ts",
+		"import": "./dist/drive-picker/index.js"
+	},
+	"./package.json": "./package.json"
+},
+```
+
+If the file you want to import is specified under some other condition, such as `"import"` for ESM, you'll have to provide additional webpack config like this:
+
+```js
+// In your app's ember-cli-build.js file or check the `Usage from Addons` section for relevant usage of the following in addons
+let app = new EmberApp(defaults, {
+  autoImport: {
+    webpack: {
+      resolve: {
+        conditionNames: ['import'],
+      },
+    },
+  },
+});
+```
+
 ## Debugging Tips
 
 Set the environment variable `DEBUG="ember-auto-import:*"` to see debug logging during the build.
