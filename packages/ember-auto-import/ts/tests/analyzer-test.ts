@@ -38,7 +38,8 @@ Qmodule('analyzer', function (hooks) {
     ensureDirSync((upstream = join(this.workDir, 'upstream')));
     pack = {
       fileExtensions: ['js'],
-    } as Package;
+      implicitImports: [],
+    } as unknown as Package;
     babelConfig = {
       plugins: [
         require.resolve('../../js/analyzer-plugin'),
