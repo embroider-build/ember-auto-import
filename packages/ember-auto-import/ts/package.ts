@@ -20,7 +20,7 @@ import type { Import } from './analyzer';
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
 
-// from an addon instance or project to its package.
+// from an addon instance or project to its package
 const packageCache: WeakMap<AddonInstance | Project, Package> = new WeakMap();
 
 let pkgGeneration = 0;
@@ -76,7 +76,10 @@ export type V2AddonResolver = {
   hasV2Addon(name: string): boolean;
   v2AddonRoot(name: string): string | undefined;
   handleRenaming(name: string): string;
-  implicitImports(root: string): string[];
+  implicitImports(
+    kind: 'implicit-modules' | 'implicit-test-modules',
+    root: string
+  ): string[];
 };
 
 export default class Package {
@@ -190,13 +193,26 @@ export default class Package {
   // addon dependencies, just like in Embroider.
   @Memoize()
   get implicitImports(): Import[] {
-    return this.extraResolve.implicitImports(this.root).map((specifier) => ({
-      isDynamic: false,
-      specifier,
-      path: './-eai-implicit-modules.js',
-      package: this,
-      treeType: 'app',
-    }));
+    return [
+      ...this.extraResolve
+        .implicitImports('implicit-modules', this.root)
+        .map((specifier) => ({
+          isDynamic: false,
+          specifier,
+          path: './-eai-implicit-modules.js',
+          package: this,
+          treeType: 'app' as const,
+        })),
+      ...this.extraResolve
+        .implicitImports('implicit-test-modules', this.root)
+        .map((specifier) => ({
+          isDynamic: false,
+          specifier,
+          path: './-eai-implicit-modules.js',
+          package: this,
+          treeType: 'test' as const,
+        })),
+    ];
   }
 
   private buildBabelOptions(instance: Project | AddonInstance, options: any) {

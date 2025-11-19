@@ -178,7 +178,10 @@ export default class AutoImport implements AutoImportSharedAPI {
         return name;
       },
 
-      implicitImports: (packageRoot: string): string[] => {
+      implicitImports: (
+        kind: 'implicit-modules' | 'implicit-test-modules',
+        packageRoot: string
+      ): string[] => {
         let output: string[] = [];
         for (let dep of this.packageCache.get(packageRoot).dependencies) {
           if (dep.isV2Addon()) {
@@ -189,7 +192,7 @@ export default class AutoImport implements AutoImportSharedAPI {
               // our cache unintentionally
               meta = customize(JSON.parse(JSON.stringify(meta)));
             }
-            let implicitModules = meta['implicit-modules'];
+            let implicitModules = meta[kind];
             if (implicitModules) {
               for (let localPath of implicitModules) {
                 let specifier = externalName(dep.packageJSON, localPath);
