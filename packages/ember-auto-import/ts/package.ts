@@ -8,7 +8,6 @@ import {
   isDeepAddonInstance,
   Project,
   packageName as getPackageName,
-  type PackageCache,
 } from '@embroider/shared-internals';
 import semver from 'semver';
 import type { PluginItem, TransformOptions } from '@babel/core';
@@ -17,7 +16,6 @@ import minimatch from 'minimatch';
 import { stripQuery } from './util';
 import { getWatchedDirectories } from './watch-utils';
 import type { Import } from './analyzer';
-import { externalName } from '@embroider/reverse-exports';
 
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
@@ -78,6 +76,7 @@ export type V2AddonResolver = {
   hasV2Addon(name: string): boolean;
   v2AddonRoot(name: string): string | undefined;
   handleRenaming(name: string): string;
+  implicitImports(root: string): string[];
 };
 
 export default class Package {
@@ -97,17 +96,15 @@ export default class Package {
   private pkgCache: any;
   private macrosConfig: MacrosConfig | undefined;
   private extraResolve: V2AddonResolver;
-  private sharedCache: PackageCache;
 
   static lookupParentOf(
     child: AddonInstance,
-    extraResolve: V2AddonResolver,
-    sharedCache: PackageCache
+    extraResolve: V2AddonResolver
   ): Package {
     if (!parentCache.has(child)) {
       let pkg = packageCache.get(child.parent);
       if (!pkg) {
-        pkg = new this(child, extraResolve, sharedCache);
+        pkg = new this(child, extraResolve);
         packageCache.set(child.parent, pkg);
       }
       parentCache.set(child, pkg);
@@ -115,14 +112,9 @@ export default class Package {
     return parentCache.get(child)!;
   }
 
-  constructor(
-    child: AddonInstance,
-    extraResolve: V2AddonResolver,
-    sharedCache: PackageCache
-  ) {
+  constructor(child: AddonInstance, extraResolve: V2AddonResolver) {
     this.name = child.parent.pkg.name;
     this.extraResolve = extraResolve;
-    this.sharedCache = sharedCache;
 
     if (isDeepAddonInstance(child)) {
       this.root = this.pkgRoot = child.parent.root;
@@ -198,33 +190,13 @@ export default class Package {
   // addon dependencies, just like in Embroider.
   @Memoize()
   get implicitImports(): Import[] {
-    let output: Import[] = [];
-    for (let dep of this.sharedCache.get(this.root).dependencies) {
-      if (dep.isV2Addon()) {
-        let implicitModules = dep.meta['implicit-modules'];
-        if (implicitModules) {
-          for (let localPath of implicitModules) {
-            let specifier = externalName(dep.packageJSON, localPath);
-            if (!specifier) {
-              throw new Error(
-                `${dep.name} declared implicit-module ${localPath} but that is not accessible outside the package`
-              );
-            }
-            if (specifier.endsWith('.js')) {
-              specifier = specifier.slice(0, -3);
-            }
-            output.push({
-              isDynamic: false,
-              specifier,
-              path: './-eai-implicit-modules.js',
-              package: this,
-              treeType: 'app',
-            });
-          }
-        }
-      }
-    }
-    return output;
+    return this.extraResolve.implicitImports(this.root).map((specifier) => ({
+      isDynamic: false,
+      specifier,
+      path: './-eai-implicit-modules.js',
+      package: this,
+      treeType: 'app',
+    }));
   }
 
   private buildBabelOptions(instance: Project | AddonInstance, options: any) {

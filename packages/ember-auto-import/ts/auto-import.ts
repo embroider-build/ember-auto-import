@@ -29,6 +29,7 @@ import { MARKER } from './analyzer-syntax';
 import path from 'path';
 import funnel from 'broccoli-funnel';
 import makeDebug from 'debug';
+import { externalName } from '@embroider/reverse-exports';
 
 const debugTree = BroccoliDebug.buildDebugCallback('ember-auto-import');
 const debugWatch = makeDebug('ember-auto-import:watch');
@@ -89,11 +90,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       topmostAddon.project.root
     );
     this.packages.add(
-      Package.lookupParentOf(
-        topmostAddon,
-        this.v2AddonResolver,
-        this.packageCache
-      )
+      Package.lookupParentOf(topmostAddon, this.v2AddonResolver)
     );
     let host = topmostAddon.app;
 
@@ -135,11 +132,7 @@ export default class AutoImport implements AutoImportSharedAPI {
     treeType?: TreeType,
     supportsFastAnalyzer?: true
   ) {
-    let pack = Package.lookupParentOf(
-      addon,
-      this.v2AddonResolver,
-      this.packageCache
-    );
+    let pack = Package.lookupParentOf(addon, this.v2AddonResolver);
     this.packages.add(pack);
     let analyzer = new Analyzer(
       debugTree(tree, `preprocessor:input-${this.analyzers.size}`),
@@ -183,6 +176,37 @@ export default class AutoImport implements AutoImportSharedAPI {
           return hit;
         }
         return name;
+      },
+
+      implicitImports: (packageRoot: string): string[] => {
+        let output: string[] = [];
+        for (let dep of this.packageCache.get(packageRoot).dependencies) {
+          if (dep.isV2Addon()) {
+            let meta = dep.meta;
+            let customize = this.v2Addons.get(dep.name)?.options?.customizeMeta;
+            if (customize) {
+              // json here is just a super simple clone so the hook can't mutate
+              // our cache unintentionally
+              meta = customize(JSON.parse(JSON.stringify(meta)));
+            }
+            let implicitModules = meta['implicit-modules'];
+            if (implicitModules) {
+              for (let localPath of implicitModules) {
+                let specifier = externalName(dep.packageJSON, localPath);
+                if (!specifier) {
+                  throw new Error(
+                    `${dep.name} declared implicit-module ${localPath} but that is not accessible outside the package`
+                  );
+                }
+                if (specifier.endsWith('.js')) {
+                  specifier = specifier.slice(0, -3);
+                }
+                output.push(specifier);
+              }
+            }
+          }
+        }
+        return output;
       },
     };
   }

@@ -160,7 +160,13 @@ function buildV2AddonWithExports(name: string) {
     files: {
       'addon-main.js': `
         const { addonV1Shim } = require('@embroider/addon-shim');
-        module.exports = addonV1Shim(__dirname);
+        module.exports = addonV1Shim(__dirname, {
+          autoImportCompat: {
+            customizeMeta(meta) {
+              return { ...meta, 'implicit-modules': ['./special/implicit.js'] };
+            }
+          }
+        });
       `,
       special: {
         'index.js': `
@@ -185,7 +191,6 @@ function buildV2AddonWithExports(name: string) {
     version: 2,
     type: 'addon',
     main: './addon-main.js',
-    'implicit-modules': ['./special/implicit.js'],
   };
   addon.pkg.exports = {
     '.': './special/index.js',
