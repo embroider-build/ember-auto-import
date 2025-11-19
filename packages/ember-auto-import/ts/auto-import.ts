@@ -198,6 +198,15 @@ export default class AutoImport implements AutoImportSharedAPI {
                     `${dep.name} declared implicit-module ${localPath} but that is not accessible outside the package`
                   );
                 }
+                if (meta['renamed-modules']) {
+                  for (let [renamed, original] of Object.entries(
+                    meta['renamed-modules']
+                  )) {
+                    if (specifier === original) {
+                      specifier = renamed;
+                    }
+                  }
+                }
                 if (specifier.endsWith('.js')) {
                   specifier = specifier.slice(0, -3);
                 }

@@ -163,7 +163,13 @@ function buildV2AddonWithExports(name: string) {
         module.exports = addonV1Shim(__dirname, {
           autoImportCompat: {
             customizeMeta(meta) {
-              return { ...meta, 'implicit-modules': ['./special/implicit.js'] };
+              return {
+                ...meta,
+                'implicit-modules': ['./special/implicit.js'],
+                'renamed-modules': {
+                  "renamed-${name}/implicit": "${name}/implicit"
+                }
+              };
             }
           }
         });
@@ -465,8 +471,8 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
             test('addon can inject implicit-modules', function (assert) {
               assert.strictEqual(globalThis.require('my-v2-addon/implicitly-included').default(), 'my-v2-addon implicit module')
             })
-            test('addon with exports can inject implicit-modules', function (assert) {
-              assert.strictEqual(globalThis.require('fourth-v2-addon/implicit').default(), 'fourth-v2-addon implicit module')
+            test('addon with exports, customizeMeta, and renamed-modules can inject implicit-modules', function (assert) {
+              assert.strictEqual(globalThis.require('renamed-fourth-v2-addon/implicit').default(), 'fourth-v2-addon implicit module')
             })
           });
         `,
