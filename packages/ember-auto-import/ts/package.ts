@@ -195,7 +195,7 @@ export default class Package {
   get implicitImports(): Import[] {
     return [
       ...this.extraResolve
-        .implicitImports('implicit-modules', this.root)
+        .implicitImports('implicit-modules', this.pkgRoot)
         .map((specifier) => ({
           isDynamic: false,
           specifier,
@@ -204,7 +204,7 @@ export default class Package {
           treeType: 'app' as const,
         })),
       ...this.extraResolve
-        .implicitImports('implicit-test-modules', this.root)
+        .implicitImports('implicit-test-modules', this.pkgRoot)
         .map((specifier) => ({
           isDynamic: false,
           specifier,

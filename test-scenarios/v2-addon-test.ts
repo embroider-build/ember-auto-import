@@ -605,7 +605,7 @@ Scenarios.fromProject(baseApp)
       addon: {
         'index.js': `
         export function things() {
-          return 'it works'
+          return 'it worked'
         }
       `,
       },
