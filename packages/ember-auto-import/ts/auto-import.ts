@@ -8,9 +8,9 @@ import BundleConfig from './bundle-config';
 import type { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
 import {
-  AddonInstance,
-  AddonMeta,
-  AppInstance,
+  type AddonInstance,
+  type AddonMeta,
+  type AppInstance,
   findTopmostAddon,
   isDeepAddonInstance,
   PackageCache,
@@ -89,7 +89,11 @@ export default class AutoImport implements AutoImportSharedAPI {
       topmostAddon.project.root
     );
     this.packages.add(
-      Package.lookupParentOf(topmostAddon, this.v2AddonResolver)
+      Package.lookupParentOf(
+        topmostAddon,
+        this.v2AddonResolver,
+        this.packageCache
+      )
     );
     let host = topmostAddon.app;
 
@@ -131,7 +135,11 @@ export default class AutoImport implements AutoImportSharedAPI {
     treeType?: TreeType,
     supportsFastAnalyzer?: true
   ) {
-    let pack = Package.lookupParentOf(addon, this.v2AddonResolver);
+    let pack = Package.lookupParentOf(
+      addon,
+      this.v2AddonResolver,
+      this.packageCache
+    );
     this.packages.add(pack);
     let analyzer = new Analyzer(
       debugTree(tree, `preprocessor:input-${this.analyzers.size}`),

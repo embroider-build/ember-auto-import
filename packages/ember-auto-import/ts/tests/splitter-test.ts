@@ -14,6 +14,7 @@ import {
   AddonInstance,
   AppInstance,
   Project as EmberCLIProject,
+  PackageCache,
 } from '@embroider/shared-internals';
 // @ts-ignore
 import broccoliBabel from 'broccoli-babel-transpiler';
@@ -69,17 +70,21 @@ Qmodule('splitter', function (hooks) {
     await project.write();
 
     setup = function (options: Options = {}) {
-      pack = new Package(stubAddonInstance(project.baseDir, options), {
-        handleRenaming(name) {
-          return name;
+      pack = new Package(
+        stubAddonInstance(project.baseDir, options),
+        {
+          handleRenaming(name) {
+            return name;
+          },
+          hasV2Addon() {
+            return false;
+          },
+          v2AddonRoot() {
+            return undefined;
+          },
         },
-        hasV2Addon() {
-          return false;
-        },
-        v2AddonRoot() {
-          return undefined;
-        },
-      });
+        PackageCache.shared('splitter-test', project.baseDir)
+      );
       let transpiled = broccoliBabel(new UnwatchedDir(project.baseDir), {
         plugins: [
           require.resolve('../../js/analyzer-plugin'),

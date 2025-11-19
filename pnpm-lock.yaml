@@ -288,6 +288,9 @@ importers:
       '@embroider/macros':
         specifier: ^1.0.0
         version: 1.18.1
+      '@embroider/reverse-exports':
+        specifier: ^0.2.0
+        version: 0.2.0
       '@embroider/shared-internals':
         specifier: ^2.0.0
         version: 2.9.1
@@ -1673,6 +1676,10 @@ packages:
 
   '@embroider/reverse-exports@0.1.2':
     resolution: {integrity: sha512-TgjQalfB42RnwdRVApjcvHSVjBe+7MJfCZV0Cs1jv2QgnFGr/6f5X19PKvmF4FU4xbBf7yOsIWrVvYvidWnXlw==}
+
+  '@embroider/reverse-exports@0.2.0':
+    resolution: {integrity: sha512-WFsw8nQpHZiWGEDYpa/A79KEFfTisqteXbY+jg9eZiww1r1G+LZvsmdszDp86TkotUSCqrMbK/ewn0jR1CJmqg==}
+    engines: {node: 12.* || 14.* || >= 16}
 
   '@embroider/router@3.0.4':
     resolution: {integrity: sha512-kSygi43vpyqaX7gOaIPFY6WkqHm0NlvMSFJBG98Z2DNxjalGFI3+vzVEmguzQd5fgiMiZcXVAug4yjn1CKdXTA==}
@@ -12045,6 +12052,11 @@ snapshots:
       - supports-color
 
   '@embroider/reverse-exports@0.1.2':
+    dependencies:
+      mem: 8.1.1
+      resolve.exports: 2.0.3
+
+  '@embroider/reverse-exports@0.2.0':
     dependencies:
       mem: 8.1.1
       resolve.exports: 2.0.3

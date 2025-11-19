@@ -46,6 +46,9 @@ function buildV2Addon() {
           return 'hello-test-support-worked';
         }
       `,
+      'implicitly-included.js': `
+        export default function() { return "my-v2-addon implicit module" }
+      `,
       app: {
         components: {
           'hello-world.js': `
@@ -103,6 +106,7 @@ function buildV2Addon() {
       'special-module/index.js': 'my-v2-addon/special-module-dest.js',
       'customization-target/index.js': 'my-v2-addon/this-does-not-exist.js',
     },
+    'implicit-modules': ['./implicitly-included.js'],
   };
   return addon;
 }
@@ -169,6 +173,9 @@ function buildV2AddonWithExports(name: string) {
             return '${name}-secondary-worked';
           }
         `,
+        'implicit.js': `
+          export default function() { return "${name} implicit module" }
+        `,
       },
     },
   });
@@ -178,6 +185,7 @@ function buildV2AddonWithExports(name: string) {
     version: 2,
     type: 'addon',
     main: './addon-main.js',
+    'implicit-modules': ['./special/implicit.js'],
   };
   addon.pkg.exports = {
     '.': './special/index.js',
@@ -447,6 +455,15 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
               assert.equal(customized(), 'from customized target');
             });
           })
+
+          module('Unit | v2 addon implicit-modules', function () {
+            test('addon can inject implicit-modules', function (assert) {
+              assert.strictEqual(globalThis.require('my-v2-addon/implicitly-included').default(), 'my-v2-addon implicit module')
+            })
+            test('addon with exports can inject implicit-modules', function (assert) {
+              assert.strictEqual(globalThis.require('fourth-v2-addon/implicit').default(), 'fourth-v2-addon implicit module')
+            })
+          });
         `,
         'addon-dev-dep-test.js': `
           import makeObject from 'with-dev-dep';
@@ -577,7 +594,7 @@ Scenarios.fromProject(baseApp)
       addon: {
         'index.js': `
         export function things() {
-          return 'it worked'
+          return 'it works'
         }
       `,
       },
