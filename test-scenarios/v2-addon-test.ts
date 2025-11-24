@@ -46,6 +46,9 @@ function buildV2Addon() {
           return 'hello-test-support-worked';
         }
       `,
+      'implicitly-included.js': `
+        export default function() { return "my-v2-addon implicit module" }
+      `,
       app: {
         components: {
           'hello-world.js': `
@@ -103,6 +106,7 @@ function buildV2Addon() {
       'special-module/index.js': 'my-v2-addon/special-module-dest.js',
       'customization-target/index.js': 'my-v2-addon/this-does-not-exist.js',
     },
+    'implicit-modules': ['./implicitly-included.js'],
   };
   return addon;
 }
@@ -156,7 +160,19 @@ function buildV2AddonWithExports(name: string) {
     files: {
       'addon-main.js': `
         const { addonV1Shim } = require('@embroider/addon-shim');
-        module.exports = addonV1Shim(__dirname);
+        module.exports = addonV1Shim(__dirname, {
+          autoImportCompat: {
+            customizeMeta(meta) {
+              return {
+                ...meta,
+                'implicit-modules': ['./special/implicit.js'],
+                'renamed-modules': {
+                  "renamed-${name}/implicit": "${name}/implicit"
+                }
+              };
+            }
+          }
+        });
       `,
       special: {
         'index.js': `
@@ -168,6 +184,9 @@ function buildV2AddonWithExports(name: string) {
           export function secondary() {
             return '${name}-secondary-worked';
           }
+        `,
+        'implicit.js': `
+          export default function() { return "${name} implicit module" }
         `,
       },
     },
@@ -447,6 +466,15 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
               assert.equal(customized(), 'from customized target');
             });
           })
+
+          module('Unit | v2 addon implicit-modules', function () {
+            test('addon can inject implicit-modules', function (assert) {
+              assert.strictEqual(globalThis.require('my-v2-addon/implicitly-included').default(), 'my-v2-addon implicit module')
+            })
+            test('addon with exports, customizeMeta, and renamed-modules can inject implicit-modules', function (assert) {
+              assert.strictEqual(globalThis.require('renamed-fourth-v2-addon/implicit').default(), 'fourth-v2-addon implicit module')
+            })
+          });
         `,
         'addon-dev-dep-test.js': `
           import makeObject from 'with-dev-dep';

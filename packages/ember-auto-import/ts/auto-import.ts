@@ -8,9 +8,9 @@ import BundleConfig from './bundle-config';
 import type { Node } from 'broccoli-node-api';
 import { LeaderChooser } from './leader';
 import {
-  AddonInstance,
-  AddonMeta,
-  AppInstance,
+  type AddonInstance,
+  type AddonMeta,
+  type AppInstance,
   findTopmostAddon,
   isDeepAddonInstance,
   PackageCache,
@@ -29,6 +29,7 @@ import { MARKER } from './analyzer-syntax';
 import path from 'path';
 import funnel from 'broccoli-funnel';
 import makeDebug from 'debug';
+import { externalName } from '@embroider/reverse-exports';
 
 const debugTree = BroccoliDebug.buildDebugCallback('ember-auto-import');
 const debugWatch = makeDebug('ember-auto-import:watch');
@@ -175,6 +176,49 @@ export default class AutoImport implements AutoImportSharedAPI {
           return hit;
         }
         return name;
+      },
+
+      implicitImports: (
+        kind: 'implicit-modules' | 'implicit-test-modules',
+        packageRoot: string
+      ): string[] => {
+        let output: string[] = [];
+        for (let dep of this.packageCache.get(packageRoot).dependencies) {
+          if (dep.isV2Addon()) {
+            let meta = dep.meta;
+            let customize = this.v2Addons.get(dep.name)?.options?.customizeMeta;
+            if (customize) {
+              // json here is just a super simple clone so the hook can't mutate
+              // our cache unintentionally
+              meta = customize(JSON.parse(JSON.stringify(meta)));
+            }
+            let implicitModules = meta[kind];
+            if (implicitModules) {
+              for (let localPath of implicitModules) {
+                let specifier = externalName(dep.packageJSON, localPath);
+                if (!specifier) {
+                  throw new Error(
+                    `${dep.name} declared implicit-module ${localPath} but that is not accessible outside the package`
+                  );
+                }
+                if (meta['renamed-modules']) {
+                  for (let [renamed, original] of Object.entries(
+                    meta['renamed-modules']
+                  )) {
+                    if (specifier === original) {
+                      specifier = renamed;
+                    }
+                  }
+                }
+                if (specifier.endsWith('.js')) {
+                  specifier = specifier.slice(0, -3);
+                }
+                output.push(specifier);
+              }
+            }
+          }
+        }
+        return output;
       },
     };
   }

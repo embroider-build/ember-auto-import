@@ -79,6 +79,9 @@ Qmodule('splitter', function (hooks) {
         v2AddonRoot() {
           return undefined;
         },
+        implicitImports() {
+          return [];
+        },
       });
       let transpiled = broccoliBabel(new UnwatchedDir(project.baseDir), {
         plugins: [

@@ -15,6 +15,7 @@ import { MacrosConfig } from '@embroider/macros/src/node';
 import minimatch from 'minimatch';
 import { stripQuery } from './util';
 import { getWatchedDirectories } from './watch-utils';
+import type { Import } from './analyzer';
 
 // from child addon instance to their parent package
 const parentCache: WeakMap<AddonInstance, Package> = new WeakMap();
@@ -75,6 +76,10 @@ export type V2AddonResolver = {
   hasV2Addon(name: string): boolean;
   v2AddonRoot(name: string): string | undefined;
   handleRenaming(name: string): string;
+  implicitImports(
+    kind: 'implicit-modules' | 'implicit-test-modules',
+    root: string
+  ): string[];
 };
 
 export default class Package {
@@ -182,6 +187,32 @@ export default class Package {
       process.env.FASTBOOT_DISABLED !== 'true' &&
       this._parent.addons.some((addon) => addon.name === 'ember-cli-fastboot')
     );
+  }
+
+  // each package implicitly imports the `implicit-modules` declared by its v2
+  // addon dependencies, just like in Embroider.
+  @Memoize()
+  get implicitImports(): Import[] {
+    return [
+      ...this.extraResolve
+        .implicitImports('implicit-modules', this.pkgRoot)
+        .map((specifier) => ({
+          isDynamic: false,
+          specifier,
+          path: './-eai-implicit-modules.js',
+          package: this,
+          treeType: 'app' as const,
+        })),
+      ...this.extraResolve
+        .implicitImports('implicit-test-modules', this.pkgRoot)
+        .map((specifier) => ({
+          isDynamic: false,
+          specifier,
+          path: './-eai-implicit-modules.js',
+          package: this,
+          treeType: 'test' as const,
+        })),
+    ];
   }
 
   private buildBabelOptions(instance: Project | AddonInstance, options: any) {

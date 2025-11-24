@@ -85,7 +85,10 @@ export default class Analyzer extends Funnel {
 
   get imports(): Import[] {
     if (!this.modules) {
-      this.modules = flatten([...this.paths.values()]);
+      this.modules = flatten([
+        ...this.paths.values(),
+        ...this.pack.implicitImports,
+      ]);
       debug('imports %m', this.modules);
     }
     return this.modules;
