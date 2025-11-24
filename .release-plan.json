@@ -1,17 +1,21 @@
 {
   "solution": {
     "ember-auto-import": {
-      "impact": "patch",
-      "oldVersion": "2.11.1",
-      "newVersion": "2.11.2",
+      "impact": "minor",
+      "oldVersion": "2.11.2",
+      "newVersion": "2.12.0",
       "constraints": [
         {
+          "impact": "minor",
+          "reason": "Appears in changelog section :rocket: Enhancement"
+        },
+        {
           "impact": "patch",
-          "reason": "Appears in changelog section :bug: Bug Fix"
+          "reason": "Appears in changelog section :memo: Documentation"
         }
       ],
       "pkgJSONPath": "./packages/ember-auto-import/package.json"
     }
   },
-  "description": "## Release (2025-11-07)\n\nember-auto-import 2.11.2 (patch)\n\n#### :bug: Bug Fix\n* `ember-auto-import`, `v2-app-template`, `@ef4/test-scenarios`\n  * [#670](https://github.com/embroider-build/ember-auto-import/pull/670) make missing top-level EAI errors lazy to fix embroider 4.x ([@ef4](https://github.com/ef4))\n\n#### Committers: 1\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n"
+  "description": "## Release (2025-11-24)\n\nember-auto-import 2.12.0 (minor)\n\n#### :rocket: Enhancement\n* `ember-auto-import`, `@ef4/test-scenarios`\n  * [#677](https://github.com/embroider-build/ember-auto-import/pull/677) Implicit modules support ([@ef4](https://github.com/ef4))\n\n#### :memo: Documentation\n* `ember-auto-import`\n  * [#675](https://github.com/embroider-build/ember-auto-import/pull/675) Add conditionName config example to readme ([@apellerano-pw](https://github.com/apellerano-pw))\n\n#### Committers: 2\n- Andrew Pellerano ([@apellerano-pw](https://github.com/apellerano-pw))\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n"
 }

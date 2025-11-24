@@ -1,5 +1,21 @@
 # Changelog
 
+## Release (2025-11-24)
+
+ember-auto-import 2.12.0 (minor)
+
+#### :rocket: Enhancement
+* `ember-auto-import`, `@ef4/test-scenarios`
+  * [#677](https://github.com/embroider-build/ember-auto-import/pull/677) Implicit modules support ([@ef4](https://github.com/ef4))
+
+#### :memo: Documentation
+* `ember-auto-import`
+  * [#675](https://github.com/embroider-build/ember-auto-import/pull/675) Add conditionName config example to readme ([@apellerano-pw](https://github.com/apellerano-pw))
+
+#### Committers: 2
+- Andrew Pellerano ([@apellerano-pw](https://github.com/apellerano-pw))
+- Edward Faulkner ([@ef4](https://github.com/ef4))
+
 ## Release (2025-11-07)
 
 ember-auto-import 2.11.2 (patch)
