@@ -295,12 +295,207 @@ function buildV2AddonWithDevDep() {
   return addon;
 }
 
+// This addon tests that v2 addons can import from themselves using their package name.
+// This is important for addons that use absolute imports internally, and ensures
+// that naming conflicts with app modules don't break addon self-imports.
+// See: https://github.com/embroider-build/ember-auto-import/issues/681
+function buildV2AddonWithSelfImport() {
+  let addon = new Project('addon-self-import', {
+    files: {
+      'addon-main.js': `
+        const { addonV1Shim } = require('@embroider/addon-shim');
+        module.exports = addonV1Shim(__dirname);
+      `,
+      dist: {
+        'index.js': `
+          // This import uses the package name to import from itself.
+          // This should work even if the app has a conflicting module.
+          import { addonHelper } from 'addon-self-import/utils/helper';
+          export function addonMain() {
+            return 'addon-main:' + addonHelper();
+          }
+        `,
+        utils: {
+          'helper.js': `
+            export function addonHelper() {
+              return 'addon-helper-value';
+            }
+          `,
+        },
+        components: {
+          'my-component.js': `
+            // Another self-import using package name
+            import { addonHelper } from 'addon-self-import/utils/helper';
+            export function myComponent() {
+              return 'my-component:' + addonHelper();
+            }
+          `,
+        },
+      },
+    },
+  });
+  addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  addon.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.js',
+  };
+  addon.pkg.exports = {
+    '.': './dist/index.js',
+    './*': './dist/*',
+  };
+  return addon;
+}
+
+// This addon tests the fullySpecified: false fix for ESM modules.
+// It has a directory structure where the component is at:
+//   dist/components/my-component/index.js
+// And uses "type": "module" in package.json with exports pattern "./*": "./dist/*".
+// Without the fullySpecified: false fix, importing "addon-with-index/components/my-component"
+// would fail because webpack 5's ESM resolution requires fully specified paths
+// (including the file extension or explicit /index.js).
+function buildV2AddonWithIndexResolution() {
+  let addon = new Project('addon-with-index', {
+    files: {
+      'addon-main.cjs': `
+        const { addonV1Shim } = require('@embroider/addon-shim');
+        module.exports = addonV1Shim(__dirname);
+      `,
+      dist: {
+        'index.js': `
+          // This import tests ESM-to-ESM resolution within a type:module package.
+          // It imports from a directory without specifying /index.js.
+          // Without fullySpecified: false, this would fail.
+          import { myComponent } from './components/my-component';
+          export function mainExport() {
+            return 'addon-with-index-main:' + myComponent();
+          }
+        `,
+        components: {
+          'my-component': {
+            'index.js': `
+              export function myComponent() {
+                return 'my-component-from-index';
+              }
+            `,
+          },
+          'another-component': {
+            'index.js': `
+              export function anotherComponent() {
+                return 'another-component-from-index';
+              }
+            `,
+            'helper.js': `
+              export function helper() {
+                return 'helper-from-another-component';
+              }
+            `,
+          },
+        },
+      },
+    },
+  });
+  addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  addon.pkg.type = 'module';
+  addon.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.cjs',
+  };
+  // This exports pattern tests that webpack can resolve directory imports
+  // to index.js files when the package has "type": "module".
+  // Without fullySpecified: false, webpack requires explicit /index.js paths.
+  addon.pkg.exports = {
+    '.': './dist/index.js',
+    './*': './dist/*',
+  };
+  return addon;
+}
+
+// This addon tests the conditional exports pattern commonly used by v2 addons
+// where exports map to .js files directly: "./*": { "default": "./dist/*.js" }
+// This pattern is problematic when the actual files are directories with index.js
+// because the exports field adds .js, bypassing directory resolution entirely.
+// For example: import 'addon/components/name' -> exports maps to dist/components/name.js
+// But if the actual file is dist/components/name/index.js, this fails.
+function buildV2AddonWithConditionalExports() {
+  let addon = new Project('addon-conditional-exports', {
+    files: {
+      'addon-main.cjs': `
+        const { addonV1Shim } = require('@embroider/addon-shim');
+        module.exports = addonV1Shim(__dirname);
+      `,
+      declarations: {
+        'index.d.ts': `export declare function mainExport(): string;`,
+        'components': {
+          'flat-component.d.ts': `export declare function flatComponent(): string;`,
+          'dir-component': {
+            'index.d.ts': `export declare function dirComponent(): string;`,
+          },
+        },
+      },
+      dist: {
+        'index.js': `
+          export function mainExport() {
+            return 'conditional-exports-main';
+          }
+        `,
+        components: {
+          // Flat file - works with "./*": "./dist/*.js" pattern
+          'flat-component.js': `
+            export function flatComponent() {
+              return 'flat-component-value';
+            }
+          `,
+          // Directory with index.js - does NOT work with "./*": "./dist/*.js" pattern
+          // because exports maps 'components/dir-component' to 'dist/components/dir-component.js'
+          // but the actual file is 'dist/components/dir-component/index.js'
+          'dir-component': {
+            'index.js': `
+              export function dirComponent() {
+                return 'dir-component-from-index';
+              }
+            `,
+          },
+        },
+      },
+    },
+  });
+  addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  addon.pkg.type = 'module';
+  addon.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.cjs',
+  };
+  // This is the conditional exports pattern that causes issues with directory imports.
+  // The "./*" pattern maps to "./dist/*.js" which adds .js extension,
+  // preventing directory -> index.js resolution.
+  addon.pkg.exports = {
+    '.': {
+      'types': './declarations/index.d.ts',
+      'default': './dist/index.js',
+    },
+    './*': {
+      'types': './declarations/*.d.ts',
+      'default': './dist/*.js',
+    },
+  };
+  return addon;
+}
+
 let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
   project.addDevDependency(buildV2Addon());
   project.addDevDependency(buildIntermediateV1Addon());
   project.addDevDependency(buildV2AddonWithExports('fourth-v2-addon'));
   project.addDevDependency(buildV2AddonWithMacros());
   project.addDevDependency(buildV2AddonWithDevDep());
+  project.addDevDependency(buildV2AddonWithSelfImport());
+  project.addDevDependency(buildV2AddonWithIndexResolution());
+  project.addDevDependency(buildV2AddonWithConditionalExports());
 
   // apps don't necessarily need a directly dependency on @embroider/macros just
   // because they have a v2 addon that contains some macros, but in this test
@@ -347,6 +542,17 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
               return false;
             }
           });
+        `,
+      },
+      // This file intentionally has the same path as the addon's internal module
+      // to test that addon self-imports work even with naming conflicts.
+      // See: https://github.com/embroider-build/ember-auto-import/issues/681
+      utils: {
+        'helper.js': `
+          // This is the APP's helper, NOT the addon's helper
+          export function appHelper() {
+            return 'app-helper-value';
+          }
         `,
       },
       templates: {
@@ -482,6 +688,102 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
           module('Unit | v2-addon with dev-dep', function () {
             test('should not consume dev-dep from npm', function(assert) {
                assert.ok(makeObject(), 'this will throw if we actually consume the dev dep from npm');
+            });
+          });
+        `,
+        // Test for issue #681: v2 addon self-imports with naming conflicts
+        // https://github.com/embroider-build/ember-auto-import/issues/681
+        'self-import-test.js': `
+          import { module, test } from 'qunit';
+          // The addon uses self-imports with its package name internally.
+          // This should work even though the app has a conflicting utils/helper.js file.
+          import { addonMain } from 'addon-self-import';
+          import { myComponent } from 'addon-self-import/components/my-component';
+          // Also import the app's helper to prove both exist and are separate
+          import { appHelper } from '@ef4/app-template/utils/helper';
+
+          module('Unit | v2 addon self-import with naming conflict', function () {
+            test('addon can import from itself using package name', function (assert) {
+              // addonMain internally imports from 'addon-self-import/utils/helper'
+              // This should resolve to the addon's helper, not the app's helper
+              assert.equal(addonMain(), 'addon-main:addon-helper-value', 'addon self-import should work');
+            });
+
+            test('addon component can import from addon using package name', function (assert) {
+              // myComponent also internally imports from 'addon-self-import/utils/helper'
+              assert.equal(myComponent(), 'my-component:addon-helper-value', 'component self-import should work');
+            });
+
+            test('app helper is separate from addon helper', function (assert) {
+              // The app has its own utils/helper.js that should not interfere
+              assert.equal(appHelper(), 'app-helper-value', 'app helper should be separate');
+            });
+          });
+        `,
+        // Test for fullySpecified: false fix - ESM directory imports
+        // This tests that v2 addons with "type": "module" can use directory imports
+        // that resolve to index.js without webpack requiring explicit paths.
+        'index-resolution-test.js': `
+          import { module, test } from 'qunit';
+          // Test the main export which internally imports from a directory without /index.js
+          // This tests ESM-to-ESM imports within a type:module package.
+          // Without fullySpecified: false, the internal import would fail.
+          import { mainExport } from 'addon-with-index';
+          import { anotherComponent } from 'addon-with-index/components/another-component';
+          // Also test that explicit file imports still work
+          import { helper } from 'addon-with-index/components/another-component/helper.js';
+
+          module('Unit | v2 addon index.js resolution with type module', function () {
+            test('internal ESM imports resolve directories to index.js', function (assert) {
+              // mainExport internally imports from './components/my-component' (no /index.js)
+              // This tests that fullySpecified: false allows directory resolution
+              assert.equal(mainExport(), 'addon-with-index-main:my-component-from-index', 'internal import should resolve');
+            });
+
+            test('can import from directory with index.js', function (assert) {
+              assert.equal(anotherComponent(), 'another-component-from-index', 'another-component should resolve to index.js');
+            });
+
+            test('can still import explicit .js files from component directories', function (assert) {
+              assert.equal(helper(), 'helper-from-another-component', 'explicit file imports should work');
+            });
+          });
+        `,
+        // Test for conditional exports pattern: "./*": { "default": "./dist/*.js" }
+        // This pattern is commonly used by v2 addons but causes issues with directory imports
+        // because the exports field adds .js extension, preventing index.js resolution.
+        //
+        // ember-auto-import handles this with the ExportsIndexFallbackPlugin which:
+        // 1. Detects when a .js file doesn't exist but a directory/index.js does
+        // 2. Resolves to the index.js file
+        // 3. Shows a warning in development mode about the misconfigured exports
+        'conditional-exports-test.js': `
+          import { module, test } from 'qunit';
+          // Main export should work - uses explicit "./dist/index.js" in exports
+          import { mainExport } from 'addon-conditional-exports';
+          // Flat file import should work - "components/flat-component" -> "dist/components/flat-component.js"
+          import { flatComponent } from 'addon-conditional-exports/components/flat-component';
+          // Directory import with index.js - this WOULD fail without ExportsIndexFallbackPlugin:
+          //   - exports maps: components/dir-component -> dist/components/dir-component.js
+          //   - but actual file is: dist/components/dir-component/index.js
+          // The plugin detects this and resolves to index.js with a dev warning.
+          import { dirComponent } from 'addon-conditional-exports/components/dir-component';
+
+          module('Unit | v2 addon conditional exports with .js pattern', function () {
+            test('main export works with conditional exports', function (assert) {
+              assert.equal(mainExport(), 'conditional-exports-main', 'main export should work');
+            });
+
+            test('flat file imports work with .js exports pattern', function (assert) {
+              // This works because: components/flat-component -> dist/components/flat-component.js (file exists)
+              assert.equal(flatComponent(), 'flat-component-value', 'flat component should work');
+            });
+
+            test('directory imports with index.js work via ExportsIndexFallbackPlugin', function (assert) {
+              // Without the plugin, this would fail because exports maps to .js file
+              // that doesn't exist. The plugin detects this and resolves to index.js.
+              // In development mode, a warning is logged about the misconfigured exports.
+              assert.equal(dirComponent(), 'dir-component-from-index', 'directory component should resolve to index.js');
             });
           });
         `,
