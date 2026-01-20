@@ -295,12 +295,81 @@ function buildV2AddonWithDevDep() {
   return addon;
 }
 
+// This addon tests the fullySpecified: false fix for ESM modules.
+// It has a directory structure where the component is at:
+//   dist/components/my-component/index.js
+// And uses "type": "module" in package.json with exports pattern "./*": "./dist/*".
+// Without the fullySpecified: false fix, importing "addon-with-index/components/my-component"
+// would fail because webpack 5's ESM resolution requires fully specified paths
+// (including the file extension or explicit /index.js).
+function buildV2AddonWithIndexResolution() {
+  // This addon uses "type": "module" to trigger webpack's strict ESM resolution.
+  // The fix adds fullySpecified: false to webpack config to allow directory imports.
+  let addon = new Project('addon-with-index', {
+    files: {
+      'addon-main.cjs': `
+        const { addonV1Shim } = require('@embroider/addon-shim');
+        module.exports = addonV1Shim(__dirname);
+      `,
+      dist: {
+        'index.js': `
+          // This import tests ESM-to-ESM resolution within a type:module package.
+          // It imports from a directory without specifying /index.js.
+          // Without fullySpecified: false, this would fail.
+          import { myComponent } from './components/my-component';
+          export function mainExport() {
+            return 'addon-with-index-main:' + myComponent();
+          }
+        `,
+        components: {
+          'my-component': {
+            'index.js': `
+              export function myComponent() {
+                return 'my-component-from-index';
+              }
+            `,
+          },
+          'another-component': {
+            'index.js': `
+              export function anotherComponent() {
+                return 'another-component-from-index';
+              }
+            `,
+            'helper.js': `
+              export function helper() {
+                return 'helper-from-another-component';
+              }
+            `,
+          },
+        },
+      },
+    },
+  });
+  addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  addon.pkg.type = 'module';
+  addon.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.cjs',
+  };
+  // This exports pattern tests that webpack can resolve directory imports
+  // to index.js files when the package has "type": "module".
+  // Without fullySpecified: false, webpack requires explicit /index.js paths.
+  addon.pkg.exports = {
+    '.': './dist/index.js',
+    './*': './dist/*',
+  };
+  return addon;
+}
+
 let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
   project.addDevDependency(buildV2Addon());
   project.addDevDependency(buildIntermediateV1Addon());
   project.addDevDependency(buildV2AddonWithExports('fourth-v2-addon'));
   project.addDevDependency(buildV2AddonWithMacros());
   project.addDevDependency(buildV2AddonWithDevDep());
+  project.addDevDependency(buildV2AddonWithIndexResolution());
 
   // apps don't necessarily need a directly dependency on @embroider/macros just
   // because they have a v2 addon that contains some macros, but in this test
@@ -482,6 +551,32 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
           module('Unit | v2-addon with dev-dep', function () {
             test('should not consume dev-dep from npm', function(assert) {
                assert.ok(makeObject(), 'this will throw if we actually consume the dev dep from npm');
+            });
+          });
+        `,
+        'index-resolution-test.js': `
+          import { module, test } from 'qunit';
+          // Test the main export which internally imports from a directory without /index.js
+          // This tests ESM-to-ESM imports within a type:module package.
+          // Without fullySpecified: false, the internal import would fail.
+          import { mainExport } from 'addon-with-index';
+          import { anotherComponent } from 'addon-with-index/components/another-component';
+          // Also test that explicit file imports still work
+          import { helper } from 'addon-with-index/components/another-component/helper.js';
+
+          module('Unit | v2 addon index.js resolution with type module', function () {
+            test('internal ESM imports resolve directories to index.js', function (assert) {
+              // mainExport internally imports from './components/my-component' (no /index.js)
+              // This tests that fullySpecified: false allows directory resolution
+              assert.equal(mainExport(), 'addon-with-index-main:my-component-from-index', 'internal import should resolve');
+            });
+
+            test('can import from directory with index.js', function (assert) {
+              assert.equal(anotherComponent(), 'another-component-from-index', 'another-component should resolve to index.js');
+            });
+
+            test('can still import explicit .js files from component directories', function (assert) {
+              assert.equal(helper(), 'helper-from-another-component', 'explicit file imports should work');
             });
           });
         `,

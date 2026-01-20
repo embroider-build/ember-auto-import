@@ -234,6 +234,16 @@ export default class WebpackBundler extends Plugin implements Bundler {
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.cjs'),
         rules: [
+          // Disable webpack's strict ESM resolution for .js files. This is needed
+          // for v2 addons that use "type": "module" in package.json with directory
+          // imports like "./components/my-component" that should resolve to
+          // "./components/my-component/index.js".
+          {
+            test: /\.js$/,
+            resolve: {
+              fullySpecified: false,
+            },
+          },
           this.babelRule(
             stagingDir,
             (filename) => !this.fileIsInApp(filename),
