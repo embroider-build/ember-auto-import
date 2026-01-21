@@ -49,7 +49,7 @@ function moduleToId(moduleSpecifier: string) {
 
   // if the module contains characters that need to be escaped, then map this to a hash instead, so we can easily replace this later
   if (moduleSpecifier.includes('"') || moduleSpecifier.includes("'")) {
-    id = createHash('md5').update('some_string').digest('hex');
+    id = createHash('md5').update(moduleSpecifier).digest('hex');
 
     moduleIdMap.set(id, moduleSpecifier);
   }
