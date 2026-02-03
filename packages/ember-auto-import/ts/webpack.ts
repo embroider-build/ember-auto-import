@@ -65,9 +65,9 @@ class ExportsIndexFallbackPlugin {
 
   apply(compiler: Compiler) {
     // Hook into the resolver factory to intercept all resolver creations.
-    compiler.resolverFactory.hooks.resolveOptions.for('normal').tap(
-      'ExportsIndexFallbackPlugin',
-      (resolveOptions: any) => {
+    compiler.resolverFactory.hooks.resolveOptions
+      .for('normal')
+      .tap('ExportsIndexFallbackPlugin', (resolveOptions: any) => {
         // Add our plugin to the resolver's plugins array
         if (!resolveOptions.plugins) {
           resolveOptions.plugins = [];
@@ -76,94 +76,120 @@ class ExportsIndexFallbackPlugin {
         // Create a resolver plugin that handles the fallback
         const fallbackPlugin = {
           apply: (resolver: any) => {
-            resolver.getHook('resolve').tapAsync(
-              { name: 'ExportsIndexFallbackPlugin', stage: 100 },
-              (request: any, resolveContext: any, callback: (err?: Error | null, result?: any) => void) => {
-                const req = request.request;
-                if (!req || req.startsWith('.') || req.startsWith('/')) {
-                  return callback();
-                }
+            resolver
+              .getHook('resolve')
+              .tapAsync(
+                { name: 'ExportsIndexFallbackPlugin', stage: 100 },
+                (
+                  request: any,
+                  resolveContext: any,
+                  callback: (err?: Error | null, result?: any) => void
+                ) => {
+                  const req = request.request;
+                  if (!req || req.startsWith('.') || req.startsWith('/')) {
+                    return callback();
+                  }
 
-                // Let the resolution proceed, and if it fails, try the fallback
-                resolver.doResolve(
-                  resolver.hooks.resolve,
-                  request,
-                  `trying original resolution`,
-                  resolveContext,
-                  (err: Error | null, result: any) => {
-                    if (!err && result) {
-                      return callback(null, result);
-                    }
-
-                    // Resolution failed, try /index fallback with various extensions
-                    // This handles cases where exports pattern adds .js, .mjs, or .cjs extension
-                    const tryIndexFallback = (suffixes: string[], originalErr: Error | null) => {
-                      if (suffixes.length === 0) {
-                        // All fallbacks failed, return original error
-                        return callback(originalErr);
+                  // Let the resolution proceed, and if it fails, try the fallback
+                  resolver.doResolve(
+                    resolver.hooks.resolve,
+                    request,
+                    `trying original resolution`,
+                    resolveContext,
+                    (err: Error | null, result: any) => {
+                      if (!err && result) {
+                        return callback(null, result);
                       }
 
-                      const suffix = suffixes[0];
-                      const remainingSuffixes = suffixes.slice(1);
-                      const indexRequest = { ...request, request: req + suffix };
+                      // Resolution failed, try /index fallback with various extensions
+                      // This handles cases where exports pattern adds .js, .mjs, or .cjs extension
+                      const tryIndexFallback = (
+                        suffixes: string[],
+                        originalErr: Error | null
+                      ) => {
+                        if (suffixes.length === 0) {
+                          // All fallbacks failed, return original error
+                          return callback(originalErr);
+                        }
 
-                      resolver.doResolve(
-                        resolver.hooks.resolve,
-                        indexRequest,
-                        `trying ${suffix} fallback`,
-                        resolveContext,
-                        (indexErr: Error | null, indexResult: any) => {
-                          if (indexErr || !indexResult) {
-                            // This fallback failed, try next one
-                            return tryIndexFallback(remainingSuffixes, originalErr);
-                          }
+                        const suffix = suffixes[0];
+                        const remainingSuffixes = suffixes.slice(1);
+                        const indexRequest = {
+                          ...request,
+                          request: req + suffix,
+                        };
 
-                          // Index fallback worked - warn in development mode
-                          if (this.isDevelopment) {
-                            const warningKey = req;
-                            if (!exportsWarningsShown.has(warningKey)) {
-                              exportsWarningsShown.add(warningKey);
-
-                              // Extract useful context for the warning
-                              const issuer = request.context?.issuer || 'unknown file';
-                              const resolvedPath = indexResult.path || 'unknown path';
-                              const pkgName = packageName(req) || req.split('/')[0];
-                              const pkgJsonPath = indexResult.descriptionFilePath ||
-                                (indexResult.descriptionFileRoot ? join(indexResult.descriptionFileRoot, 'package.json') : 'unknown');
-
-                              console.warn(
-                                `\n[ember-auto-import] Warning: Misconfigured "exports" field in "${pkgName}".\n` +
-                                `  Package.json: ${pkgJsonPath}\n` +
-                                `  Field: "exports"\n` +
-                                `  Import: "${req}"\n` +
-                                `  From: ${issuer}\n` +
-                                `  Resolved via fallback to: ${resolvedPath}\n\n` +
-                                `The exports pattern "./*": { "default": "./dist/*.js" } doesn't work with directory imports.\n` +
-                                `Consider changing to "./*": { "default": "./dist/*" } to support both flat files and directories.\n`
+                        resolver.doResolve(
+                          resolver.hooks.resolve,
+                          indexRequest,
+                          `trying ${suffix} fallback`,
+                          resolveContext,
+                          (indexErr: Error | null, indexResult: any) => {
+                            if (indexErr || !indexResult) {
+                              // This fallback failed, try next one
+                              return tryIndexFallback(
+                                remainingSuffixes,
+                                originalErr
                               );
                             }
+
+                            // Index fallback worked - warn in development mode
+                            if (this.isDevelopment) {
+                              const warningKey = req;
+                              if (!exportsWarningsShown.has(warningKey)) {
+                                exportsWarningsShown.add(warningKey);
+
+                                // Extract useful context for the warning
+                                const issuer =
+                                  request.context?.issuer || 'unknown file';
+                                const resolvedPath =
+                                  indexResult.path || 'unknown path';
+                                const pkgName =
+                                  packageName(req) || req.split('/')[0];
+                                const pkgJsonPath =
+                                  indexResult.descriptionFilePath ||
+                                  (indexResult.descriptionFileRoot
+                                    ? join(
+                                        indexResult.descriptionFileRoot,
+                                        'package.json'
+                                      )
+                                    : 'unknown');
+
+                                console.warn(
+                                  `\n[ember-auto-import] Warning: Misconfigured "exports" field in "${pkgName}".\n` +
+                                    `  Package.json: ${pkgJsonPath}\n` +
+                                    `  Field: "exports"\n` +
+                                    `  Import: "${req}"\n` +
+                                    `  From: ${issuer}\n` +
+                                    `  Resolved via fallback to: ${resolvedPath}\n\n` +
+                                    `The exports pattern "./*": { "default": "./dist/*.js" } doesn't work with directory imports.\n` +
+                                    `Consider changing to "./*": { "default": "./dist/*" } to support both flat files and directories.\n`
+                                );
+                              }
+                            }
+
+                            callback(null, indexResult);
                           }
+                        );
+                      };
 
-                          callback(null, indexResult);
-                        }
+                      // Try common index file patterns:
+                      // - /index (for exports without extension or with extension added by resolver)
+                      // - /index.js, /index.mjs, /index.cjs (for explicit extension patterns)
+                      tryIndexFallback(
+                        ['/index', '/index.js', '/index.mjs', '/index.cjs'],
+                        err
                       );
-                    };
-
-                    // Try common index file patterns:
-                    // - /index (for exports without extension or with extension added by resolver)
-                    // - /index.js, /index.mjs, /index.cjs (for explicit extension patterns)
-                    tryIndexFallback(['/index', '/index.js', '/index.mjs', '/index.cjs'], err);
-                  }
-                );
-              }
-            );
-          }
+                    }
+                  );
+                }
+              );
+          },
         };
 
         resolveOptions.plugins.push(fallbackPlugin);
         return resolveOptions;
-      }
-    );
+      });
   }
 }
 
