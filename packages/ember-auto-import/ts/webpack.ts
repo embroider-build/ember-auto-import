@@ -37,6 +37,162 @@ const EXTENSIONS = ['.js', '.ts', '.json'];
 
 const debug = makeDebug('ember-auto-import:webpack');
 
+// Track which exports field warnings we've already shown to avoid spam
+const exportsWarningsShown = new Set<string>();
+
+/**
+ * Webpack compiler plugin that handles a common misconfiguration in v2 addon exports fields.
+ *
+ * Problem: When a package.json has exports like:
+ *   "./*": { "default": "./dist/*.js" }
+ *
+ * And the actual file structure uses directories with index.js:
+ *   dist/components/my-component/index.js
+ *
+ * Then importing "addon/components/my-component" fails because:
+ *   - exports maps it to: dist/components/my-component.js (doesn't exist)
+ *   - but the actual file is: dist/components/my-component/index.js
+ *
+ * This plugin detects this case and resolves to the index.js, while warning
+ * in development mode about the misconfigured exports field.
+ */
+class ExportsIndexFallbackPlugin {
+  private isDevelopment: boolean;
+
+  constructor(isDevelopment: boolean) {
+    this.isDevelopment = isDevelopment;
+  }
+
+  apply(compiler: Compiler) {
+    // Hook into the resolver factory to intercept all resolver creations.
+    compiler.resolverFactory.hooks.resolveOptions
+      .for('normal')
+      .tap('ExportsIndexFallbackPlugin', (resolveOptions: any) => {
+        // Add our plugin to the resolver's plugins array
+        if (!resolveOptions.plugins) {
+          resolveOptions.plugins = [];
+        }
+
+        // Create a resolver plugin that handles the fallback
+        const fallbackPlugin = {
+          apply: (resolver: any) => {
+            resolver
+              .getHook('resolve')
+              .tapAsync(
+                { name: 'ExportsIndexFallbackPlugin', stage: 100 },
+                (
+                  request: any,
+                  resolveContext: any,
+                  callback: (err?: Error | null, result?: any) => void
+                ) => {
+                  const req = request.request;
+                  if (!req || req.startsWith('.') || req.startsWith('/')) {
+                    return callback();
+                  }
+
+                  // Let the resolution proceed, and if it fails, try the fallback
+                  resolver.doResolve(
+                    resolver.hooks.resolve,
+                    request,
+                    `trying original resolution`,
+                    resolveContext,
+                    (err: Error | null, result: any) => {
+                      if (!err && result) {
+                        return callback(null, result);
+                      }
+
+                      // Resolution failed, try /index fallback with various extensions
+                      // This handles cases where exports pattern adds .js, .mjs, or .cjs extension
+                      const tryIndexFallback = (
+                        suffixes: string[],
+                        originalErr: Error | null
+                      ) => {
+                        if (suffixes.length === 0) {
+                          // All fallbacks failed, return original error
+                          return callback(originalErr);
+                        }
+
+                        const suffix = suffixes[0];
+                        const remainingSuffixes = suffixes.slice(1);
+                        const indexRequest = {
+                          ...request,
+                          request: req + suffix,
+                        };
+
+                        resolver.doResolve(
+                          resolver.hooks.resolve,
+                          indexRequest,
+                          `trying ${suffix} fallback`,
+                          resolveContext,
+                          (indexErr: Error | null, indexResult: any) => {
+                            if (indexErr || !indexResult) {
+                              // This fallback failed, try next one
+                              return tryIndexFallback(
+                                remainingSuffixes,
+                                originalErr
+                              );
+                            }
+
+                            // Index fallback worked - warn in development mode
+                            if (this.isDevelopment) {
+                              const warningKey = req;
+                              if (!exportsWarningsShown.has(warningKey)) {
+                                exportsWarningsShown.add(warningKey);
+
+                                // Extract useful context for the warning
+                                const issuer =
+                                  request.context?.issuer || 'unknown file';
+                                const resolvedPath =
+                                  indexResult.path || 'unknown path';
+                                const pkgName =
+                                  packageName(req) || req.split('/')[0];
+                                const pkgJsonPath =
+                                  indexResult.descriptionFilePath ||
+                                  (indexResult.descriptionFileRoot
+                                    ? join(
+                                        indexResult.descriptionFileRoot,
+                                        'package.json'
+                                      )
+                                    : 'unknown');
+
+                                console.warn(
+                                  `\n[ember-auto-import] Warning: Misconfigured "exports" field in "${pkgName}".\n` +
+                                    `  Package.json: ${pkgJsonPath}\n` +
+                                    `  Field: "exports"\n` +
+                                    `  Import: "${req}"\n` +
+                                    `  From: ${issuer}\n` +
+                                    `  Resolved via fallback to: ${resolvedPath}\n\n` +
+                                    `The exports pattern "./*": { "default": "./dist/*.js" } doesn't work with directory imports.\n` +
+                                    `Consider changing to "./*": { "default": "./dist/*" } to support both flat files and directories.\n`
+                                );
+                              }
+                            }
+
+                            callback(null, indexResult);
+                          }
+                        );
+                      };
+
+                      // Try common index file patterns:
+                      // - /index (for exports without extension or with extension added by resolver)
+                      // - /index.js, /index.mjs, /index.cjs (for explicit extension patterns)
+                      tryIndexFallback(
+                        ['/index', '/index.js', '/index.mjs', '/index.cjs'],
+                        err
+                      );
+                    }
+                  );
+                }
+              );
+          },
+        };
+
+        resolveOptions.plugins.push(fallbackPlugin);
+        return resolveOptions;
+      });
+  }
+}
+
 Handlebars.registerHelper('js-string-escape', jsStringEscape);
 Handlebars.registerHelper('join', function (list, connector) {
   return list.join(connector);
@@ -44,12 +200,12 @@ Handlebars.registerHelper('join', function (list, connector) {
 
 const moduleIdMap = new Map<string, string>();
 
-function moduleToId(moduleSpecifier: string) {
+export function moduleToId(moduleSpecifier: string) {
   let id = moduleSpecifier;
 
   // if the module contains characters that need to be escaped, then map this to a hash instead, so we can easily replace this later
   if (moduleSpecifier.includes('"') || moduleSpecifier.includes("'")) {
-    id = createHash('md5').update('some_string').digest('hex');
+    id = createHash('md5').update(moduleSpecifier).digest('hex');
 
     moduleIdMap.set(id, moduleSpecifier);
   }
@@ -57,8 +213,13 @@ function moduleToId(moduleSpecifier: string) {
   return id;
 }
 
-function idToModule(id: string) {
+export function idToModule(id: string) {
   return moduleIdMap.get(id) ?? id;
+}
+
+// Exported for testing purposes
+export function clearModuleIdMap() {
+  moduleIdMap.clear();
 }
 
 Handlebars.registerHelper('module-to-id', moduleToId);
@@ -84,7 +245,7 @@ module.exports = (function(){
     return m && m.__esModule ? m : Object.assign({ default: m }, m);
   }
   {{#each staticImports as |module|}}
-    d('{{js-string-escape module.requestedSpecifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.requestedSpecifier}}'), function() { return esc(require('{{js-string-escape module.resolvedSpecifier}}')); });
+    d('{{js-string-escape module.requestedSpecifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.resolvedSpecifier}}'), function() { return esc(require('{{js-string-escape module.resolvedSpecifier}}')); });
   {{/each}}
   {{#each dynamicImports as |module|}}
     d('_eai_dyn_{{js-string-escape module.requestedSpecifier}}', [], function() { return import('{{js-string-escape module.resolvedSpecifier}}'); });
@@ -230,10 +391,25 @@ export default class WebpackBundler extends Plugin implements Bundler {
           [this.opts.rootPackage.name]: `${this.opts.rootPackage.root}/app`,
         }),
       },
-      plugins: removeUndefined([stylePlugin]),
+      plugins: removeUndefined([
+        stylePlugin,
+        // Handle misconfigured exports fields that map to .js files when the actual
+        // files are directories with index.js. See ExportsIndexFallbackPlugin for details.
+        new ExportsIndexFallbackPlugin(this.opts.environment !== 'production'),
+      ]),
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.cjs'),
         rules: [
+          // Disable webpack's strict ESM resolution for .js files. This is needed
+          // for v2 addons that use "type": "module" in package.json with directory
+          // imports like "./components/my-component" that should resolve to
+          // "./components/my-component/index.js".
+          {
+            test: /\.js$/,
+            resolve: {
+              fullySpecified: false,
+            },
+          },
           this.babelRule(
             stagingDir,
             (filename) => !this.fileIsInApp(filename),
@@ -430,6 +606,12 @@ export default class WebpackBundler extends Plugin implements Bundler {
         if (pkg.meta.externals?.includes(name)) {
           this.externalizedByUs.add(request);
           return callback(undefined, 'commonjs ' + request);
+        }
+
+        // Allow v2 addons to import from themselves using their package name.
+        // See: https://github.com/embroider-build/ember-auto-import/issues/681
+        if (name === pkg.name) {
+          return callback();
         }
 
         if (!pkg.hasDependency(name)) {
