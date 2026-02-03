@@ -249,7 +249,7 @@ function staticImportTest(project: Project) {
             secret_string_7
           } from '../../lib/example2';
           import testAsset from '@ef4/app-template/assets/test.specialfile';
-          import { query as testAssetQuery } from '@ef4/app-template/assets/test.specialfile?foo=bar';
+          import { query as testAssetQuery } from '@ef4/app-template/assets/test.specialfile?foo=\\'bar\\'';
           import Service from '@ember/service';
           import example6Direct, { dont_find_me } from '@ef4/app-template/utils/example6';
           import example7Direct, { secret_string } from '@ef4/app-template/utils/example7';
@@ -340,7 +340,7 @@ function staticImportTest(project: Project) {
             test('it can import assets that have query params', function (assert) {
               assert.strictEqual(
                 testAssetQuery,
-                '?foo=bar',
+                '?foo=\\'bar\\'',
                 'query params are correctly handled'
               );
             });
