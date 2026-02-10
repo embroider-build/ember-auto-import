@@ -71,8 +71,9 @@ jobs:
       - name: Apply old node overrides
         run: |
           jq '
-            .overrides = (.overrides // {}) + {
-              "mktemp": "^0.4.0"
+            .pnpm.overrides = (.pnpm.overrides // {}) + {
+               "quick-temp": "0.1.8",
+               "ember-cli-babel": "^7.0.0"
             }
           ' package.json > package.json.tmp
       - run: mv package.json.tmp package.json
