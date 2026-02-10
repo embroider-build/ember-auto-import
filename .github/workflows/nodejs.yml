@@ -71,7 +71,7 @@ jobs:
       - name: Apply old node overrides
         run: |
           jq '
-            .overrides = (.overrides // {}) + {
+            .pnpm.overrides = (.pnpm.overrides // {}) + {
               "mktemp": "^0.4.0"
             }
           ' package.json > package.json.tmp
