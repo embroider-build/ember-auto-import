@@ -289,7 +289,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           ...[...this.opts.packages].find(
             (pkg) => pkg.miniCssExtractPluginOptions
           )?.miniCssExtractPluginOptions,
-        }),
+        }) as any,
       };
     } else
       return {
