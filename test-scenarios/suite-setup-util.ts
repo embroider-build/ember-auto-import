@@ -37,7 +37,9 @@ async function githubMatrix() {
         os: 'windows',
         command: s.command,
       })),
-  ];
+  ].filter(s => {
+    return Boolean(process.env.ENABLE_LEGACY_SCENARIOS) === s.name.startsWith('lts-');
+  });
 
   return {
     name: include.map(s => s.name),
