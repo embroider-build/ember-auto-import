@@ -76,8 +76,6 @@ jobs:
             }
           ' package.json > package.json.tmp
       - run: mv package.json.tmp package.json
-
-    mv package.json.tmp package.json
       - uses: ./.github/actions/setup
         with:
           use_lockfile: false
