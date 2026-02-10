@@ -8,7 +8,6 @@ import type {
   Module,
 } from 'webpack';
 import { join, dirname, resolve, relative, posix, isAbsolute } from 'path';
-import { createHash } from 'crypto';
 import { mergeWith, flatten, zip } from 'lodash';
 import { writeFileSync, realpathSync, readFileSync } from 'fs';
 import Handlebars from 'handlebars';
@@ -42,27 +41,6 @@ Handlebars.registerHelper('join', function (list, connector) {
   return list.join(connector);
 });
 
-const moduleIdMap = new Map<string, string>();
-
-function moduleToId(moduleSpecifier: string) {
-  let id = moduleSpecifier;
-
-  // if the module contains characters that need to be escaped, then map this to a hash instead, so we can easily replace this later
-  if (moduleSpecifier.includes('"') || moduleSpecifier.includes("'")) {
-    id = createHash('md5').update('some_string').digest('hex');
-
-    moduleIdMap.set(id, moduleSpecifier);
-  }
-
-  return id;
-}
-
-function idToModule(id: string) {
-  return moduleIdMap.get(id) ?? id;
-}
-
-Handlebars.registerHelper('module-to-id', moduleToId);
-
 const entryTemplate = Handlebars.compile(
   `
 module.exports = (function(){
@@ -84,7 +62,7 @@ module.exports = (function(){
     return m && m.__esModule ? m : Object.assign({ default: m }, m);
   }
   {{#each staticImports as |module|}}
-    d('{{js-string-escape module.requestedSpecifier}}', EAI_DISCOVERED_EXTERNALS('{{module-to-id module.requestedSpecifier}}'), function() { return esc(require('{{js-string-escape module.resolvedSpecifier}}')); });
+    d('{{js-string-escape module.requestedSpecifier}}', [EAI_DISCOVERED_EXTERNALS_START, '{{js-string-escape module.requestedSpecifier}}', EAI_DISCOVERED_EXTERNALS_END], function() { return esc(require('{{js-string-escape module.resolvedSpecifier}}')); });
   {{/each}}
   {{#each dynamicImports as |module|}}
     d('_eai_dyn_{{js-string-escape module.requestedSpecifier}}', [], function() { return import('{{js-string-escape module.resolvedSpecifier}}'); });
@@ -544,10 +522,10 @@ export default class WebpackBundler extends Plugin implements Bundler {
           'utf8'
         );
         let outputSrc = inputSrc.replace(
-          /EAI_DISCOVERED_EXTERNALS\(['"]([^'"]+)['"]\)/g,
+          /\[EAI_DISCOVERED_EXTERNALS_START,\s*['"](.*?)['"],\s*EAI_DISCOVERED_EXTERNALS_END\]/g,
           (_substr: string, matched: string) => {
             let deps = build
-              .externalDepsFor(idToModule(matched))
+              .externalDepsFor(matched)
               .filter((dep) => this.externalizedByUs.has(dep));
             return '[' + deps.map((d) => `'${d}'`).join(',') + ']';
           }
@@ -596,7 +574,8 @@ export default class WebpackBundler extends Plugin implements Bundler {
     return (request: string): string[] => {
       for (let module of stats.compilation.modules) {
         for (let dep of module.dependencies) {
-          if ((dep as any).request === request) {
+          // the request is understood to be jsStringEscaped already
+          if (jsStringEscape((dep as any).request) === request) {
             return [
               ...gatherExternals(stats.compilation.moduleGraph.getModule(dep)!),
             ];
