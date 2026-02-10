@@ -44,6 +44,50 @@ jobs:
         run: ${{ matrix.command }}
         working-directory: test-scenarios
 
+  discover_matrix_legacy:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v1
+      - uses: ./.github/actions/setup
+      - id: set-matrix
+        working-directory: test-scenarios
+        env:
+          ENABLE_LEGACY_SCENARIOS: true
+        run: |
+          matrix_json=$(node --require ts-node/register ./suite-setup-util.ts)
+          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+
+  scenarios_legacy:
+    needs: discover_matrix_legacy
+    name: ${{ matrix.name }}
+    runs-on: '${{ matrix.os }}-latest'
+    strategy:
+      fail-fast: false
+      matrix: ${{fromJson(needs.discover_matrix_legacy.outputs.matrix)}}
+    steps:
+      - uses: actions/checkout@v1
+      - name: Apply old node overrides
+        run: |
+          jq '
+            .overrides = (.overrides // {}) + {
+              "mktemp": "^0.4.0"
+            }
+          ' package.json > package.json.tmp
+      - run: mv package.json.tmp package.json
+
+    mv package.json.tmp package.json
+      - uses: ./.github/actions/setup
+        with:
+          use_lockfile: false
+      - name: Work around windows short path alias # https://github.com/actions/runner-images/issues/712
+        if: runner.os == 'Windows'
+        run: new-item D:\temp -ItemType Directory; echo "TEMP=D:\temp" >> $env:GITHUB_ENV
+      - name: test
+        run: ${{ matrix.command }}
+        working-directory: test-scenarios
+
   unit:
     name: Unit Tests
     runs-on: ubuntu-latest
