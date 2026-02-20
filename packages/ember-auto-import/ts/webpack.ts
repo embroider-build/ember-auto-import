@@ -44,6 +44,9 @@ Handlebars.registerHelper('join', function (list, connector) {
 const entryTemplate = Handlebars.compile(
   `
 module.exports = (function(){
+  {{#each entrypointInjectables as |injectable|}}
+    {{injectable}}
+  {{/each}}
   var d = _eai_d;
   var r = _eai_r;
   window.emberAutoImportDynamic = function(specifier) {
@@ -94,6 +97,7 @@ module.exports = (function(){
   dynamicTemplateImports: { key: string; args: string; template: string }[];
   publicAssetURL: string | undefined;
   needsApp: boolean;
+  entrypointInjectables: string[];
 }) => string;
 
 // this goes in a file by itself so we can tell webpack not to parse it. That
@@ -649,6 +653,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           deps.staticTemplateImports.map(mapTemplateImports),
         publicAssetURL: this.opts.rootPackage.publicAssetURL(),
         needsApp: name === 'tests',
+        entrypointInjectables: this.opts.entrypointInjectables || [],
       })
     );
   }

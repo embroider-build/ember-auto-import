@@ -43,6 +43,7 @@ export interface Options {
   allowAppImports?: string[];
   insertScriptsAt?: string;
   insertStylesAt?: string;
+  entrypointInjectables?: string[];
 }
 
 export interface DepResolution {
@@ -567,6 +568,14 @@ export default class Package {
     // only apps (not addons) are allowed to set this
     if (!this.isAddon) {
       return this.autoImportOptions?.allowAppImports ?? [];
+    }
+
+    return [];
+  }
+
+  get entrypointInjectables(): string[] {
+    if (!this.isAddon) {
+      return this.autoImportOptions?.entrypointInjectables || [];
     }
 
     return [];

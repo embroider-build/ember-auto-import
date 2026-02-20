@@ -16,6 +16,7 @@ export interface BundlerOptions {
   bundles: BundleConfig;
   webpack: typeof webpack;
   rootPackage: Package;
+  entrypointInjectables: string[];
 }
 
 export interface BuildResult {
