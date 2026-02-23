@@ -92,7 +92,9 @@ function buildV2Addon() {
   });
 
   addon.addDependency(buildInnerV1Addon());
-  addon.addDependency(buildInnerV2Addon('inner-v2-addon'));
+  let inner = buildInnerV2Addon('inner-v2-addon');
+  inner.addDependency(buildInnerV2Addon('inner-inner-v2-addon'));
+  addon.addDependency(inner);
 
   addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
   addon.pkg['ember-addon'] = {
