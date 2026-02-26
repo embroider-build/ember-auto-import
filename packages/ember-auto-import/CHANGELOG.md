@@ -1,23 +1,5 @@
 # Changelog
 
-## Release (2026-02-26)
-
-* ember-auto-import 2.12.1 (patch)
-
-#### :bug: Bug Fix
-* `ember-auto-import`
-  * [#687](https://github.com/embroider-build/ember-auto-import/pull/687) Fix externals tracking for deps with escaped characters ([@ef4](https://github.com/ef4))
-
-#### :house: Internal
-* Other
-  * [#692](https://github.com/embroider-build/ember-auto-import/pull/692) upgrade release-plan ([@mansona](https://github.com/mansona))
-* `ember-auto-import`
-  * [#689](https://github.com/embroider-build/ember-auto-import/pull/689) fixing upstream types ([@ef4](https://github.com/ef4))
-
-#### Committers: 2
-- Chris Manson ([@mansona](https://github.com/mansona))
-- Edward Faulkner ([@ef4](https://github.com/ef4))
-
 ## Release (2025-11-24)
 
 ember-auto-import 2.12.0 (minor)
