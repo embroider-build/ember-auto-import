@@ -1,21 +1,21 @@
 {
   "solution": {
     "ember-auto-import": {
-      "impact": "minor",
-      "oldVersion": "2.11.2",
-      "newVersion": "2.12.0",
+      "impact": "patch",
+      "oldVersion": "2.12.0",
+      "newVersion": "2.12.1",
       "constraints": [
         {
-          "impact": "minor",
-          "reason": "Appears in changelog section :rocket: Enhancement"
+          "impact": "patch",
+          "reason": "Appears in changelog section :bug: Bug Fix"
         },
         {
           "impact": "patch",
-          "reason": "Appears in changelog section :memo: Documentation"
+          "reason": "Appears in changelog section :house: Internal"
         }
       ],
       "pkgJSONPath": "./packages/ember-auto-import/package.json"
     }
   },
-  "description": "## Release (2025-11-24)\n\nember-auto-import 2.12.0 (minor)\n\n#### :rocket: Enhancement\n* `ember-auto-import`, `@ef4/test-scenarios`\n  * [#677](https://github.com/embroider-build/ember-auto-import/pull/677) Implicit modules support ([@ef4](https://github.com/ef4))\n\n#### :memo: Documentation\n* `ember-auto-import`\n  * [#675](https://github.com/embroider-build/ember-auto-import/pull/675) Add conditionName config example to readme ([@apellerano-pw](https://github.com/apellerano-pw))\n\n#### Committers: 2\n- Andrew Pellerano ([@apellerano-pw](https://github.com/apellerano-pw))\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n"
+  "description": "## Release (2026-02-10)\n\nember-auto-import 2.12.1 (patch)\n\n#### :bug: Bug Fix\n* `ember-auto-import`, `@ef4/test-scenarios`\n  * [#687](https://github.com/embroider-build/ember-auto-import/pull/687) Fix externals tracking for deps with escaped characters ([@ef4](https://github.com/ef4))\n\n#### :house: Internal\n* `ember-auto-import`\n  * [#689](https://github.com/embroider-build/ember-auto-import/pull/689) fixing upstream types ([@ef4](https://github.com/ef4))\n\n#### Committers: 1\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n"
 }
