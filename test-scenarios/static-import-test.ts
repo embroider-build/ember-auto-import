@@ -32,11 +32,13 @@ function staticImportTest(project: Project) {
   merge(project.files, {
     'ember-cli-build.js': `
         const EmberApp = require('ember-cli/lib/broccoli/ember-app');
+        const { dirname, join } = require('path');
         module.exports = function (defaults) {
           let app = new EmberApp(defaults, {
             autoImport: {
               alias: {
-                'my-aliased-package': 'original-package'
+                'my-aliased-package': 'original-package',
+                'dual-build-package': join(dirname(require.resolve('dual-build-package', { paths: [process.cwd()] })), 'dist/index.mjs'),
               },
               watchDependencies: [
                'original-package'
@@ -235,6 +237,16 @@ function staticImportTest(project: Project) {
               });
             });
           `,
+        'absolute-alias-test.js': `
+          import { module, test } from 'qunit';
+          import value from 'dual-build-package';
+
+          module('Unit | absolute alias', function () {
+            test('can import package with absolute alias', function (assert) {
+              assert.equal(value, 'This is ESM');
+            });
+          });
+        `,
         'allow-app-imports-test.js': `
           import { module, test } from 'qunit';
           import example1 from '@ef4/app-template/lib/example1';
@@ -356,6 +368,17 @@ function staticImportTest(project: Project) {
           module.exports = function() {
             return 'original-package';
           }`,
+    },
+  });
+
+  project.addDevDependency('dual-build-package', {
+    files: {
+      'index.js': `throw new Error('This should not get imported!)`,
+      dist: {
+        'index.mjs': `
+          const value = 'This is ESM';
+          export default value;`,
+      },
     },
   });
 
