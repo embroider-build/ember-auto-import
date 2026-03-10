@@ -1,12 +1,12 @@
-import { appScenarios, baseAddon, baseApp } from './scenarios';
-import { PreparedApp, Scenarios } from 'scenario-tester';
+import { appScenarios, baseAddonInProject, baseApp } from './scenarios';
+import { PreparedApp, Project, Scenarios } from 'scenario-tester';
 import QUnit from 'qunit';
 import merge from 'lodash/merge';
 import { setupFastboot } from './fastboot-helper';
 const { module: Qmodule, test } = QUnit;
 
-function makeAddon(resolveEAI?: string) {
-  let addon = baseAddon();
+function makeAddon(project: Project, resolveEAI?: string) {
+  let addon = baseAddonInProject(project);
   addon.linkDependency('ember-auto-import', { baseDir: __dirname, resolveName: resolveEAI });
   addon.pkg.name = 'sample-addon';
   merge(addon.files, {
@@ -189,7 +189,7 @@ appScenarios
   .skip('canary')
   .skip('beta')
   .map('indirect', project => {
-    project.addDevDependency(makeAddon());
+    project.addDevDependency(makeAddon(project));
     project.linkDependency('ember-cli-fastboot', { baseDir: __dirname });
 
     // top-level auto-import is mandatory
@@ -238,7 +238,7 @@ appScenarios
 
 Scenarios.fromProject(baseApp)
   .map('indirect-analyzer-skew', project => {
-    project.addDevDependency(makeAddon('old-analyzer'));
+    project.addDevDependency(makeAddon(project, 'old-analyzer'));
     project.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.linkDependency('webpack', { baseDir: __dirname });
     merge(project.files, projectFiles());

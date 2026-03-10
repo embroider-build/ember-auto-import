@@ -118,11 +118,14 @@ export function baseApp() {
 }
 export const appScenarios = supportMatrix(Scenarios.fromProject(baseApp), 'app');
 
-export function baseAddon(as: 'addon' | 'dummy-app' = 'addon') {
-  return Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), {
+export function baseAddonInProject(project: Project) {
+  let output = Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), {
     linkDeps: true,
-    linkDevDeps: as === 'dummy-app',
   });
+  if ((project as any).dependencyLinks.get('ember-cli-htmlbars')?.resolveName === 'ember-cli-htmlbars6') {
+    output.linkDependency('ember-cli-htmlbars', { baseDir: __dirname, resolveName: 'ember-cli-htmlbars6' });
+  }
+  return output;
 }
 
 export function baseV2Addon() {
@@ -133,6 +136,11 @@ export function baseV2Addon() {
 }
 
 export const addonScenarios = supportMatrix(
-  Scenarios.fromProject(() => baseAddon('dummy-app')),
+  Scenarios.fromProject(() => {
+    return Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), {
+      linkDeps: true,
+      linkDevDeps: true,
+    });
+  }),
   'addon'
 );

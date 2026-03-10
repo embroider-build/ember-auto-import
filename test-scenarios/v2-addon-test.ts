@@ -1,11 +1,11 @@
 import merge from 'lodash/merge';
-import { appScenarios, baseAddon, baseApp, baseV2Addon } from './scenarios';
+import { appScenarios, baseAddonInProject, baseApp, baseV2Addon } from './scenarios';
 import { PreparedApp, Project, Scenarios } from 'scenario-tester';
 import { setupFastboot } from './fastboot-helper';
 import QUnit from 'qunit';
 const { module: Qmodule, test } = QUnit;
 
-function buildV2Addon() {
+function buildV2Addon(project: Project) {
   let addon = new Project('my-v2-addon', {
     files: {
       'addon-main.js': `
@@ -91,7 +91,7 @@ function buildV2Addon() {
     },
   });
 
-  addon.addDependency(buildInnerV1Addon());
+  addon.addDependency(buildInnerV1Addon(project));
   addon.addDependency(buildInnerV2Addon('inner-v2-addon'));
 
   addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
@@ -111,8 +111,8 @@ function buildV2Addon() {
   return addon;
 }
 
-function buildInnerV1Addon() {
-  let addon = baseAddon();
+function buildInnerV1Addon(project: Project) {
+  let addon = baseAddonInProject(project);
   addon.name = 'inner-v1-addon';
   merge(addon.files, {
     addon: {
@@ -126,8 +126,8 @@ function buildInnerV1Addon() {
   return addon;
 }
 
-function buildIntermediateV1Addon() {
-  let addon = baseAddon();
+function buildIntermediateV1Addon(project: Project) {
+  let addon = baseAddonInProject(project);
   addon.name = 'intermediate-v1-addon';
   merge(addon.files, {
     app: {
@@ -296,8 +296,8 @@ function buildV2AddonWithDevDep() {
 }
 
 let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
-  project.addDevDependency(buildV2Addon());
-  project.addDevDependency(buildIntermediateV1Addon());
+  project.addDevDependency(buildV2Addon(project));
+  project.addDevDependency(buildIntermediateV1Addon(project));
   project.addDevDependency(buildV2AddonWithExports('fourth-v2-addon'));
   project.addDevDependency(buildV2AddonWithMacros());
   project.addDevDependency(buildV2AddonWithDevDep());
@@ -554,7 +554,7 @@ scenarios
 
 Scenarios.fromProject(baseApp)
   .map('shim-requires-auto-import', project => {
-    let v1Addon = baseAddon();
+    let v1Addon = baseAddonInProject(project);
     v1Addon.name = 'my-v1-addon';
     v1Addon.addDependency(buildV2AddonWithExports('my-v2-addon'));
     project.addDependency(v1Addon);
@@ -599,7 +599,7 @@ Scenarios.fromProject(baseApp)
     v2Addon.pkg.peerDependencies ||= {};
     v2Addon.pkg.peerDependencies['v1-addon'] = '*';
 
-    let v1Addon = baseAddon();
+    let v1Addon = baseAddonInProject(project);
     v1Addon.pkg.name = 'v1-addon';
     merge(v1Addon.files, {
       addon: {
