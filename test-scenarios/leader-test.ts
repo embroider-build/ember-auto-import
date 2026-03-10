@@ -7,9 +7,6 @@ const { module: Qmodule, test } = QUnit;
 
 Scenarios.fromProject(baseApp)
   .map('leader-success', project => {
-    project.linkDependency('ember-auto-import', { baseDir: __dirname });
-    project.linkDependency('webpack', { baseDir: __dirname });
-
     project.addDependency('images', {
       files: {
         'thing.png': 'fake image here',

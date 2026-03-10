@@ -192,10 +192,6 @@ appScenarios
     project.addDevDependency(makeAddon(project));
     project.linkDependency('ember-cli-fastboot', { baseDir: __dirname });
 
-    // top-level auto-import is mandatory
-    project.linkDependency('ember-auto-import', { baseDir: __dirname });
-    project.linkDependency('webpack', { baseDir: __dirname });
-
     merge(project.files, projectFiles());
   })
   .forEachScenario(scenario => {
@@ -239,8 +235,6 @@ appScenarios
 Scenarios.fromProject(baseApp)
   .map('indirect-analyzer-skew', project => {
     project.addDevDependency(makeAddon(project, 'old-analyzer'));
-    project.linkDependency('ember-auto-import', { baseDir: __dirname });
-    project.linkDependency('webpack', { baseDir: __dirname });
     merge(project.files, projectFiles());
   })
   .forEachScenario(scenario => {

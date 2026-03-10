@@ -23,8 +23,6 @@ export const CHECK_SCRIPTS_MODULE = `export default async function checkScripts(
 }`;
 
 function staticImportTest(project: Project) {
-  project.linkDependency('ember-auto-import', { baseDir: __dirname });
-  project.linkDependency('webpack', { baseDir: __dirname });
   project.linkDependency('ember-cli-fastboot', { baseDir: __dirname });
   project.linkDependency('moment', { baseDir: __dirname });
   project.linkDependency('lodash-es', { baseDir: __dirname });
