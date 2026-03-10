@@ -1,11 +1,11 @@
-import { appScenarios, baseAddon } from './scenarios';
-import { PreparedApp } from 'scenario-tester';
+import { appScenarios, baseAddonInProject } from './scenarios';
+import { PreparedApp, type Project } from 'scenario-tester';
 import QUnit from 'qunit';
 import merge from 'lodash/merge';
 const { module: Qmodule, test } = QUnit;
 
-function makeAddon() {
-  let addon = baseAddon();
+function makeAddon(project: Project) {
+  let addon = baseAddonInProject(project);
   addon.linkDependency('ember-auto-import', { baseDir: __dirname });
 
   addon.pkg.name = 'sample-addon';
@@ -87,8 +87,8 @@ function makeAddon() {
   return addon;
 }
 
-function makeIntermediateAddon() {
-  let addon = baseAddon();
+function makeIntermediateAddon(project: Project) {
+  let addon = baseAddonInProject(project);
   addon.pkg.name = 'intermediate-addon';
   merge(addon.files, {
     app: {
@@ -116,14 +116,14 @@ function makeIntermediateAddon() {
     },
   });
 
-  addon.addDependency(makeAddon());
+  addon.addDependency(makeAddon(project));
 
   return addon;
 }
 
 appScenarios
   .map('doubly-indirect', project => {
-    project.addDevDependency(makeIntermediateAddon());
+    project.addDevDependency(makeIntermediateAddon(project));
 
     // top-level auto-import is mandatory
     project.linkDependency('ember-auto-import', { baseDir: __dirname });

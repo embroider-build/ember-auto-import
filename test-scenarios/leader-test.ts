@@ -1,4 +1,4 @@
-import { baseAddon, baseApp } from './scenarios';
+import { baseAddonInProject, baseApp } from './scenarios';
 import { PreparedApp, Project, Scenarios } from 'scenario-tester';
 import QUnit from 'qunit';
 import merge from 'lodash/merge';
@@ -54,13 +54,13 @@ Scenarios.fromProject(baseApp)
       },
     });
 
-    let a = baseAddon();
+    let a = baseAddonInProject(project);
     a.name = 'a';
     // this is a version of ember-auto-import that uses the v2 leader election protocol
     a.linkDependency('ember-auto-import', { baseDir: __dirname, resolveName: 'leader-v2' });
     project.addDependency(a);
 
-    let b = baseAddon();
+    let b = baseAddonInProject(project);
     b.name = 'b';
     // this is a version of ember-auto-import that uses the v1 leader election protocol
     b.linkDependency('ember-auto-import', { baseDir: __dirname, resolveName: 'leader-v1' });
@@ -83,11 +83,11 @@ Scenarios.fromProject(baseApp)
   .map('leader-too-old', project => {
     project.linkDependency('ember-auto-import', { baseDir: __dirname, resolveName: 'leader-v2' });
 
-    let a = baseAddon();
+    let a = baseAddonInProject(project);
     a.name = 'problematic-addon';
     a.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.addDependency(a);
-    let b = baseAddon();
+    let b = baseAddonInProject(project);
     b.name = 'other-problematic-addon';
     b.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.addDependency(b);
@@ -113,11 +113,11 @@ Scenarios.fromProject(baseApp)
 
 Scenarios.fromProject(baseApp)
   .map('leader-missing', project => {
-    let a = baseAddon();
+    let a = baseAddonInProject(project);
     a.name = 'problematic-addon';
     a.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.addDependency(a);
-    let b = baseAddon();
+    let b = baseAddonInProject(project);
     b.name = 'other-problematic-addon';
     b.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.addDependency(b);
@@ -145,7 +145,7 @@ Scenarios.fromProject(() =>
   Project.fromDir(dirname(require.resolve('v2-app-template/package.json')), { linkDevDeps: true })
 )
   .map('embroider-vite', function (project) {
-    let a = baseAddon();
+    let a = baseAddonInProject(project);
     a.name = 'some-addon';
     a.linkDependency('ember-auto-import', { baseDir: __dirname });
     project.addDependency(a);

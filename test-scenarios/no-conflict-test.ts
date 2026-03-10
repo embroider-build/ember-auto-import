@@ -1,4 +1,4 @@
-import { appScenarios, baseAddon } from './scenarios';
+import { appScenarios, baseAddonInProject } from './scenarios';
 import { PreparedApp } from 'scenario-tester';
 import QUnit from 'qunit';
 import merge from 'lodash/merge';
@@ -20,7 +20,7 @@ appScenarios
       },
     });
 
-    let addon = baseAddon();
+    let addon = baseAddonInProject(project);
     addon.linkDependency('ember-auto-import', { baseDir: __dirname });
     addon.addDependency('inner-lib', '1.3.4', { requestedRange: '^1.0.0' });
     merge(addon.files, {
