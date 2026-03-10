@@ -1,0 +1,6 @@
+# Unlabeled Changes
+
+* [#702](https://github.com/embroider-build/ember-auto-import/pull/702) Test against ember-cli-htmlbars 7 ([@ef4](https://github.com/ef4))
+
+
+*Cannot plan release until the above changes are labeled*.
