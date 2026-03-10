@@ -3,22 +3,27 @@ import { dirname } from 'path';
 import { merge } from 'lodash';
 
 // this scenario represents the oldest Ember LTS we support
-async function lts(project: Project) {
-  project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-lts' });
-  project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-lts' });
-  project.linkDevDependency('@ember/test-helpers', { baseDir: __dirname, resolveName: 'ember-test-helpers-lts' });
-  project.linkDevDependency('ember-cli-htmlbars', { baseDir: __dirname, resolveName: 'ember-cli-htmlbars6' });
+function lts(mode: 'app' | 'addon') {
+  return async function (project: Project) {
+    project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-lts' });
+    project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-lts' });
+    project.linkDevDependency('@ember/test-helpers', { baseDir: __dirname, resolveName: 'ember-test-helpers-lts' });
+    if (mode === 'app') {
+      project.linkDevDependency('ember-cli-htmlbars', { baseDir: __dirname, resolveName: 'ember-cli-htmlbars6' });
+    } else {
+      project.linkDependency('ember-cli-htmlbars', { baseDir: __dirname, resolveName: 'ember-cli-htmlbars6' });
+    }
 
-  project.mergeFiles({
-    '.npmrc': `
+    project.mergeFiles({
+      '.npmrc': `
       use-node-version=12.22.1
     `,
-  });
+    });
 
-  // this version of ember doesn't support native class syntax here (which is
-  // what we have in our base app and addon templates)
-  function olderAppJS(moduleName: string) {
-    return `
+    // this version of ember doesn't support native class syntax here (which is
+    // what we have in our base app and addon templates)
+    function olderAppJS(moduleName: string) {
+      return `
   import Application from '@ember/application';
   import Resolver from 'ember-resolver';
   import loadInitializers from 'ember-load-initializers';
@@ -33,44 +38,45 @@ async function lts(project: Project) {
   loadInitializers(App, config.modulePrefix);
   export default App
 `;
-  }
+    }
 
-  // this wasn't a thing in ember 3.4
-  project.removeDevDependency('@glimmer/tracking');
+    // this wasn't a thing in ember 3.4
+    project.removeDevDependency('@glimmer/tracking');
 
-  if (project.name === '@ef4/app-template') {
-    merge(project.files, {
-      config: {
-        'targets.js': `
+    if (project.name === '@ef4/app-template') {
+      merge(project.files, {
+        config: {
+          'targets.js': `
           module.exports = {
             browsers: ['ie 11']
           };
         `,
-      },
-      app: {
-        'app.js': olderAppJS('@ef4/app-template'),
-      },
-    });
-    // ember-welcome-page 6 doesn't support our oldest LTS
-    project.linkDevDependency('ember-welcome-page', { baseDir: __dirname, resolveName: 'ember-welcome-page5' });
-  } else if (project.name === '@ef4/addon-template') {
-    merge(project.files, {
-      tests: {
-        dummy: {
-          app: {
-            'app.js': olderAppJS('dummy'),
-          },
-          config: {
-            'targets.js': `
+        },
+        app: {
+          'app.js': olderAppJS('@ef4/app-template'),
+        },
+      });
+      // ember-welcome-page 6 doesn't support our oldest LTS
+      project.linkDevDependency('ember-welcome-page', { baseDir: __dirname, resolveName: 'ember-welcome-page5' });
+    } else if (project.name === '@ef4/addon-template') {
+      merge(project.files, {
+        tests: {
+          dummy: {
+            app: {
+              'app.js': olderAppJS('dummy'),
+            },
+            config: {
+              'targets.js': `
               module.exports = {
                 browsers: ['ie 11']
               };
             `,
+            },
           },
         },
-      },
-    });
-  }
+      });
+    }
+  };
 }
 
 // this scenario represents the last Ember 3.x release
@@ -97,9 +103,9 @@ async function canary(project: Project) {
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-canary' });
 }
 
-export function supportMatrix(scenarios: Scenarios) {
+export function supportMatrix(scenarios: Scenarios, mode: 'app' | 'addon') {
   return scenarios.expand({
-    lts,
+    lts: lts(mode),
     ember3,
     release,
     beta,
@@ -110,7 +116,7 @@ export function supportMatrix(scenarios: Scenarios) {
 export function baseApp() {
   return Project.fromDir(dirname(require.resolve('@ef4/app-template/package.json')), { linkDevDeps: true });
 }
-export const appScenarios = supportMatrix(Scenarios.fromProject(baseApp));
+export const appScenarios = supportMatrix(Scenarios.fromProject(baseApp), 'app');
 
 export function baseAddon(as: 'addon' | 'dummy-app' = 'addon') {
   return Project.fromDir(dirname(require.resolve('@ef4/addon-template/package.json')), {
@@ -126,4 +132,7 @@ export function baseV2Addon() {
   });
 }
 
-export const addonScenarios = supportMatrix(Scenarios.fromProject(() => baseAddon('dummy-app')));
+export const addonScenarios = supportMatrix(
+  Scenarios.fromProject(() => baseAddon('dummy-app')),
+  'addon'
+);
