@@ -6,9 +6,6 @@ const { module: Qmodule, test } = QUnit;
 
 appScenarios
   .map('custom-html', project => {
-    project.linkDependency('ember-auto-import', { baseDir: __dirname });
-    project.linkDependency('webpack', { baseDir: __dirname });
-
     merge(project.files, {
       'ember-cli-build.js': `
         const EmberApp = require('ember-cli/lib/broccoli/ember-app');

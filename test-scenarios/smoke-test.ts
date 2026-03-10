@@ -31,9 +31,6 @@ let scenarios = appScenarios.only('release').map('smoke-test', project => {
       },
     },
   });
-
-  project.linkDependency('ember-auto-import', { baseDir: __dirname });
-  project.linkDependency('webpack', { baseDir: __dirname });
 });
 
 scenarios.forEachScenario(scenario => {
