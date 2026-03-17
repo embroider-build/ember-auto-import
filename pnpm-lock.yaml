@@ -56,6 +56,9 @@ importers:
 
   packages/addon-template:
     dependencies:
+      ember-auto-import:
+        specifier: workspace:*
+        version: link:../ember-auto-import
       ember-cli-babel:
         specifier: ^7.26.8
         version: 7.26.11
@@ -162,6 +165,9 @@ importers:
       qunit-dom:
         specifier: ^2.0.0
         version: 2.0.0
+      webpack:
+        specifier: ^5.31.0
+        version: 5.105.4
 
   packages/app-template:
     devDependencies:
@@ -189,6 +195,9 @@ importers:
       broccoli-asset-rev:
         specifier: ^3.0.0
         version: 3.0.0
+      ember-auto-import:
+        specifier: workspace:*
+        version: link:../ember-auto-import
       ember-cli:
         specifier: ~4.0.1
         version: 4.0.1(encoding@0.1.13)
@@ -267,6 +276,9 @@ importers:
       qunit-dom:
         specifier: ^2.0.0
         version: 2.0.0
+      webpack:
+        specifier: ^5.31.0
+        version: 5.105.4
 
   packages/ember-auto-import:
     dependencies:
@@ -743,9 +755,6 @@ importers:
       v2-app-template:
         specifier: workspace:*
         version: link:../packages/v2-app-template
-      webpack:
-        specifier: ^5.31.0
-        version: 5.105.4
 
   types/broccoli-funnel:
     dependencies:

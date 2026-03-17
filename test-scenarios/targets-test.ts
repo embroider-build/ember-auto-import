@@ -27,8 +27,6 @@ appScenarios
         }`,
       },
     });
-    project.linkDevDependency('ember-auto-import', { baseDir: __dirname });
-    project.linkDependency('webpack', { baseDir: __dirname });
   })
   .expand({
     transpiled: project => {

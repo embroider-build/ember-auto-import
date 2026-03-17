@@ -86,8 +86,6 @@ appScenarios
     });
 
     project.addDevDependency(addon);
-    project.linkDependency('ember-auto-import', { baseDir: __dirname });
-    project.linkDependency('webpack', { baseDir: __dirname });
 
     project
       .addDevDependency('custom-loader', {

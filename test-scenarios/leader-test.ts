@@ -7,9 +7,6 @@ const { module: Qmodule, test } = QUnit;
 
 Scenarios.fromProject(baseApp)
   .map('leader-success', project => {
-    project.linkDependency('ember-auto-import', { baseDir: __dirname });
-    project.linkDependency('webpack', { baseDir: __dirname });
-
     project.addDependency('images', {
       files: {
         'thing.png': 'fake image here',
@@ -113,6 +110,9 @@ Scenarios.fromProject(baseApp)
 
 Scenarios.fromProject(baseApp)
   .map('leader-missing', project => {
+    // deliberately causing leader missing situation
+    project.removeDevDependency('ember-auto-import');
+
     let a = baseAddonInProject(project);
     a.name = 'problematic-addon';
     a.linkDependency('ember-auto-import', { baseDir: __dirname });

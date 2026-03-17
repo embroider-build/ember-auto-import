@@ -8,8 +8,6 @@ const { module: Qmodule, test } = QUnit;
 // we also use
 Scenarios.fromProject(baseApp)
   .map('webpack-config', project => {
-    project.linkDependency('ember-auto-import', { baseDir: __dirname });
-    project.linkDependency('webpack', { baseDir: __dirname });
     project.addDependency('noparsed-dependency', {
       files: {
         'index.js': `

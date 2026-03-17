@@ -489,8 +489,6 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
     },
   });
 
-  project.linkDependency('ember-auto-import', { baseDir: __dirname });
-  project.linkDependency('webpack', { baseDir: __dirname });
   project.linkDependency('ember-cli-fastboot', { baseDir: __dirname });
 });
 
@@ -556,10 +554,9 @@ Scenarios.fromProject(baseApp)
   .map('shim-requires-auto-import', project => {
     let v1Addon = baseAddonInProject(project);
     v1Addon.name = 'my-v1-addon';
+    v1Addon.removeDependency('ember-auto-import');
     v1Addon.addDependency(buildV2AddonWithExports('my-v2-addon'));
     project.addDependency(v1Addon);
-    project.linkDevDependency('ember-auto-import', { baseDir: __dirname });
-    project.linkDependency('webpack', { baseDir: __dirname });
   })
   .forEachScenario(scenario => {
     Qmodule(scenario.name, function (hooks) {
@@ -613,9 +610,6 @@ Scenarios.fromProject(baseApp)
 
     project.addDependency(v2Addon);
     project.addDependency(v1Addon);
-
-    project.linkDependency('ember-auto-import', { baseDir: __dirname });
-    project.linkDependency('webpack', { baseDir: __dirname });
 
     merge(project.files, {
       tests: {

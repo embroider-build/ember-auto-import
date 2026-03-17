@@ -9,10 +9,8 @@ let template = Scenarios.fromProject(baseApp);
 
 template
   .map('node ES modules', project => {
-    project.linkDevDependency('ember-auto-import', { baseDir: __dirname });
     // Support for ember-cli internally to respect `ember-cli-build.cjs` landed in https://github.com/ember-cli/ember-cli/pull/10053
     project.linkDevDependency('ember-cli', { baseDir: __dirname });
-    project.linkDependency('webpack', { baseDir: __dirname });
 
     project.files['ember-cli-build.cjs'] = project.files['ember-cli-build.js'];
     delete project.files['ember-cli-build.js'];
