@@ -552,6 +552,7 @@ scenarios
 
 Scenarios.fromProject(baseApp)
   .map('shim-requires-auto-import', project => {
+    project.removeDevDependency('ember-auto-import');
     let v1Addon = baseAddonInProject(project);
     v1Addon.name = 'my-v1-addon';
     v1Addon.addDependency(buildV2AddonWithExports('my-v2-addon'));
