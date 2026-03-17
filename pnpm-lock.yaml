@@ -56,6 +56,9 @@ importers:
 
   packages/addon-template:
     dependencies:
+      ember-auto-import:
+        specifier: workspace:*
+        version: link:../ember-auto-import
       ember-cli-babel:
         specifier: ^7.26.8
         version: 7.26.11
@@ -90,15 +93,12 @@ importers:
       broccoli-asset-rev:
         specifier: ^3.0.0
         version: 3.0.0
-      ember-auto-import:
-        specifier: workspace:*
-        version: link:../ember-auto-import
       ember-cli:
         specifier: ~4.0.1
         version: 4.0.1(encoding@0.1.13)
       ember-cli-dependency-checker:
         specifier: ^3.2.0
-        version: 3.3.3(ember-cli@4.0.1(encoding@0.1.13))
+        version: 3.3.3(ember-cli@4.0.1)
       ember-cli-inject-live-reload:
         specifier: ^2.1.0
         version: 2.1.0
@@ -209,7 +209,7 @@ importers:
         version: 7.26.11
       ember-cli-dependency-checker:
         specifier: ^3.2.0
-        version: 3.3.3(ember-cli@4.0.1(encoding@0.1.13))
+        version: 3.3.3(ember-cli@4.0.1)
       ember-cli-htmlbars:
         specifier: ^7.0.0
         version: 7.0.0(@babel/core@7.29.0)(ember-source@4.0.1(@babel/core@7.29.0)(webpack@5.105.4))
@@ -16796,7 +16796,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ember-cli-dependency-checker@3.3.3(ember-cli@4.0.1(encoding@0.1.13)):
+  ember-cli-dependency-checker@3.3.3(ember-cli@4.0.1):
     dependencies:
       chalk: 2.4.2
       ember-cli: 4.0.1(encoding@0.1.13)

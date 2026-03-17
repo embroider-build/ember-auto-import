@@ -110,6 +110,9 @@ Scenarios.fromProject(baseApp)
 
 Scenarios.fromProject(baseApp)
   .map('leader-missing', project => {
+    // deliberately causing leader missing situation
+    project.removeDevDependency('ember-auto-import');
+
     let a = baseAddonInProject(project);
     a.name = 'problematic-addon';
     a.linkDependency('ember-auto-import', { baseDir: __dirname });
