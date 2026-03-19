@@ -1,22 +1,8 @@
 {
   "solution": {
     "ember-auto-import": {
-      "impact": "patch",
-      "oldVersion": "2.12.0",
-      "newVersion": "2.12.1",
-      "tagName": "latest",
-      "constraints": [
-        {
-          "impact": "patch",
-          "reason": "Appears in changelog section :bug: Bug Fix"
-        },
-        {
-          "impact": "patch",
-          "reason": "Appears in changelog section :house: Internal"
-        }
-      ],
-      "pkgJSONPath": "./packages/ember-auto-import/package.json"
+      "oldVersion": "2.12.1"
     }
   },
-  "description": "## Release (2026-02-26)\n\n* ember-auto-import 2.12.1 (patch)\n\n#### :bug: Bug Fix\n* `ember-auto-import`\n  * [#687](https://github.com/embroider-build/ember-auto-import/pull/687) Fix externals tracking for deps with escaped characters ([@ef4](https://github.com/ef4))\n\n#### :house: Internal\n* Other\n  * [#698](https://github.com/embroider-build/ember-auto-import/pull/698) fix order of operations for publish ([@mansona](https://github.com/mansona))\n  * [#695](https://github.com/embroider-build/ember-auto-import/pull/695) fix node setup for publish.yml ([@mansona](https://github.com/mansona))\n  * [#692](https://github.com/embroider-build/ember-auto-import/pull/692) upgrade release-plan ([@mansona](https://github.com/mansona))\n* `ember-auto-import`\n  * [#689](https://github.com/embroider-build/ember-auto-import/pull/689) fixing upstream types ([@ef4](https://github.com/ef4))\n\n#### Committers: 2\n- Chris Manson ([@mansona](https://github.com/mansona))\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n"
+  "description": "## Release (2026-03-19)\n\n\n\n#### :house: Internal\n* [#704](https://github.com/embroider-build/ember-auto-import/pull/704) Test helper updates ([@ef4](https://github.com/ef4))\n* [#703](https://github.com/embroider-build/ember-auto-import/pull/703) Test suite: Move ember-auto-import into app-template ([@ef4](https://github.com/ef4))\n* [#702](https://github.com/embroider-build/ember-auto-import/pull/702) Test against ember-cli-htmlbars 7 ([@ef4](https://github.com/ef4))\n* [#674](https://github.com/embroider-build/ember-auto-import/pull/674) unpin ember-source-latest ([@mansona](https://github.com/mansona))\n\n#### Committers: 2\n- Chris Manson ([@mansona](https://github.com/mansona))\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n"
 }
