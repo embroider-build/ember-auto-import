@@ -55,7 +55,7 @@ appScenarios
 
 const APPLICATION_TS = `
 import Controller from '@ember/controller';
-import { computed } from '@ember-decorators/object';
+import { computed } from '@ember/object';
 import aDependency from 'a-dependency';
 
 export default class extends Controller {

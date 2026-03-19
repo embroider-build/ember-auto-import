@@ -61,7 +61,7 @@ Scenarios.fromProject(baseApp)
         controllers: {
           'application.js': `
             import Controller from '@ember/controller';
-            import { computed } from '@ember-decorators/object';
+            import { computed } from '@ember/object';
 
             // sets window.emberAutoImportNoparsedDependency
             import 'noparsed-dependency';
