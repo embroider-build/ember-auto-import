@@ -1,5 +1,19 @@
 # Changelog
 
+## Release (2026-03-19)
+
+
+
+#### :house: Internal
+* [#704](https://github.com/embroider-build/ember-auto-import/pull/704) Test helper updates ([@ef4](https://github.com/ef4))
+* [#703](https://github.com/embroider-build/ember-auto-import/pull/703) Test suite: Move ember-auto-import into app-template ([@ef4](https://github.com/ef4))
+* [#702](https://github.com/embroider-build/ember-auto-import/pull/702) Test against ember-cli-htmlbars 7 ([@ef4](https://github.com/ef4))
+* [#674](https://github.com/embroider-build/ember-auto-import/pull/674) unpin ember-source-latest ([@mansona](https://github.com/mansona))
+
+#### Committers: 2
+- Chris Manson ([@mansona](https://github.com/mansona))
+- Edward Faulkner ([@ef4](https://github.com/ef4))
+
 ## Release (2026-02-26)
 
 * ember-auto-import 2.12.1 (patch)
