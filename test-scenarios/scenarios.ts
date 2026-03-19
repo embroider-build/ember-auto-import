@@ -8,6 +8,8 @@ function lts(mode: 'app' | 'addon') {
     project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-lts' });
     project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-lts' });
     project.linkDevDependency('@ember/test-helpers', { baseDir: __dirname, resolveName: 'ember-test-helpers-lts' });
+    project.linkDevDependency('ember-qunit', { baseDir: __dirname, resolveName: 'ember-qunit-5' });
+
     if (mode === 'app') {
       project.linkDevDependency('ember-cli-htmlbars', { baseDir: __dirname, resolveName: 'ember-cli-htmlbars6' });
     } else {
@@ -83,6 +85,8 @@ function lts(mode: 'app' | 'addon') {
 async function ember3(project: Project) {
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-3' });
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-3' });
+  project.linkDevDependency('@ember/test-helpers', { baseDir: __dirname, resolveName: 'ember-test-helpers-lts' });
+  project.linkDevDependency('ember-qunit', { baseDir: __dirname, resolveName: 'ember-qunit-5' });
 }
 
 // the current ember release
