@@ -148,7 +148,7 @@ module.exports = function(defaults) {
 
 const APPLICATION_JS = `
 import Controller from '@ember/controller';
-import { computed } from '@ember-decorators/object';
+import { computed } from '@ember/object';
 import aModuleDependency from 'a-module-dependency';
 
 export default class extends Controller {
