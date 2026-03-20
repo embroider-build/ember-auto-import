@@ -5,7 +5,8 @@ import QUnit from 'qunit';
 const { module: Qmodule, test } = QUnit;
 
 let scenarios = appScenarios.only('release').map('use-ember-modules test', project => {
-  project.linkDevDependency('tracked-built-ins', { baseDir: __dirname, resolveName: 'tracked-built-ins-4' });
+  // working around old ember-cli-htmlbars
+  // project.linkDevDependency('tracked-built-ins', { baseDir: __dirname, resolveName: 'tracked-built-ins-4' });
   merge(project.files, {
     config: {
       'optional-features.json': `
