@@ -31,6 +31,7 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import minimatch from 'minimatch';
 import { TransformOptions } from '@babel/core';
 import { stripQuery } from './util';
+import { AutoImportResolverPlugin } from './resolver-plugin';
 
 const EXTENSIONS = ['.js', '.ts', '.json'];
 
@@ -208,7 +209,7 @@ export default class WebpackBundler extends Plugin implements Bundler {
           [this.opts.rootPackage.name]: `${this.opts.rootPackage.root}/app`,
         }),
       },
-      plugins: removeUndefined([stylePlugin]),
+      plugins: removeUndefined([stylePlugin, new AutoImportResolverPlugin()]),
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.cjs'),
         rules: [
