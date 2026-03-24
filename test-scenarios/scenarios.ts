@@ -95,6 +95,37 @@ async function release(project: Project) {
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-latest' });
 }
 
+function releaseWithModules(mode: 'app' | 'addon') {
+  return async function (project: Project) {
+    release(project);
+
+    let config = {
+      // the important one here we're testing is use-ember-modules
+      'optional-features.json': `
+        {
+          "use-ember-modules": true,
+          "application-template-wrapper": false,
+          "default-async-observers": true,
+          "jquery-integration": false,
+          "template-only-glimmer-components": true
+        }
+      `,
+    };
+
+    if (mode === 'app') {
+      merge(project.files, {
+        config,
+      });
+    } else {
+      merge(project.files, {
+        tests: {
+          dummy: { config },
+        },
+      });
+    }
+  };
+}
+
 async function beta(project: Project) {
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-beta' });
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-beta' });
@@ -112,6 +143,7 @@ export function supportMatrix(scenarios: Scenarios, mode: 'app' | 'addon') {
     lts: lts(mode),
     ember3,
     release,
+    releaseWithModules: releaseWithModules(mode),
     beta,
     canary,
   });

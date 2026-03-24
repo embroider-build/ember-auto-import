@@ -282,6 +282,7 @@ export default class AutoImport implements AutoImportSharedAPI {
       bundles: this.bundles,
       webpack,
       rootPackage: this.rootPackage,
+      v2AddonResolver: this.v2AddonResolver,
     });
   }
 

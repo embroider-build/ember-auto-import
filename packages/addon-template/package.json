@@ -21,8 +21,8 @@
     "lint:hbs:fix": "ember-template-lint . --fix",
     "lint:js": "eslint . --cache",
     "lint:js:fix": "eslint . --fix",
-    "start": "./node_modules/ember-cli/bin/ember serve",
-    "test": "./node_modules/ember-cli/bin/ember test",
+    "start": "ember serve",
+    "test": "ember test",
     "test:ember-compatibility": "ember try:each"
   },
   "dependencies": {
