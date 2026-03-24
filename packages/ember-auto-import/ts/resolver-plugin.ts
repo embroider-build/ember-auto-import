@@ -1,14 +1,46 @@
-import { dirname } from 'path';
+import { dirname, resolve } from 'path';
 import type { Compiler, Module, ResolveData } from 'webpack';
 import { ModuleRequest, RequestAdapter, Resolution } from './module-request';
+import type { V2AddonResolver } from './package';
+import {
+  emberVirtualPeerDeps,
+  PackageCache,
+  packageName,
+} from '@embroider/shared-internals';
 
 export class AutoImportResolverPlugin {
+  #appRoot: string;
+  #v2AddonResolver: V2AddonResolver;
+
+  constructor(appRoot: string, v2AddonResolver: V2AddonResolver) {
+    this.#appRoot = appRoot;
+    this.#v2AddonResolver = v2AddonResolver;
+  }
+
+  #packageCache() {
+    return PackageCache.shared('ember-auto-import', this.#appRoot);
+  }
+
   async #resolve(
     request: ModuleRequest<WebpackResolution>
   ): Promise<WebpackResolution> {
-    console.log(
-      `TODO: intrecepting request ${request.specifier} from ${request.fromFile}`
-    );
+    let renamedModule = this.#v2AddonResolver.handleRenaming(request.specifier);
+    if (renamedModule !== request.specifier) {
+      request = request.alias(renamedModule);
+    }
+
+    let requestedPackage = packageName(request.specifier);
+    if (requestedPackage) {
+      let pkg = this.#packageCache().ownerOfFile(request.fromFile);
+      if (
+        pkg &&
+        !pkg.hasDependency(requestedPackage) &&
+        emberVirtualPeerDeps.has(requestedPackage)
+      ) {
+        request = request.rehome(resolve(this.#appRoot, 'package.json'));
+      }
+    }
+
     return await request.defaultResolve();
   }
 

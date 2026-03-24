@@ -209,7 +209,13 @@ export default class WebpackBundler extends Plugin implements Bundler {
           [this.opts.rootPackage.name]: `${this.opts.rootPackage.root}/app`,
         }),
       },
-      plugins: removeUndefined([stylePlugin, new AutoImportResolverPlugin()]),
+      plugins: removeUndefined([
+        stylePlugin,
+        new AutoImportResolverPlugin(
+          this.opts.rootPackage.root,
+          this.opts.v2AddonResolver
+        ),
+      ]),
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.cjs'),
         rules: [
@@ -403,6 +409,17 @@ export default class WebpackBundler extends Plugin implements Bundler {
         !this.matchesAppImports(pkg, contextInfo?.issuer)
       ) {
         return callback();
+      }
+
+      let renamedModule = this.opts.v2AddonResolver.handleRenaming(request);
+      if (renamedModule !== request) {
+        name = packageName(renamedModule);
+        if (!name) {
+          throw new Error(
+            `bug in ember-auto-import: renamed module ${request} -> ${renamedModule} resulted in a relative path, which should never happen`
+          );
+        }
+        request = renamedModule;
       }
 
       if (pkg.isV2Addon()) {

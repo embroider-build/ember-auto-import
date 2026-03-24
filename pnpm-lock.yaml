@@ -753,8 +753,8 @@ importers:
         specifier: npm:ember-auto-import@2.1.0
         version: ember-auto-import@2.1.0(webpack@5.105.4)
       tracked-built-ins-4:
-        specifier: npm:tracked-built-ins@^4.1.0
-        version: tracked-built-ins@4.1.0(@babel/core@7.29.0)
+        specifier: npm:tracked-built-ins@^4.1.2
+        version: tracked-built-ins@4.1.2(@babel/core@7.29.0)
       typescript-4:
         specifier: npm:typescript@^4.1.2
         version: typescript@4.9.5
@@ -10089,6 +10089,9 @@ packages:
 
   tracked-built-ins@4.1.0:
     resolution: {integrity: sha512-v1+jca3sD3LgbAFVsontSONTv7HsZll3yeUB00L6KPwLilFRrY77gvgptDe35fTalk9ea7mmrM2wABD56pTvuw==}
+
+  tracked-built-ins@4.1.2:
+    resolution: {integrity: sha512-KiiV/Pzi7VNKTn9Fip6Ic54AjKgFfqows1Jq3L0WLVqZcvfswdhVxQ9yqqhTXsmgLhVzIgtdzNBH4ExqWf34BQ==}
 
   tree-kill@1.2.2:
     resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
@@ -24582,6 +24585,14 @@ snapshots:
       '@embroider/addon-shim': 1.10.2
       decorator-transforms: 2.3.1(@babel/core@7.29.0)
       ember-tracked-storage-polyfill: 1.0.0
+    transitivePeerDependencies:
+      - '@babel/core'
+      - supports-color
+
+  tracked-built-ins@4.1.2(@babel/core@7.29.0):
+    dependencies:
+      '@embroider/addon-shim': 1.10.2
+      decorator-transforms: 2.3.1(@babel/core@7.29.0)
     transitivePeerDependencies:
       - '@babel/core'
       - supports-color

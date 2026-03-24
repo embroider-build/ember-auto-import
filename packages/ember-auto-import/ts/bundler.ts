@@ -5,6 +5,7 @@ import type BundleConfig from './bundle-config';
 import type { BundleName } from './bundle-config';
 import BroccoliDebug from 'broccoli-debug';
 import type webpack from 'webpack';
+import type { V2AddonResolver } from './package';
 
 const debugTree = BroccoliDebug.buildDebugCallback('ember-auto-import');
 
@@ -16,6 +17,7 @@ export interface BundlerOptions {
   bundles: BundleConfig;
   webpack: typeof webpack;
   rootPackage: Package;
+  v2AddonResolver: V2AddonResolver;
 }
 
 export interface BuildResult {
