@@ -95,10 +95,11 @@ async function release(project: Project) {
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-latest' });
 }
 
-async function releaseWithModules(project: Project) {
-  release(project);
-  merge(project.files, {
-    config: {
+function releaseWithModules(mode: 'app' | 'addon') {
+  return async function (project: Project) {
+    release(project);
+
+    let config = {
       // the important one here we're testing is use-ember-modules
       'optional-features.json': `
         {
@@ -109,8 +110,20 @@ async function releaseWithModules(project: Project) {
           "template-only-glimmer-components": true
         }
       `,
-    },
-  });
+    };
+
+    if (mode === 'app') {
+      merge(project.files, {
+        config,
+      });
+    } else {
+      merge(project.files, {
+        tests: {
+          dummy: { config },
+        },
+      });
+    }
+  };
 }
 
 async function beta(project: Project) {
@@ -130,7 +143,7 @@ export function supportMatrix(scenarios: Scenarios, mode: 'app' | 'addon') {
     lts: lts(mode),
     ember3,
     release,
-    releaseWithModules,
+    releaseWithModules: releaseWithModules(mode),
     beta,
     canary,
   });
