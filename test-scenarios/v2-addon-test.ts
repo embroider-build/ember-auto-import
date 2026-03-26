@@ -259,6 +259,110 @@ function buildV2AddonWithMacros() {
   return addon;
 }
 
+// This addon tests ESM directory imports with "type": "module".
+// Without fullySpecified: false, webpack 5's strict ESM resolution
+// requires fully specified paths including /index.js.
+function buildV2AddonWithIndexResolution() {
+  let addon = new Project('addon-with-index', {
+    files: {
+      'addon-main.cjs': `
+        const { addonV1Shim } = require('@embroider/addon-shim');
+        module.exports = addonV1Shim(__dirname);
+      `,
+      dist: {
+        'index.js': `
+          import { myComponent } from './components/my-component';
+          export function mainExport() {
+            return 'addon-with-index-main:' + myComponent();
+          }
+        `,
+        components: {
+          'my-component': {
+            'index.js': `
+              export function myComponent() {
+                return 'my-component-from-index';
+              }
+            `,
+          },
+          'another-component': {
+            'index.js': `
+              export function anotherComponent() {
+                return 'another-component-from-index';
+              }
+            `,
+          },
+        },
+      },
+    },
+  });
+  addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  addon.pkg.type = 'module';
+  addon.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.cjs',
+  };
+  addon.pkg.exports = {
+    '.': './dist/index.js',
+    './*': './dist/*',
+  };
+  return addon;
+}
+
+// This addon tests the conditional exports pattern "./*": { "default": "./dist/*.js" }
+// which adds .js extension and breaks directory imports with index.js.
+// The resolver plugin's index fallback handles this by trying specifier + '/index'
+// when the original resolution fails.
+function buildV2AddonWithConditionalExports() {
+  let addon = new Project('addon-conditional-exports', {
+    files: {
+      'addon-main.cjs': `
+        const { addonV1Shim } = require('@embroider/addon-shim');
+        module.exports = addonV1Shim(__dirname);
+      `,
+      dist: {
+        'index.js': `
+          export function mainExport() {
+            return 'conditional-exports-main';
+          }
+        `,
+        components: {
+          'flat-component.js': `
+            export function flatComponent() {
+              return 'flat-component-value';
+            }
+          `,
+          'dir-component': {
+            'index.js': `
+              export function dirComponent() {
+                return 'dir-component-from-index';
+              }
+            `,
+          },
+        },
+      },
+    },
+  });
+  addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  addon.pkg.type = 'module';
+  addon.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.cjs',
+  };
+  addon.pkg.exports = {
+    '.': {
+      'default': './dist/index.js',
+    },
+    './*': {
+      'default': './dist/*.js',
+    },
+  };
+  return addon;
+}
+
 function buildV2AddonWithDevDep() {
   let addon = new Project('with-dev-dep', {
     files: {
@@ -301,6 +405,8 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
   project.addDevDependency(buildV2AddonWithExports('fourth-v2-addon'));
   project.addDevDependency(buildV2AddonWithMacros());
   project.addDevDependency(buildV2AddonWithDevDep());
+  project.addDevDependency(buildV2AddonWithIndexResolution());
+  project.addDevDependency(buildV2AddonWithConditionalExports());
 
   // apps don't necessarily need a directly dependency on @embroider/macros just
   // because they have a v2 addon that contains some macros, but in this test
@@ -482,6 +588,41 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
           module('Unit | v2-addon with dev-dep', function () {
             test('should not consume dev-dep from npm', function(assert) {
                assert.ok(makeObject(), 'this will throw if we actually consume the dev dep from npm');
+            });
+          });
+        `,
+        'index-resolution-test.js': `
+          import { module, test } from 'qunit';
+          import { mainExport } from 'addon-with-index';
+          import { anotherComponent } from 'addon-with-index/components/another-component';
+
+          module('Unit | v2 addon index.js resolution with type module', function () {
+            test('internal ESM imports resolve directories to index.js', function (assert) {
+              assert.equal(mainExport(), 'addon-with-index-main:my-component-from-index');
+            });
+
+            test('can import from directory with index.js', function (assert) {
+              assert.equal(anotherComponent(), 'another-component-from-index');
+            });
+          });
+        `,
+        'conditional-exports-test.js': `
+          import { module, test } from 'qunit';
+          import { mainExport } from 'addon-conditional-exports';
+          import { flatComponent } from 'addon-conditional-exports/components/flat-component';
+          import { dirComponent } from 'addon-conditional-exports/components/dir-component';
+
+          module('Unit | v2 addon conditional exports with .js pattern', function () {
+            test('main export works', function (assert) {
+              assert.equal(mainExport(), 'conditional-exports-main');
+            });
+
+            test('flat file imports work with .js exports pattern', function (assert) {
+              assert.equal(flatComponent(), 'flat-component-value');
+            });
+
+            test('directory imports with index.js resolve via fallback', function (assert) {
+              assert.equal(dirComponent(), 'dir-component-from-index');
             });
           });
         `,
