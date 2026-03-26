@@ -428,6 +428,13 @@ export default class WebpackBundler extends Plugin implements Bundler {
           return callback(undefined, 'commonjs ' + request);
         }
 
+        // Allow v2 addons to import from themselves using their package name.
+        // Without this, self-imports get externalized because the addon doesn't
+        // list itself as its own dependency.
+        if (name === pkg.name) {
+          return callback();
+        }
+
         if (!pkg.hasDependency(name)) {
           // v2 addons are allowed to resolve these special virtual peers from
           // the app
