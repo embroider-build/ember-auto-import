@@ -1,18 +1,18 @@
 {
   "solution": {
     "ember-auto-import": {
-      "impact": "minor",
-      "oldVersion": "2.12.1",
-      "newVersion": "2.13.0",
+      "impact": "patch",
+      "oldVersion": "2.13.0",
+      "newVersion": "2.13.1",
       "tagName": "latest",
       "constraints": [
         {
-          "impact": "minor",
-          "reason": "Appears in changelog section :rocket: Enhancement"
+          "impact": "patch",
+          "reason": "Appears in changelog section :bug: Bug Fix"
         }
       ],
       "pkgJSONPath": "./packages/ember-auto-import/package.json"
     }
   },
-  "description": "## Release (2026-03-24)\n\n* ember-auto-import 2.13.0 (minor)\n\n#### :rocket: Enhancement\n* `ember-auto-import`\n  * [#705](https://github.com/embroider-build/ember-auto-import/pull/705) implement renamed-modules in webpack plugin to support `use-ember-modules` ([@kategengler](https://github.com/kategengler))\n\n#### :house: Internal\n* [#704](https://github.com/embroider-build/ember-auto-import/pull/704) Test helper updates ([@ef4](https://github.com/ef4))\n* [#703](https://github.com/embroider-build/ember-auto-import/pull/703) Test suite: Move ember-auto-import into app-template ([@ef4](https://github.com/ef4))\n* [#702](https://github.com/embroider-build/ember-auto-import/pull/702) Test against ember-cli-htmlbars 7 ([@ef4](https://github.com/ef4))\n* [#674](https://github.com/embroider-build/ember-auto-import/pull/674) unpin ember-source-latest ([@mansona](https://github.com/mansona))\n\n#### Committers: 3\n- Chris Manson ([@mansona](https://github.com/mansona))\n- Edward Faulkner ([@ef4](https://github.com/ef4))\n- Katie Gengler ([@kategengler](https://github.com/kategengler))\n"
+  "description": "## Release (2026-03-29)\n\n* ember-auto-import 2.13.1 (patch)\n\n#### :bug: Bug Fix\n* `ember-auto-import`\n  * [#708](https://github.com/embroider-build/ember-auto-import/pull/708) Handle missing absolutePaths for ember-source v7+ ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))\n\n#### Committers: 1\n- NullVoxPopuli's reduced-access machine account for AI usage ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))\n"
 }
