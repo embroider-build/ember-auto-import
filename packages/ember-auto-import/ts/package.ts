@@ -591,8 +591,22 @@ export default class Package {
       '<3.27.0',
       { includePrerelease: true }
     );
-    let templateCompilerPath: string = (emberSource as any).absolutePaths
-      .templateCompiler;
+    let templateCompilerPath: string;
+    if ((emberSource as any).absolutePaths) {
+      templateCompilerPath = (emberSource as any).absolutePaths
+        .templateCompiler;
+    } else {
+      // v7+ ember-source no longer provides absolutePaths; resolve from
+      // the host app's directory through the package exports map
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      let { createRequire } = require('module') as {
+        createRequire: (filename: string) => NodeRequire;
+      };
+      let appRequire = createRequire(join(this.root, 'package.json'));
+      templateCompilerPath = appRequire.resolve(
+        'ember-source/ember-template-compiler/index.js'
+      );
+    }
 
     const babelPluginPrecompile = ensureModuleApiPolyfill
       ? [

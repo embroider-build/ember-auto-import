@@ -24,8 +24,7 @@
   },
   "pnpm": {
     "patchedDependencies": {
-      "fastboot": "patches/fastboot.patch",
-      "ember-source@6.11.0": "patches/ember-source@6.11.0.patch"
+      "fastboot": "patches/fastboot.patch"
     }
   }
 }
