@@ -1,5 +1,16 @@
 # Changelog
 
+## Release (2026-03-29)
+
+* ember-auto-import 2.13.1 (patch)
+
+#### :bug: Bug Fix
+* `ember-auto-import`
+  * [#708](https://github.com/embroider-build/ember-auto-import/pull/708) Handle missing absolutePaths for ember-source v7+ ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))
+
+#### Committers: 1
+- NullVoxPopuli's reduced-access machine account for AI usage ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))
+
 ## Release (2026-03-24)
 
 * ember-auto-import 2.13.0 (minor)
