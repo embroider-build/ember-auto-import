@@ -259,6 +259,54 @@ function buildV2AddonWithMacros() {
   return addon;
 }
 
+// This addon tests that v2 addons can import from themselves using their package name.
+// This is important for addons that use absolute imports internally.
+function buildV2AddonWithSelfImport() {
+  let addon = new Project('addon-self-import', {
+    files: {
+      'addon-main.js': `
+        const { addonV1Shim } = require('@embroider/addon-shim');
+        module.exports = addonV1Shim(__dirname);
+      `,
+      dist: {
+        'index.js': `
+          import { addonHelper } from 'addon-self-import/utils/helper';
+          export function addonMain() {
+            return 'addon-main:' + addonHelper();
+          }
+        `,
+        utils: {
+          'helper.js': `
+            export function addonHelper() {
+              return 'addon-helper-value';
+            }
+          `,
+        },
+        components: {
+          'my-component.js': `
+            import { addonHelper } from 'addon-self-import/utils/helper';
+            export function myComponent() {
+              return 'my-component:' + addonHelper();
+            }
+          `,
+        },
+      },
+    },
+  });
+  addon.linkDependency('@embroider/addon-shim', { baseDir: __dirname });
+  addon.pkg.keywords = addon.pkg.keywords ? [...addon.pkg.keywords, 'ember-addon'] : ['ember-addon'];
+  addon.pkg['ember-addon'] = {
+    version: 2,
+    type: 'addon',
+    main: './addon-main.js',
+  };
+  addon.pkg.exports = {
+    '.': './dist/index.js',
+    './*': './dist/*',
+  };
+  return addon;
+}
+
 function buildV2AddonWithDevDep() {
   let addon = new Project('with-dev-dep', {
     files: {
@@ -301,6 +349,7 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
   project.addDevDependency(buildV2AddonWithExports('fourth-v2-addon'));
   project.addDevDependency(buildV2AddonWithMacros());
   project.addDevDependency(buildV2AddonWithDevDep());
+  project.addDevDependency(buildV2AddonWithSelfImport());
 
   // apps don't necessarily need a directly dependency on @embroider/macros just
   // because they have a v2 addon that contains some macros, but in this test
@@ -482,6 +531,21 @@ let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
           module('Unit | v2-addon with dev-dep', function () {
             test('should not consume dev-dep from npm', function(assert) {
                assert.ok(makeObject(), 'this will throw if we actually consume the dev dep from npm');
+            });
+          });
+        `,
+        'self-import-test.js': `
+          import { module, test } from 'qunit';
+          import { addonMain } from 'addon-self-import';
+          import { myComponent } from 'addon-self-import/components/my-component';
+
+          module('Unit | v2 addon self-import', function () {
+            test('addon can import from itself using package name', function (assert) {
+              assert.equal(addonMain(), 'addon-main:addon-helper-value', 'addon self-import should work');
+            });
+
+            test('addon component can import from addon using package name', function (assert) {
+              assert.equal(myComponent(), 'my-component:addon-helper-value', 'component self-import should work');
             });
           });
         `,
