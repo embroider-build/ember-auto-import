@@ -29,6 +29,7 @@
     "ember-auto-import": "workspace:*",
     "ember-cli": "npm:ember-cli@alpha",
     "ember-cli-3": "npm:ember-cli@^3.0.0",
+    "ember-cli-app-version": "^7.0.0",
     "ember-cli-babel-older": "npm:ember-cli-babel@7.11.1",
     "ember-cli-beta": "npm:ember-cli@beta",
     "ember-cli-fastboot": "npm:ember-cli-fastboot@^4.1.0",
