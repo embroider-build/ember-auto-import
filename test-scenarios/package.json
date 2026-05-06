@@ -44,7 +44,7 @@
     "ember-resolver": "^13.2.0",
     "ember-source-3": "npm:ember-source@^3.0.0",
     "ember-source-beta": "npm:ember-source@beta",
-    "ember-source-canary": "npm:ember-source@alpha",
+    "ember-source-canary": "file:ember-source-side-effects-false.tgz",
     "ember-source-latest": "npm:ember-source@latest",
     "ember-source-lts": "npm:ember-source@~3.4.0",
     "ember-test-helpers-lts": "npm:@ember/test-helpers@2.6.0",
