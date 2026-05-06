@@ -8,6 +8,10 @@ import { CHECK_SCRIPTS_MODULE } from './static-import-test';
 const { module: Qmodule, test } = QUnit;
 
 appScenarios
+  // ember-cli-fastboot 4.1.5 (latest) imports the AMD `ember` module and the
+  // removed `inject as service` shape, neither of which work on ember-source 7+
+  .skip('canary')
+  .skip('beta')
   .map('dynamic-import', project => {
     project.linkDependency('ember-cli-fastboot', { baseDir: __dirname });
 
