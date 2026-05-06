@@ -1,18 +1,8 @@
 {
   "solution": {
     "ember-auto-import": {
-      "impact": "patch",
-      "oldVersion": "2.13.0",
-      "newVersion": "2.13.1",
-      "tagName": "latest",
-      "constraints": [
-        {
-          "impact": "patch",
-          "reason": "Appears in changelog section :bug: Bug Fix"
-        }
-      ],
-      "pkgJSONPath": "./packages/ember-auto-import/package.json"
+      "oldVersion": "2.13.1"
     }
   },
-  "description": "## Release (2026-03-29)\n\n* ember-auto-import 2.13.1 (patch)\n\n#### :bug: Bug Fix\n* `ember-auto-import`\n  * [#708](https://github.com/embroider-build/ember-auto-import/pull/708) Handle missing absolutePaths for ember-source v7+ ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))\n\n#### Committers: 1\n- NullVoxPopuli's reduced-access machine account for AI usage ([@NullVoxPopuli-ai-agent](https://github.com/NullVoxPopuli-ai-agent))\n"
+  "description": "## Release (2026-05-06)\n\n\n\n#### :house: Internal\n* [#713](https://github.com/embroider-build/ember-auto-import/pull/713) Fix CI ([@NullVoxPopuli](https://github.com/NullVoxPopuli))\n\n#### Committers: 1\n- [@NullVoxPopuli](https://github.com/NullVoxPopuli)\n"
 }
