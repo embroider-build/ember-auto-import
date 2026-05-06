@@ -136,6 +136,11 @@ async function canary(project: Project) {
   // aliasing of non-registry deps
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli' });
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-canary' });
+  project.linkDevDependency('babel-plugin-ember-template-compilation', {
+    baseDir: __dirname,
+    resolveName: 'babel-plugin-ember-template-compilation',
+  });
+  project.linkDevDependency('ember-resolver', { baseDir: __dirname, resolveName: 'ember-resolver' });
 }
 
 export function supportMatrix(scenarios: Scenarios, mode: 'app' | 'addon') {
