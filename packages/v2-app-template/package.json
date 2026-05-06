@@ -58,7 +58,7 @@
     "qunit": "^2.24.2",
     "qunit-dom": "^3.5.0",
     "testem": "^3.16.0",
-    "tracked-built-ins": "^4.0.0",
+    "tracked-built-ins": "^4.1.2",
     "vite": "^7.1.9"
   },
   "engines": {

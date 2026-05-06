@@ -295,7 +295,9 @@ function buildV2AddonWithDevDep() {
   return addon;
 }
 
-let scenarios = appScenarios.skip('lts').map('v2-addon', project => {
+// ember-cli-fastboot 4.1.5 (latest) imports the AMD `ember` module and the
+// removed `inject as service` shape, neither of which work on ember-source 7+
+let scenarios = appScenarios.skip('lts').skip('canary').skip('beta').map('v2-addon', project => {
   project.addDevDependency(buildV2Addon(project));
   project.addDevDependency(buildIntermediateV1Addon(project));
   project.addDevDependency(buildV2AddonWithExports('fourth-v2-addon'));
