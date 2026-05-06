@@ -1,5 +1,15 @@
 # Changelog
 
+## Release (2026-05-06)
+
+
+
+#### :house: Internal
+* [#713](https://github.com/embroider-build/ember-auto-import/pull/713) Fix CI ([@NullVoxPopuli](https://github.com/NullVoxPopuli))
+
+#### Committers: 1
+- [@NullVoxPopuli](https://github.com/NullVoxPopuli)
+
 ## Release (2026-03-29)
 
 * ember-auto-import 2.13.1 (patch)
