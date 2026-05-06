@@ -129,6 +129,8 @@ function releaseWithModules(mode: 'app' | 'addon') {
 async function beta(project: Project) {
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli-beta' });
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-beta' });
+  project.linkDevDependency('ember-resolver', { baseDir: __dirname, resolveName: 'ember-resolver' });
+  project.linkDevDependency('ember-cli-app-version', { baseDir: __dirname, resolveName: 'ember-cli-app-version' });
 }
 
 async function canary(project: Project) {
@@ -136,6 +138,12 @@ async function canary(project: Project) {
   // aliasing of non-registry deps
   project.linkDevDependency('ember-cli', { baseDir: __dirname, resolveName: 'ember-cli' });
   project.linkDevDependency('ember-source', { baseDir: __dirname, resolveName: 'ember-source-canary' });
+  project.linkDevDependency('babel-plugin-ember-template-compilation', {
+    baseDir: __dirname,
+    resolveName: 'babel-plugin-ember-template-compilation',
+  });
+  project.linkDevDependency('ember-resolver', { baseDir: __dirname, resolveName: 'ember-resolver' });
+  project.linkDevDependency('ember-cli-app-version', { baseDir: __dirname, resolveName: 'ember-cli-app-version' });
 }
 
 export function supportMatrix(scenarios: Scenarios, mode: 'app' | 'addon') {

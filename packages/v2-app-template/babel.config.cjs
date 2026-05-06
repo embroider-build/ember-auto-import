@@ -1,14 +1,19 @@
-const {
-  babelCompatSupport,
-  templateCompatSupport,
-} = require('@embroider/compat/babel');
+const { babelCompatSupport, templateCompatSupport } = require('@embroider/compat/babel');
+
+let needsCompiler = require('./package.json')
+  .devDependencies['babel-plugin-ember-template-compilation'].split('.')[0]
+  .includes('2');
 
 module.exports = {
   plugins: [
     [
       'babel-plugin-ember-template-compilation',
       {
-        compilerPath: 'ember-source/dist/ember-template-compiler.js',
+        ...(needsCompiler
+          ? {
+              compilerPath: 'ember-source/dist/ember-template-compiler.js',
+            }
+          : {}),
         enableLegacyModules: [
           'ember-cli-htmlbars',
           'ember-cli-htmlbars-inline-precompile',

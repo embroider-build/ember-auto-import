@@ -5,6 +5,11 @@ import merge from 'lodash/merge';
 const { module: Qmodule, test } = QUnit;
 
 appScenarios
+  // the synthesized addon uses classic `Component.extend({ layout })`, which
+  // ember-source 7 no longer auto-associates with the classic component
+  // manager
+  .skip('canary')
+  .skip('beta')
   .map('merged', project => {
     let innerLib = project.addDevDependency('inner-lib', {
       files: {
