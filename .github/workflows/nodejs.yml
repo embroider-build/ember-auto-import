@@ -1,12 +1,13 @@
 name: Node CI
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-      - 'v*' # prior release branches (e.g. `v0.30.x` branch)
+      - "v*" # prior release branches (e.g. `v0.30.x` branch)
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
 
 jobs:
@@ -28,7 +29,7 @@ jobs:
   scenarios:
     needs: discover_matrix
     name: ${{ matrix.name }}
-    runs-on: '${{ matrix.os }}-latest'
+    runs-on: "${{ matrix.os }}-latest"
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.discover_matrix.outputs.matrix)}}
@@ -62,7 +63,7 @@ jobs:
   scenarios_legacy:
     needs: discover_matrix_legacy
     name: ${{ matrix.name }}
-    runs-on: '${{ matrix.os }}-latest'
+    runs-on: "${{ matrix.os }}-latest"
     strategy:
       fail-fast: false
       matrix: ${{fromJson(needs.discover_matrix_legacy.outputs.matrix)}}
