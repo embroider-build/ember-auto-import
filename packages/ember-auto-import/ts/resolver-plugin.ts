@@ -41,7 +41,25 @@ export class AutoImportResolverPlugin {
       }
     }
 
-    return await request.defaultResolve();
+    let resolution = await request.defaultResolve();
+
+    // When resolution fails, try appending /index to the specifier. This
+    // handles v2 addons whose exports field maps "./*" to "./dist/*.js" but
+    // the actual files are directories with index.js. For example:
+    //   import 'addon/components/name' -> exports maps to dist/components/name.js
+    //   but actual file is dist/components/name/index.js
+    // By trying specifier + '/index', the exports pattern produces
+    // dist/components/name/index.js which does exist.
+    if (resolution.type === 'not_found' && requestedPackage) {
+      let indexResolution = await request
+        .alias(request.specifier + '/index')
+        .defaultResolve();
+      if (indexResolution.type === 'found') {
+        return indexResolution;
+      }
+    }
+
+    return resolution;
   }
 
   apply(compiler: Compiler) {
