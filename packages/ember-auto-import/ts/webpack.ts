@@ -219,6 +219,25 @@ export default class WebpackBundler extends Plugin implements Bundler {
       module: {
         noParse: (file: string) => file === join(stagingDir, 'l.cjs'),
         rules: [
+          {
+            // Ember addons need their .js files to be interpreted the same
+            // way whether or not the addon's package.json says `"type":
+            // "module"`. Without this rule, webpack would give the strict ESM
+            // treatment to .js files in v2 addons that say `"type": "module"`:
+            // import specifiers would need to be fully-specified, and
+            // default-importing one of the CommonJS/AMD modules that we
+            // externalize (like `@ember/component/template-only` or a v1
+            // addon) would yield the module's exports object rather than its
+            // default export. Opting these files back into "javascript/auto"
+            // keeps type=module v2 addons working the same as every other v2
+            // addon.
+            test: (filename: string) =>
+              filename.endsWith('.js') && this.fileIsInV2Addon(filename),
+            type: 'javascript/auto',
+            resolve: {
+              fullySpecified: false,
+            },
+          },
           this.babelRule(
             stagingDir,
             (filename) => !this.fileIsInApp(filename),
@@ -296,6 +315,17 @@ export default class WebpackBundler extends Plugin implements Bundler {
       }
     }
     return output;
+  }
+
+  private fileIsInV2Addon(filename: string): boolean {
+    let packageCache = PackageCache.shared(
+      'ember-auto-import',
+      this.opts.rootPackage.root
+    );
+
+    const pkg = packageCache.ownerOfFile(filename);
+
+    return Boolean(pkg?.isV2Addon());
   }
 
   private fileIsInApp(filename: string) {
