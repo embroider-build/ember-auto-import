@@ -15,7 +15,7 @@ import type Package from '../package';
 import Analyzer from '../analyzer';
 // @ts-ignore
 import broccoliBabel from 'broccoli-babel-transpiler';
-import type { TransformOptions } from '@babel/core';
+import type { TransformOptions } from '../babel-compat';
 import {
   deserialize,
   ImportSyntax,
@@ -52,7 +52,9 @@ Qmodule('analyzer', function (hooks) {
         require('../../babel-plugin'),
       ],
     };
-    let transpiled = broccoliBabel(new UnwatchedDir(upstream), babelConfig);
+    let transpiled = new broccoliBabel(new UnwatchedDir(upstream), {
+      babel: babelConfig,
+    });
     analyzer = new Analyzer(transpiled, pack, undefined, true);
     builder = new broccoli.Builder(analyzer);
   });
@@ -450,6 +452,97 @@ Qmodule('analyzer', function (hooks) {
     }
     `;
     outputFileSync(join(upstream, 'sample.js'), src);
+    try {
+      await builder.build();
+      throw new Error(`expected not to get here, build was supposed to fail`);
+    } catch (err) {
+      assert.contains(
+        err instanceof Error ? err.message : String(err),
+        'import() is only allowed to contain string literals or template string literals'
+      );
+    }
+  });
+});
+
+// Babel 8 parses `import()` into an ImportExpression node instead of a
+// CallExpression with an `Import` callee. Babel 7 produces that same AST under
+// the `createImportExpressions` parser option, so we can cover both node shapes
+// without a second @babel/core install.
+Qmodule('analyzer with ImportExpression AST', function (hooks) {
+  let builder: Builder;
+  let upstream: string;
+  let analyzer: Analyzer;
+  let pack: Package;
+
+  hooks.beforeEach(function (this: any) {
+    quickTemp.makeOrRemake(this, 'workDir', 'auto-import-analyzer-tests');
+    ensureDirSync((upstream = join(this.workDir, 'upstream')));
+    pack = {
+      fileExtensions: ['js'],
+      implicitImports: [],
+    } as unknown as Package;
+    let transpiled = new broccoliBabel(new UnwatchedDir(upstream), {
+      babel: {
+        parserOpts: { createImportExpressions: true },
+        plugins: [
+          require.resolve('../../js/analyzer-plugin'),
+          require('../../babel-plugin'),
+        ],
+      },
+    });
+    analyzer = new Analyzer(transpiled, pack, undefined, true);
+    builder = new broccoli.Builder(analyzer);
+  });
+
+  hooks.afterEach(function (this: any) {
+    removeSync(this.workDir);
+    if (builder) {
+      return builder.cleanup();
+    }
+  });
+
+  test('discovers a string literal dynamic import', async function (assert) {
+    outputFileSync(join(upstream, 'sample.js'), "import('alpha');");
+    await builder.build();
+    assert.deepEqual(analyzer.imports, [
+      {
+        isDynamic: true,
+        specifier: 'alpha',
+        path: 'sample.js',
+        package: pack,
+        treeType: undefined,
+      },
+    ]);
+  });
+
+  test('discovers a template literal dynamic import', async function (assert) {
+    outputFileSync(join(upstream, 'sample.js'), 'import(`alpha/${foo}`);');
+    await builder.build();
+    assert.deepEqual(analyzer.imports, [
+      {
+        isDynamic: true,
+        cookedQuasis: ['alpha/', ''],
+        expressionNameHints: ['foo'],
+        path: 'sample.js',
+        package: pack,
+        treeType: undefined,
+      },
+    ]);
+  });
+
+  test('rewrites dynamic import of a dependency', async function (assert) {
+    outputFileSync(join(upstream, 'sample.js'), "import('alpha');");
+    await builder.build();
+    let content = readFileSync(join(builder.outputPath, 'sample.js'), 'utf8');
+    assert.contains(content, 'emberAutoImportDynamic(');
+  });
+
+  test('disallowed pattern: unsupported syntax', async function (assert) {
+    assert.expect(1);
+    outputFileSync(
+      join(upstream, 'sample.js'),
+      `import((function(){ return 'hi' })());`
+    );
     try {
       await builder.build();
       throw new Error(`expected not to get here, build was supposed to fail`);

@@ -96,3 +96,37 @@ jobs:
       - name: test
         run: npm run test:node
         working-directory: packages/ember-auto-import
+
+  # The scenario tests can't run under Babel 8 yet because ember-cli-babel
+  # doesn't support it. These cover the parts of the pipeline we own: our own
+  # babel plugins and the config we hand to babel-loader.
+  unit_babel8:
+    name: Unit Tests (Babel 8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Force Babel 8
+        run: |
+          jq '
+            .pnpm.overrides = (.pnpm.overrides // {}) + {
+               "@babel/core": "^8.0.0",
+               "@babel/preset-env": "^8.0.0",
+               "@babel/plugin-proposal-decorators": "^8.0.0",
+               "@babel/plugin-transform-class-properties": "^8.0.0",
+               "@babel/plugin-transform-class-static-block": "^8.0.0",
+               "@babel/plugin-transform-private-methods": "^8.0.0",
+               "babel-loader": "^10.1.1"
+            }
+          ' package.json > package.json.tmp
+      - run: mv package.json.tmp package.json
+      - uses: ./.github/actions/setup
+        with:
+          use_lockfile: false
+      # tsc also has to survive Babel 8, which ships its own types under
+      # different names than @types/babel__core uses.
+      - name: compile
+        run: npm run compile
+        working-directory: packages/ember-auto-import
+      - name: test
+        run: npm run test:node
+        working-directory: packages/ember-auto-import

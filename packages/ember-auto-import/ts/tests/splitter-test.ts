@@ -83,17 +83,19 @@ Qmodule('splitter', function (hooks) {
           return [];
         },
       });
-      let transpiled = broccoliBabel(new UnwatchedDir(project.baseDir), {
-        plugins: [
-          require.resolve('../../js/analyzer-plugin'),
-          require.resolve('@babel/plugin-syntax-typescript'),
+      let transpiled = new broccoliBabel(new UnwatchedDir(project.baseDir), {
+        babel: {
+          plugins: [
+            require.resolve('../../js/analyzer-plugin'),
+            require.resolve('@babel/plugin-syntax-typescript'),
 
-          // keeping this in non-parallelizable form prevents
-          // broccoli-babel-transpiler from spinning up separate worker processes,
-          // which we don't want or need and which hang at the end of the test
-          // suite.
-          require('../../babel-plugin'),
-        ],
+            // keeping this in non-parallelizable form prevents
+            // broccoli-babel-transpiler from spinning up separate worker
+            // processes, which we don't want or need and which hang at the end
+            // of the test suite.
+            require('../../babel-plugin'),
+          ],
+        },
       });
       let analyzer = new Analyzer(transpiled, pack, undefined, true);
       splitter = new Splitter({

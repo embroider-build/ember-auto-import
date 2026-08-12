@@ -10,7 +10,8 @@ import {
   packageName as getPackageName,
 } from '@embroider/shared-internals';
 import semver from 'semver';
-import type { PluginItem, TransformOptions } from '@babel/core';
+import type { PluginItem } from '@babel/core';
+import type { TransformOptions } from './babel-compat';
 import { MacrosConfig } from '@embroider/macros/src/node';
 import minimatch from 'minimatch';
 import { stripQuery } from './util';
@@ -608,7 +609,7 @@ export default class Package {
       );
     }
 
-    const babelPluginPrecompile = ensureModuleApiPolyfill
+    const babelPluginPrecompile: PluginItem = ensureModuleApiPolyfill
       ? [
           require.resolve('babel-plugin-htmlbars-inline-precompile'),
           {
@@ -640,25 +641,25 @@ export default class Package {
           'ember-cli-htmlbars:inline-precompile',
         ];
 
-    let plugins = [
-      [require.resolve('@babel/plugin-proposal-decorators'), { legacy: true }],
-      [require.resolve('@babel/plugin-transform-class-static-block')],
+    let plugins: PluginItem[] = [
+      // `version` rather than `legacy: true` because Babel 8 dropped the
+      // `legacy` shorthand and requires an explicit version. Babel 7.17+
+      // understands `version: 'legacy'` too.
       [
-        require.resolve('@babel/plugin-proposal-class-properties'),
-        { loose: false },
+        require.resolve('@babel/plugin-proposal-decorators'),
+        { version: 'legacy' },
       ],
-      [
-        require.resolve('@babel/plugin-proposal-private-methods'),
-        { loose: false },
-      ],
+      require.resolve('@babel/plugin-transform-class-static-block'),
+      // `loose` is left at its default (false). Passing it explicitly is
+      // deprecated in Babel 8 in favor of the `assumptions` config.
+      require.resolve('@babel/plugin-transform-class-properties'),
+      require.resolve('@babel/plugin-transform-private-methods'),
       babelPluginPrecompile,
       ...macrosConfig.babelPluginConfig(),
     ];
 
     if (ensureModuleApiPolyfill) {
-      plugins.push([
-        require.resolve('babel-plugin-ember-modules-api-polyfill'),
-      ]);
+      plugins.push(require.resolve('babel-plugin-ember-modules-api-polyfill'));
     }
 
     // this is to facilitate testing external dependencies against our cleanBabelConfig.
@@ -668,7 +669,7 @@ export default class Package {
     // was removed that test wasn't checking the right thing. This was the simplest way that
     // we could think to test that would be future-proof
     if (process.env.USE_EAI_BABEL_WATERMARK) {
-      plugins.push([require.resolve('./watermark-plugin')]);
+      plugins.push(require.resolve('./watermark-plugin'));
     }
 
     return {

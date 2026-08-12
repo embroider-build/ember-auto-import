@@ -29,7 +29,7 @@ import makeDebug from 'debug';
 import { ensureDirSync, symlinkSync, existsSync } from 'fs-extra';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import minimatch from 'minimatch';
-import { TransformOptions } from '@babel/core';
+import type { TransformOptions } from './babel-compat';
 import { stripQuery } from './util';
 import { AutoImportResolverPlugin } from './resolver-plugin';
 

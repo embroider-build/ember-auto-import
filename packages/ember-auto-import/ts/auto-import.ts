@@ -24,7 +24,7 @@ import resolve from 'resolve';
 import type webpackType from 'webpack';
 import resolvePackagePath from 'resolve-package-path';
 import semver from 'semver';
-import type { TransformOptions } from '@babel/core';
+import type { TransformOptions } from './babel-compat';
 import { MARKER } from './analyzer-syntax';
 import path from 'path';
 import funnel from 'broccoli-funnel';

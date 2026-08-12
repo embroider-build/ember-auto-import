@@ -4,7 +4,7 @@ import { ImportSyntax, serialize } from './analyzer-syntax';
 
 interface State {
   imports: ImportSyntax[];
-  handled: WeakSet<t.CallExpression>;
+  handled: WeakSet<t.Node>;
   opts: {
     imports?: ImportSyntax[];
   };
@@ -55,15 +55,31 @@ function analyzerPlugin(babel: typeof Babel) {
         }
         let callee = path.get('callee');
         if (callee.type === 'Import') {
-          state.imports.push(processImportCallExpression(path, true));
+          state.imports.push(
+            processImportSpecifier(path, path.node.arguments[0], true)
+          );
           state.handled.add(path.node);
         } else if (
           callee.isIdentifier() &&
           callee.referencesImport('@embroider/macros', 'importSync')
         ) {
-          state.imports.push(processImportCallExpression(path, false));
+          state.imports.push(
+            processImportSpecifier(path, path.node.arguments[0], false)
+          );
           state.handled.add(path.node);
         }
+      },
+      // Babel 8 (and Babel 7 with the `createImportExpressions` parser option)
+      // parses `import()` into its own node type instead of a CallExpression
+      // with an `Import` callee.
+      ImportExpression(path: NodePath<t.ImportExpression>, state: State) {
+        if (state.handled.has(path.node)) {
+          return;
+        }
+        state.imports.push(
+          processImportSpecifier(path, path.node.source, true)
+        );
+        state.handled.add(path.node);
       },
       ImportDeclaration(path: NodePath<t.ImportDeclaration>, state: State) {
         if (erasedImportKinds.has(path.node.importKind)) return;
@@ -97,14 +113,13 @@ function analyzerPlugin(babel: typeof Babel) {
   };
 }
 
-function processImportCallExpression(
-  path: NodePath<t.CallExpression>,
+function processImportSpecifier(
+  path: NodePath<t.CallExpression | t.ImportExpression>,
+  // it's a syntax error to have anything other than exactly one argument, so we
+  // can just assume this exists
+  argument: t.Node,
   isDynamic: boolean
 ): ImportSyntax {
-  // it's a syntax error to have anything other than exactly one
-  // argument, so we can just assume this exists
-  let argument = path.node.arguments[0];
-
   switch (argument.type) {
     case 'StringLiteral':
       return {
